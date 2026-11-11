@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIPREMIXESTOOLS - Portal & Record Pool</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#0A070B',
+                            panelBg: '#120A10',
+                            cardBg: '#1B0E17',
+                            crimson: '#FF003C',
+                            burgundyDark: '#4A000E',
+                            burgundyMid: '#80001B',
+                            border: '#2E1524'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #0A070B; color: #f8fafc; }
+        .logo-font { font-style: italic; font-weight: 900; letter-spacing: -0.05em; }
+        .glow-button { box-shadow: 0 0 25px rgba(255, 0, 60, 0.4); }
+        .glow-accent { box-shadow: 0 0 35px rgba(255, 0, 60, 0.25); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0A070B; }
+        ::-webkit-scrollbar-thumb { background: #2E1524; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FF003C; }
+
+        .wave-bar {
+            width: 3px;
+            background: linear-gradient(to top, #FF003C, #f43f5e, #fb7185, #38bdf8);
+            border-radius: 9999px;
+            transition: height 0.1s ease;
+            height: 6px;
+        }
+        .playing .wave-bar {
+            animation: soundWave 1.2s infinite ease-in-out alternate;
+        }
+        .playing .wave-bar:nth-child(1) { animation-delay: 0.1s; }
+        .playing .wave-bar:nth-child(2) { animation-delay: 0.3s; }
+        .playing .wave-bar:nth-child(3) { animation-delay: 0.5s; }
+        .playing .wave-bar:nth-child(4) { animation-delay: 0.2s; }
+        .playing .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+        .playing .wave-bar:nth-child(6) { animation-delay: 0.4s; }
+        .playing .wave-bar:nth-child(7) { animation-delay: 0.7s; }
+        .playing .wave-bar:nth-child(8) { animation-delay: 0.25s; }
+        .playing .wave-bar:nth-child(9) { animation-delay: 0.55s; }
+        .playing .wave-bar:nth-child(10) { animation-delay: 0.15s; }
+        .playing .wave-bar:nth-child(11) { animation-delay: 0.45s; }
+        .playing .wave-bar:nth-child(12) { animation-delay: 0.65s; }
+
+        @keyframes soundWave {
+            0% { height: 6px; opacity: 0.4; }
+            50% { height: 32px; opacity: 1; }
+            100% { height: 14px; opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-brand-bg text-slate-100 min-h-screen flex flex-col selection:bg-brand-crimson selection:text-white">
+
+    <!-- HEADER NAVIGATION -->
+    <header class="bg-brand-panelBg border-b border-brand-border sticky top-0 z-40 px-4 lg:px-8 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="resetFilters()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-burgundyDark via-brand-burgundyMid to-brand-crimson flex items-center justify-center glow-accent border border-brand-crimson/40">
+                    <i class="fa-solid fa-compact-disc text-white text-xl"></i>
+                </div>
+                <div class="leading-none">
+                    <div class="logo-font text-xl lg:text-2xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-brand-crimson to-rose-400 italic">
+                        VIP<span class="text-white">REMIXES</span><span class="text-brand-crimson">TOOLS</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="hidden lg:flex items-center space-x-6 text-sm font-medium text-slate-300">
+                <a href="#" onclick="event.preventDefault();resetFilters()" class="hover:text-white transition">Catálogo</a>
+                <a href="#" onclick="event.preventDefault();filterNewReleases()" class="hover:text-white transition text-rose-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs"></i> Nuevos / Recientes</a>
+                <a href="#" onclick="event.preventDefault();showPlansView()" class="hover:text-white transition text-brand-crimson font-bold">Membresías</a>
+            </nav>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div id="authHeaderContainer" class="flex items-center space-x-3">
+                <button onclick="openRegisterModal()" class="border border-slate-700 hover:border-brand-crimson text-slate-300 hover:text-white font-semibold text-xs lg:text-sm px-3.5 py-2 rounded-full transition-all">
+                    Registrarse
+                </button>
+                <button onclick="openLoginModal()" class="bg-brand-crimson hover:bg-red-600 text-white font-semibold text-xs lg:text-sm px-4 py-2 rounded-full transition-all shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-user"></i> <span>Iniciar Sesión</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <nav class="lg:hidden flex items-center justify-around bg-brand-panelBg border-b border-brand-border text-xs font-semibold text-slate-300 py-2.5">
+        <a href="#" onclick="event.preventDefault();resetFilters()">Catálogo</a>
+        <a href="#" onclick="event.preventDefault();filterNewReleases()" class="text-rose-400 font-bold">Nuevos / Recientes</a>
+        <a href="#" onclick="event.preventDefault();showPlansView()" class="text-brand-crimson font-bold">Membresías</a>
+    </nav>
+
+    <!-- MAIN APP LAYOUT -->
+    <div class="flex-1 flex flex-col lg:flex-row">
+        <!-- SIDEBAR PORTALS -->
+        <aside id="sidebarPools" class="w-full lg:w-72 bg-brand-panelBg border-r border-brand-border p-4 lg:block shrink-0">
+            <div class="flex items-center justify-between mb-4 pb-2 border-b border-brand-border">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Portales / Pools</span>
+                <span id="poolCountsSummary" class="text-xs bg-brand-cardBg text-brand-crimson font-bold px-2.5 py-1 rounded-full border border-brand-border">Todo (0)</span>
+            </div>
+            <div id="portalsListContainer" class="space-y-1.5 overflow-y-auto max-h-[calc(100vh-220px)] pr-1"></div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 p-4 lg:p-8 overflow-y-auto pb-36">
+            <div id="mainViewContainer">
+                <div id="bannerCard" class="relative rounded-2xl bg-gradient-to-r from-brand-burgundyDark via-brand-burgundyMid to-brand-crimson p-6 lg:p-10 mb-8 overflow-hidden border border-brand-crimson/30 shadow-2xl">
+                    <div class="absolute -right-10 -bottom-10 opacity-10 text-white text-9xl pointer-events-none">
+                        <i class="fa-solid fa-compact-disc"></i>
+                    </div>
+                    <div class="relative z-10 max-w-2xl">
+                        <span id="bannerCategoryTag" class="bg-black/40 text-brand-crimson font-bold text-xs uppercase px-3 py-1 rounded-full border border-brand-crimson/40 mb-3 inline-block">Record Pool VIP</span>
+                        <h1 id="bannerTitle" class="text-2xl lg:text-4xl font-extrabold text-white tracking-tight mb-2">Catálogo General de Remixes</h1>
+                        <p id="bannerDesc" class="text-slate-200 text-sm lg:text-base opacity-90">Explorando las mejores versiones y herramientas exclusivas para DJs.</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center gap-4 mb-6">
+                    <div class="relative flex-1 w-full">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar por título, artista o género..." class="w-full bg-brand-panelBg border border-brand-border rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-crimson transition-all shadow-inner">
+                    </div>
+                    <div class="w-full md:w-64">
+                        <select id="genreSelectFilter" onchange="filterByDropdownGenre(this.value)" class="w-full bg-brand-panelBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson transition-all">
+                            <option value="ALL">Género (Todos)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-brand-panelBg rounded-2xl border border-brand-border overflow-hidden shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-brand-border text-slate-400 text-xs uppercase tracking-wider bg-black/20">
+                                    <th class="py-3 px-4 w-16">Portada</th>
+                                    <th class="py-3 px-4">Título / Remix</th>
+                                    <th class="py-3 px-4">Portal</th>
+                                    <th class="py-3 px-4">Género Exacto</th>
+                                    <th class="py-3 px-4 w-24">BPM</th>
+                                    <th class="py-3 px-4 w-28">Fecha</th>
+                                    <th class="py-3 px-4 text-right w-44">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tracksTableBody" class="divide-y divide-brand-border/60 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MEMBERSHIPS VIEW -->
+            <div id="membershipsViewContainer" class="hidden">
+                <div class="text-center max-w-3xl mx-auto mb-10">
+                    <span class="bg-brand-crimson/10 text-brand-crimson font-bold text-xs uppercase px-3 py-1 rounded-full border border-brand-crimson/30 mb-3 inline-block">Planes VIP</span>
+                    <h2 class="text-3xl lg:text-4xl font-extrabold text-white tracking-tight mb-3">Membresías Exclusivas para DJs</h2>
+                    <p class="text-slate-400 text-sm lg:text-base">Obtén acceso ilimitado a descargas en alta calidad WAV/MP3.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-brand-panelBg border border-brand-border hover:border-brand-crimson rounded-3xl p-8 flex flex-col justify-between transition-all relative overflow-hidden group shadow-xl">
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">Membresía 1 Mes VIP</h3>
+                            <p class="text-slate-400 text-xs mb-6">Ideal para probar todo el catálogo por 30 días.</p>
+                            <div class="flex items-baseline space-x-2 mb-6">
+                                <span class="text-4xl font-black text-white">$20</span>
+                                <span class="text-slate-400 text-xs">USD / mes</span>
+                            </div>
+                        </div>
+                        <div id="paypal-1m" class="w-full"></div>
+                    </div>
+
+                    <div class="bg-gradient-to-b from-brand-cardBg to-brand-panelBg border-2 border-brand-crimson rounded-3xl p-8 flex flex-col justify-between transition-all relative overflow-hidden group shadow-2xl glow-button">
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">Membresía 12 Meses VIP</h3>
+                            <p class="text-slate-400 text-xs mb-6">Acceso VIP completo durante todo un año.</p>
+                            <div class="flex items-baseline space-x-2 mb-6">
+                                <span class="text-4xl font-black text-white">$100</span>
+                                <span class="text-slate-400 text-xs">USD / año</span>
+                            </div>
+                        </div>
+                        <div id="paypal-12m" class="w-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN DASHBOARD -->
+            <div id="adminDashboardView" class="hidden space-y-6">
+                <div class="flex items-center justify-between bg-brand-panelBg p-6 rounded-2xl border border-brand-border">
+                    <div>
+                        <span class="bg-brand-crimson/10 text-brand-crimson font-bold text-xs uppercase px-3 py-1 rounded-full border border-brand-crimson/30">Panel Admin</span>
+                        <h2 class="text-2xl font-extrabold text-white mt-1">Gestión de Remixes y Usuarios</h2>
+                    </div>
+                    <button onclick="renderAdminDashboard()" class="bg-brand-cardBg hover:bg-brand-border text-white px-4 py-2 rounded-xl text-xs font-bold border border-brand-border transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate"></i> Actualizar
+                    </button>
+                </div>
+                <div class="bg-brand-panelBg rounded-2xl border border-brand-border p-6">
+                    <p class="text-sm text-slate-300">Bienvenido al panel central de administración.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- BOTTOM AUDIO PLAYER -->
+    <footer id="bottomPlayer" class="fixed bottom-0 left-0 right-0 bg-brand-panelBg/95 backdrop-blur-md border-t border-brand-border px-4 lg:px-8 py-3 z-50 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-4 w-full md:w-80">
+            <div id="playerCoverArt" class="w-14 h-14 rounded-xl bg-brand-cardBg border border-brand-crimson/40 overflow-hidden flex items-center justify-center shrink-0 shadow-md">
+                <i class="fa-solid fa-compact-disc text-brand-crimson text-2xl"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <h4 id="playerTrackTitle" class="text-sm font-bold text-white truncate">Selecciona un Remix</h4>
+                <p id="playerTrackArtist" class="text-xs text-slate-400 truncate">VIPREMIXESTOOLS</p>
+            </div>
+            <button onclick="toggleFavoriteCurrent()" class="text-slate-400 hover:text-brand-crimson text-lg p-1 transition"><i id="playerFavIcon" class="fa-regular fa-heart"></i></button>
+        </div>
+
+        <div class="flex flex-col items-center w-full md:max-w-md">
+            <div class="flex items-center space-x-6 mb-1.5">
+                <button onclick="prevTrack()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="playPauseBtn" onclick="togglePlayPause()" class="w-10 h-10 rounded-full bg-brand-crimson hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition transform hover:scale-105">
+                    <i class="fa-solid fa-play text-sm ml-0.5"></i>
+                </button>
+                <button onclick="nextTrack()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+            
+            <div id="waveformVisualizer" class="flex items-center space-x-1 h-8 px-4 py-1 rounded-xl bg-black/40 border border-brand-border/60">
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+            </div>
+
+            <div class="flex items-center justify-between w-full text-[10px] text-slate-400 mt-1 px-1">
+                <span id="currentTimeLabel">0:00</span>
+                <input type="range" id="seekProgressBar" value="0" max="100" step="0.1" class="w-full mx-3 accent-brand-crimson h-1 bg-brand-border rounded-lg cursor-pointer">
+                <span id="durationLabel">0:00</span>
+            </div>
+        </div>
+
+        <div class="hidden lg:flex items-center space-x-3 w-80 justify-end">
+            <i class="fa-solid fa-volume-high text-slate-400 text-sm"></i>
+            <input type="range" id="volumeRange" min="0" max="1" step="0.05" value="0.8" oninput="changeVolume(this.value)" class="w-24 accent-brand-crimson h-1 bg-brand-border rounded-lg cursor-pointer">
+        </div>
+    </footer>
+
+    <!-- MODAL: PAYWALL -->
+    <div id="paywallModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-brand-panelBg border border-brand-crimson rounded-3xl max-w-lg w-full p-8 relative shadow-2xl glow-button text-center">
+            <button onclick="closePaywallModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-black/30 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            <div class="w-16 h-16 rounded-2xl bg-brand-crimson/10 text-brand-crimson mx-auto flex items-center justify-center border border-brand-crimson/30 mb-6 text-2xl">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            <h3 class="text-2xl font-black text-white mb-2">¡Desbloquea todas las descargas!</h3>
+            <p class="text-slate-300 text-sm mb-6 leading-relaxed">Disfruta de nuestra biblioteca de remixes, escucha toda la música y descarga tus remixes favoritos convirtiéndote en miembro premium.</p>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="closePaywallModal(); showPlansView();" class="flex-1 bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm">ADQUIRIR MEMBRESÍA</button>
+                <button onclick="closePaywallModal(); showPlansView();" class="flex-1 bg-brand-cardBg hover:bg-brand-border border border-brand-border text-white font-bold py-3.5 rounded-xl transition-all text-sm">MÁS INFORMACIÓN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REGISTRO -->
+    <div id="registerModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-md w-full p-6 relative shadow-2xl">
+            <button onclick="closeRegisterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-black/30 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-user-plus text-lg"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Registro de DJ</h3>
+                    <p class="text-xs text-slate-400">Crea tu cuenta para acceder a la plataforma</p>
+                </div>
+            </div>
+            <form onsubmit="handleRegisterSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre de DJ</label>
+                    <input type="text" id="regUsername" required placeholder="DJ Carlos Mix" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
+                    <input type="email" id="regEmail" required placeholder="tu@correo.com" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Contraseña</label>
+                    <input type="password" id="regPassword" required placeholder="••••••••" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                </div>
+                <button type="submit" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2">Crear Cuenta Gratis</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: LOGIN -->
+    <div id="loginModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-md w-full p-6 relative shadow-2xl">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-black/30 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-right-to-bracket text-lg"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Iniciar Sesión</h3>
+                    <p class="text-xs text-slate-400">Acceso para DJs y administrador</p>
+                </div>
+            </div>
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
+                    <input type="text" id="loginEmail" required placeholder="tu@correo.com" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Contraseña</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                </div>
+                <button type="submit" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2">Entrar a la Plataforma</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: BULK UPLOAD -->
+    <div id="bulkModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-xl w-full p-6 relative shadow-2xl">
+            <button onclick="closeBulkModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-black/30 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-cloud-arrow-up text-lg"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Subir Lote Masivo (Hasta 50 Remixes)</h3>
+                    <p class="text-xs text-slate-400">Herramienta exclusiva de Administrador Djanthonymejia</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Portal de Destino</label>
+                    <select id="bulkPortalTarget" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                        <option value="BPM Latino">BPM Latino</option><option value="Cuba Remixes">Cuba Remixes</option><option value="Dale Mas Bajo">Dale Mas Bajo</option><option value="DJ City Latino">DJ City Latino</option>
+                        <option value="Extended Latino">Extended Latino</option><option value="Latin Box">Latin Box</option><option value="Latin Remixes">Latin Remixes</option><option value="Pro Latin Remix">Pro Latin Remix</option>
+                        <option value="Rompe Discoteca">Rompe Discoteca</option><option value="America Remix">America Remix</option><option value="Club Killers">Club Killers</option><option value="Crack 4 DJs">Crack 4 DJs</option>
+                        <option value="BPM Supreme">BPM Supreme</option><option value="Unlimited Latin">Unlimited Latin</option><option value="Heavy Hits">Heavy Hits</option><option value="TheMashup">TheMashup</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Género Musical Asignado</label>
+                    <select id="bulkGenreTarget" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                        <option value="Reggaeton">Reggaeton</option><option value="Bachata">Bachata</option><option value="Guaracha">Guaracha</option><option value="Dembow">Dembow</option><option value="Salsa">Salsa</option><option value="Merengue">Merengue</option><option value="Cumbia">Cumbia</option><option value="Electro">Electro</option><option value="Trap">Trap</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Audio (.mp3 / .wav)</label>
+                    <input type="file" id="bulkAudioFiles" multiple accept="audio/*" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
+                </div>
+                <div id="uploadProgressContainer" class="hidden">
+                    <p id="uploadStatusText" class="text-xs font-semibold text-rose-400 mb-1">Subiendo y procesando...</p>
+                    <div class="w-full bg-brand-cardBg h-2.5 rounded-full overflow-hidden border border-brand-border">
+                        <div id="uploadProgressBar" class="bg-brand-crimson h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+                <button id="uploadSubmitBtn" onclick="processBulkUpload()" class="w-full bg-gradient-to-r from-brand-crimson to-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-bolt"></i> Procesar y Publicar Lote
+                </button>
+                <button id="uploadCloseBtn" onclick="closeBulkModal()" class="w-full bg-brand-cardBg border border-brand-border text-white font-bold py-3 rounded-xl transition-all text-sm hidden">
+                    Terminado / Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION CORE -->
+    <script>
+        const portalsList = [
+            "BPM Latino", "Cuba Remixes", "Dale Mas Bajo", "DJ City Latino",
+            "Extended Latino", "Latin Box", "Latin Remixes", "Pro Latin Remix",
+            "Rompe Discoteca", "America Remix", "Club Killers", "Crack 4 DJs",
+            "BPM Supreme", "Unlimited Latin", "Heavy Hits", "TheMashup"
+        ];
+
+        const genresList = [
+            "Acapella Starter", "Bacharengue", "Bachata", "Banda Bailable", "Cubaton", 
+            "Cumbia", "Cumbia Sonidera", "Cumbia Wepa", "Dancehall", "Dembow", 
+            "Drops", "Duranguense", "Ecuatoriana", "Electro", "Guaracha", 
+            "Halloween", "Huapango", "Latin / Urban", "Mambo", "Merengue", 
+            "Moombah", "Navidad / Año Nuevo", "Nortenas con Sax", "Norteno", "Pop", 
+            "Punta", "Quebradita", "Reggae / HipHop", "Reggaeton", "Regional Mexicano", 
+            "Rock", "Rock en Espanol", "Salsa", "Techno", "Tipico", 
+            "Transition / Segway", "Trap", "Tribal", "Vallenato"
+        ];
+
+        // START CLEAN (NO DEFAULT DEMO SONGS)
+        let allRemixes = [];
+        let registeredUsers = JSON.parse(localStorage.getItem('vip_registered_users')) || [];
+
+        let currentPortalFilter = "ALL";
+        let currentGenreFilter = "ALL";
+        let searchQuery = "";
+        let currentPlayingIndex = null;
+        let isPlaying = false;
+        let currentPlayingId = null;
+        let newOnly = false;
+        let audioPlayer = new Audio();
+        
+        let currentUser = null;
+        let isAdmin = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fillBulkSelects();
+            audioPlayer.volume = 0.8;
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') ['registerModal','loginModal','paywallModal','bulkModal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            });
+            audioPlayer.addEventListener('error', () => {
+                if (currentPlayingId === null) return;
+                isPlaying = false; updatePlayPauseUI(); renderTracksTable();
+                alert('No se pudo reproducir este audio. Si lo subiste antes de recargar la página, el archivo ya no está disponible: vuelve a subirlo.');
+            });
+            updateAuthHeader();
+            renderPortalsSidebar();
+            renderDropdownGenreFilter();
+            renderTracksTable();
+            updateSummaryCounts();
+            
+            audioPlayer.addEventListener('timeupdate', () => {
+                if(audioPlayer.duration) {
+                    const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                    document.getElementById('seekProgressBar').value = progress;
+                    document.getElementById('currentTimeLabel').textContent = formatTime(audioPlayer.currentTime);
+                    document.getElementById('durationLabel').textContent = formatTime(audioPlayer.duration);
+                }
+            });
+
+            audioPlayer.addEventListener('ended', () => { nextTrack(); });
+
+            document.getElementById('seekProgressBar').addEventListener('input', (e) => {
+                if(audioPlayer.duration) {
+                    audioPlayer.currentTime = (e.target.value / 100) * audioPlayer.duration;
+                }
+            });
+        });
+
+        function escapeHtml(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function fillBulkSelects() {
+            document.getElementById('bulkPortalTarget').innerHTML = portalsList.map(p => `<option value="${p}">${p}</option>`).join('');
+            document.getElementById('bulkGenreTarget').innerHTML = genresList.map(g => `<option value="${g}">${g}</option>`).join('');
+        }
+
+        function hasMembership() {
+            if (isAdmin) return true;
+            return !!(currentUser && currentUser.membershipExpires && new Date(currentUser.membershipExpires) > new Date());
+        }
+
+        function renderAdminDashboard() {
+            const box = document.querySelector('#adminDashboardView > div:last-child');
+            const rows = portalsList.map(p => `<li class="flex justify-between"><span>${p}</span><span class="font-bold text-white">${allRemixes.filter(r => r.portal === p).length}</span></li>`).join('');
+            box.innerHTML = `<p class="text-sm text-slate-300 mb-4">Remixes: <b>${allRemixes.length}</b> &middot; Usuarios registrados: <b>${registeredUsers.length}</b></p><ul class="text-xs text-slate-400 space-y-1">${rows}</ul>`;
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('vip_remixes_data', JSON.stringify(allRemixes));
+            localStorage.setItem('vip_registered_users', JSON.stringify(registeredUsers));
+            localStorage.setItem('vip_is_admin', isAdmin ? 'true' : 'false');
+            if(currentUser) {
+                localStorage.setItem('vip_current_user', JSON.stringify(currentUser));
+            } else {
+                localStorage.removeItem('vip_current_user');
+            }
+        }
+
+        function renderPortalsSidebar() {
+            const container = document.getElementById('portalsListContainer');
+            let html = `
+                <button onclick="filterByPortal('ALL')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentPortalFilter === 'ALL' ? 'bg-brand-crimson text-white shadow-lg' : 'text-slate-300 hover:bg-black/30 hover:text-white'}">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-globe"></i><span>Todo el Catálogo</span></span>
+                    <span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px]">${allRemixes.length}</span>
+                </button>
+            `;
+
+            portalsList.forEach(portal => {
+                const count = allRemixes.filter(r => r.portal === portal).length;
+                const isActive = currentPortalFilter === portal;
+                html += `
+                    <button onclick="filterByPortal('${portal}')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${isActive ? 'bg-brand-crimson text-white shadow-lg' : 'text-slate-300 hover:bg-black/30 hover:text-white'}">
+                        <span class="truncate"><i class="fa-solid fa-compact-disc mr-2 opacity-70"></i>${portal}</span>
+                        <span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${count}</span>
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderDropdownGenreFilter() {
+            const select = document.getElementById('genreSelectFilter');
+            let html = `<option value="ALL">Género (Todos)</option>`;
+            genresList.forEach(genre => {
+                html += `<option value="${genre}" ${currentGenreFilter === genre ? 'selected' : ''}>${genre}</option>`;
+            });
+            select.innerHTML = html;
+        }
+
+        function updateSummaryCounts() {
+            document.getElementById('poolCountsSummary').textContent = `Todo (${allRemixes.length})`;
+        }
+
+        function renderTracksTable() {
+            const tbody = document.getElementById('tracksTableBody');
+            const idx = allRemixes.findIndex(r => r.id === currentPlayingId);
+            currentPlayingIndex = (currentPlayingId !== null && idx >= 0) ? idx : null;
+
+            let filtered = allRemixes.filter(track => {
+                const matchesPortal = currentPortalFilter === "ALL" || track.portal === currentPortalFilter;
+                const matchesGenre = currentGenreFilter === "ALL" || track.genre === currentGenreFilter;
+                const q = searchQuery.toLowerCase();
+                const matchesSearch = track.title.toLowerCase().includes(q) || 
+                                      track.artist.toLowerCase().includes(q) || 
+                                      track.genre.toLowerCase().includes(q) ||
+                                      track.portal.toLowerCase().includes(q);
+                return matchesPortal && matchesGenre && matchesSearch;
+            });
+
+            if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-400">
+                            <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
+                            <p class="text-sm font-semibold">No hay remixes subidos con este filtro.</p>
+                            <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = "";
+            filtered.forEach((track) => {
+                const realIndex = allRemixes.findIndex(r => r.id === track.id);
+                const isCurrent = currentPlayingIndex === realIndex;
+                const favClass = track.isFavorite ? "fa-solid text-brand-crimson" : "fa-regular text-slate-400";
+
+                html += `
+                    <tr class="border-b border-brand-border/40 hover:bg-black/30 transition group ${isCurrent ? 'bg-brand-crimson/10' : ''}">
+                        <td class="py-3 px-4">
+                            <div class="relative w-11 h-11 rounded-xl bg-brand-cardBg border border-brand-border overflow-hidden flex items-center justify-center">
+                                <img src="${track.coverUrl}" alt="Cover" onerror="this.style.display='none'" class="w-full h-full object-cover">
+                                ${track.isVip ? '<span class="absolute top-0 right-0 bg-brand-crimson text-white text-[8px] font-bold px-1 rounded-bl">VIP</span>' : ''}
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="font-bold text-white group-hover:text-brand-crimson transition flex items-center gap-2">
+                                <button onclick="playTrack(${realIndex})" class="w-8 h-8 rounded-full bg-brand-cardBg hover:bg-brand-crimson hover:text-white flex items-center justify-center text-slate-300 transition shrink-0 border border-brand-border">
+                                    <i class="fa-solid ${isCurrent && isPlaying ? 'fa-pause' : 'fa-play'} text-xs"></i>
+                                </button>
+                                <span class="truncate">${escapeHtml(track.title)}</span>
+                            </div>
+                            <div class="text-xs text-slate-400 ml-10">${escapeHtml(track.artist)}</div>
+                        </td>
+                        <td class="py-3 px-4 text-xs font-semibold text-rose-400">${track.portal}</td>
+                        <td class="py-3 px-4"><span class="bg-brand-cardBg border border-brand-border px-2.5 py-1 rounded-full text-xs text-slate-300">${track.genre}</span></td>
+                        <td class="py-3 px-4 text-xs font-bold text-slate-300">${track.bpm ? track.bpm + ' BPM' : '—'}</td>
+                        <td class="py-3 px-4 text-xs text-slate-400">${track.date}</td>
+                        <td class="py-3 px-4 text-right">
+                            <div class="flex items-center justify-end space-x-2">
+                                <button onclick="toggleFavorite(${realIndex})" class="p-2 rounded-xl hover:bg-black/40 transition"><i class="${favClass} text-sm"></i></button>
+                                <button onclick="handleDownloadClick(${realIndex})" class="bg-brand-crimson hover:bg-red-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-download text-xs"></i> Descargar
+                                </button>
+                                ${isAdmin ? `
+                                    <button onclick="deleteTrack(${realIndex})" class="bg-red-950/80 hover:bg-red-800 text-red-300 p-2 rounded-xl transition" title="Eliminar Remix"><i class="fa-solid fa-trash text-xs"></i></button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function handleDownloadClick(index) {
+            const hasActiveMembership = hasMembership();
+            if (!hasActiveMembership) {
+                openPaywallModal();
+                return;
+            }
+            downloadTrack(index);
+        }
+
+        function downloadTrack(index) {
+            const track = allRemixes[index];
+            const a = document.createElement('a');
+            a.href = track.audioUrl;
+            a.download = `${track.title} - ${track.artist}.${track.ext || 'mp3'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function simulatePayment(planName, amount, daysValid) {
+            if (!currentUser && !isAdmin) {
+                alert("Debes iniciar sesión primero para adquirir tu membresía.");
+                closePaywallModal();
+                openLoginModal();
+                return;
+            }
+            if(isAdmin) {
+                isAdmin = true;
+            } else {
+                currentUser.membershipActive = true;
+                currentUser.membershipPlan = planName;
+                currentUser.membershipExpires = new Date(Date.now() + daysValid * 86400000).toISOString();
+                const ru = registeredUsers.find(u => u.username === currentUser.username);
+                if (ru) { ru.membershipPlan = planName; ru.membershipExpires = currentUser.membershipExpires; }
+            }
+            saveToLocalStorage();
+            closePaywallModal();
+            alert(`¡Pago confirmado con éxito! Membresía "${planName}" activada correctamente.`);
+            updateAuthHeader();
+            renderTracksTable();
+        }
+
+        function deleteTrack(index) {
+            if(!isAdmin) return;
+            if(confirm("¿Estás seguro de eliminar este remix permanentemente?")) {
+                if (allRemixes[index].id === currentPlayingId) { audioPlayer.pause(); isPlaying = false; currentPlayingId = null; updatePlayPauseUI(); }
+                allRemixes.splice(index, 1);
+                saveToLocalStorage();
+                renderPortalsSidebar();
+                renderTracksTable();
+                updateSummaryCounts();
+            }
+        }
+
+        function filterByPortal(portalName) {
+            currentPortalFilter = portalName;
+            newOnly = false;
+            document.getElementById('mainViewContainer').classList.remove('hidden');
+            document.getElementById('membershipsViewContainer').classList.add('hidden');
+            document.getElementById('adminDashboardView').classList.add('hidden');
+            renderPortalsSidebar();
+            renderTracksTable();
+        }
+
+        function filterByDropdownGenre(genreName) {
+            currentGenreFilter = genreName;
+            newOnly = false;
+            document.getElementById('mainViewContainer').classList.remove('hidden');
+            document.getElementById('membershipsViewContainer').classList.add('hidden');
+            document.getElementById('adminDashboardView').classList.add('hidden');
+            renderTracksTable();
+        }
+
+        function filterNewReleases() {
+            newOnly = true;
+            currentPortalFilter = "ALL";
+            currentGenreFilter = "ALL";
+            document.getElementById('genreSelectFilter').value = "ALL";
+            renderPortalsSidebar();
+            document.getElementById('mainViewContainer').classList.remove('hidden');
+            document.getElementById('membershipsViewContainer').classList.add('hidden');
+            document.getElementById('adminDashboardView').classList.add('hidden');
+            renderTracksTable();
+        }
+
+        function showPlansView() {
+            document.getElementById('mainViewContainer').classList.add('hidden');
+            document.getElementById('membershipsViewContainer').classList.remove('hidden');
+            document.getElementById('adminDashboardView').classList.add('hidden');
+        }
+
+        function showAdminDashboardView() {
+            if (!isAdmin) return;
+            renderAdminDashboard();
+            document.getElementById('mainViewContainer').classList.add('hidden');
+            document.getElementById('membershipsViewContainer').classList.add('hidden');
+            document.getElementById('adminDashboardView').classList.remove('hidden');
+        }
+
+        function resetFilters() {
+            currentPortalFilter = "ALL";
+            currentGenreFilter = "ALL";
+            searchQuery = "";
+            document.getElementById('searchInput').value = "";
+            document.getElementById('genreSelectFilter').value = "ALL";
+            filterByPortal("ALL");
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value;
+            renderTracksTable();
+        }
+
+        function playTrack(index) {
+            const track = allRemixes[index];
+            if(!track) return;
+            if(currentPlayingIndex === index) {
+                togglePlayPause();
+                return;
+            }
+            currentPlayingIndex = index;
+            currentPlayingId = track.id;
+            audioPlayer.src = track.audioUrl;
+            audioPlayer.play().catch(e => console.error(e));
+            isPlaying = true;
+            document.getElementById('playerTrackTitle').textContent = track.title;
+            document.getElementById('playerTrackArtist').textContent = track.artist;
+            document.getElementById('playerCoverArt').innerHTML = `<img src="${track.coverUrl}" class="w-full h-full object-cover">`;
+            updatePlayPauseUI();
+            renderTracksTable();
+        }
+
+        function togglePlayPause() {
+            if(currentPlayingIndex === null && allRemixes.length > 0) { playTrack(0); return; }
+            if(isPlaying) { audioPlayer.pause(); isPlaying = false; } else { audioPlayer.play(); isPlaying = true; }
+            updatePlayPauseUI();
+            renderTracksTable();
+        }
+
+        function updatePlayPauseUI() {
+            const btn = document.getElementById('playPauseBtn');
+            const visualizer = document.getElementById('waveformVisualizer');
+            if(isPlaying) {
+                btn.innerHTML = `<i class="fa-solid fa-pause text-sm ml-0.5"></i>`;
+                visualizer.classList.add('playing');
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-play text-sm ml-0.5"></i>`;
+                visualizer.classList.remove('playing');
+            }
+        }
+
+        function nextTrack() {
+            if(allRemixes.length === 0) return;
+            let nextIdx = currentPlayingIndex === null ? 0 : (currentPlayingIndex + 1) % allRemixes.length;
+            playTrack(nextIdx);
+        }
+
+        function prevTrack() {
+            if(allRemixes.length === 0) return;
+            let prevIdx = currentPlayingIndex === null ? 0 : (currentPlayingIndex - 1 + allRemixes.length) % allRemixes.length;
+            playTrack(prevIdx);
+        }
+
+        function changeVolume(val) { audioPlayer.volume = val; }
+        function toggleFavorite(index) { allRemixes[index].isFavorite = !allRemixes[index].isFavorite; saveToLocalStorage(); renderTracksTable(); }
+        function toggleFavoriteCurrent() { if(currentPlayingIndex !== null) toggleFavorite(currentPlayingIndex); }
+        function formatTime(secs) {
+            const m = Math.floor(secs / 60);
+            const s = Math.floor(secs % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
+        function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
+        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+        function openPaywallModal() { document.getElementById('paywallModal').classList.remove('hidden'); }
+        function closePaywallModal() { document.getElementById('paywallModal').classList.add('hidden'); }
+        function openBulkModal() { 
+            document.getElementById('uploadProgressContainer').classList.add('hidden');
+            document.getElementById('uploadSubmitBtn').classList.remove('hidden');
+            document.getElementById('uploadCloseBtn').classList.add('hidden');
+            document.getElementById('bulkModal').classList.remove('hidden'); 
+        }
+        function closeBulkModal() { document.getElementById('bulkModal').classList.add('hidden'); }
+
+        function handleRegisterSubmit(event) {
+            event.preventDefault();
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+
+            if(registeredUsers.some(u => u.username === username)) {
+                alert("Este nombre de usuario ya está registrado.");
+                return;
+            }
+
+            registeredUsers.push({ username, email, password });
+            saveToLocalStorage();
+            alert(`¡Registro exitoso DJ ${username}! Ya puedes iniciar sesión.`);
+            closeRegisterModal();
+            openLoginModal();
+        }
+
+        function updateAuthHeader() {
+            const container = document.getElementById('authHeaderContainer');
+            if(isAdmin) {
+                container.innerHTML = `
+                    <button onclick="showAdminDashboardView()" class="bg-brand-cardBg hover:bg-brand-border text-slate-200 border border-brand-border text-xs font-bold px-3 py-2 rounded-full transition">
+                        <i class="fa-solid fa-gauge mr-1"></i> Panel Admin
+                    </button>
+                    <button onclick="openBulkModal()" class="flex items-center space-x-2 bg-gradient-to-r from-brand-crimson to-red-600 text-white font-bold text-xs lg:text-sm px-4 py-2 rounded-full glow-button shadow-lg">
+                        <i class="fa-solid fa-cloud-arrow-up"></i><span>Subir Lote</span>
+                    </button>
+                    <div class="flex items-center space-x-2 bg-brand-panelBg border border-brand-border px-3 py-1.5 rounded-full">
+                        <div class="w-7 h-7 rounded-full bg-brand-crimson text-white font-bold text-xs flex items-center justify-center">${escapeHtml(currentUser.username.charAt(0).toUpperCase())}</div>
+                        <span class="text-xs font-bold text-white hidden sm:inline">${escapeHtml(currentUser.username)}</span>
+                        <button onclick="logoutUser()" class="text-slate-400 hover:text-white text-xs ml-1"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    </div>
+                `;
+            } else if(currentUser) {
+                container.innerHTML = `
+                    <div class="flex items-center space-x-2 bg-brand-panelBg border border-brand-border px-3 py-1.5 rounded-full">
+                        <div class="w-7 h-7 rounded-full bg-brand-crimson text-white font-bold text-xs flex items-center justify-center">${escapeHtml(currentUser.username.charAt(0).toUpperCase())}</div>
+                        <span class="text-xs font-bold text-white hidden sm:inline">${escapeHtml(currentUser.username)}</span>
+                        <button onclick="logoutUser()" class="text-slate-400 hover:text-white text-xs ml-2"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="openRegisterModal()" class="border border-slate-700 hover:border-brand-crimson text-slate-300 hover:text-white font-semibold text-xs lg:text-sm px-3.5 py-2 rounded-full transition-all">Registrarse</button>
+                    <button onclick="openLoginModal()" class="bg-brand-crimson hover:bg-red-600 text-white font-semibold text-xs lg:text-sm px-4 py-2 rounded-full shadow-md flex items-center gap-2"><i class="fa-solid fa-user"></i> <span>Iniciar Sesión</span></button>
+                `;
+            }
+        }
+
+        function logoutUser() {
+            currentUser = null;
+            isAdmin = false;
+            localStorage.removeItem('vip_is_admin');
+            localStorage.removeItem('vip_current_user');
+            updateAuthHeader();
+            resetFilters();
+            alert("Has cerrado sesión correctamente.");
+        }
+
+        async function processBulkUpload() {
+            if(!isAdmin) { alert("Acceso denegado."); return; }
+            const portalTarget = document.getElementById('bulkPortalTarget').value;
+            const genreTarget = document.getElementById('bulkGenreTarget').value;
+            const fileInput = document.getElementById('bulkAudioFiles');
+            const files = Array.from(fileInput.files).slice(0, 50);
+
+            if(files.length === 0) { alert("Selecciona al menos un archivo de audio."); return; }
+
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const statusText = document.getElementById('uploadStatusText');
+            const submitBtn = document.getElementById('uploadSubmitBtn');
+            const closeBtn = document.getElementById('uploadCloseBtn');
+
+            progressContainer.classList.remove('hidden');
+            submitBtn.classList.add('hidden');
+
+            let addedCount = 0;
+            for(let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const cleanName = file.name.replace(/\.[^/.]+$/, "");
+                const audioUrl = URL.createObjectURL(file);
+
+                const newTrack = {
+                    id: Date.now() + i,
+                    title: cleanName,
+                    artist: "DJ Anthonymejia VIP",
+                    portal: portalTarget,
+                    genre: genreTarget,
+                    bpm: Number((cleanName.match(/(\d{2,3})\s*bpm/i) || [])[1]) || null,
+                    date: new Date().toLocaleDateString('en-CA'),
+                    audioUrl: audioUrl,
+                    ext: (file.name.match(/\.([^.]+)$/) || [])[1] || 'mp3',
+                    coverUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=100&auto=format&fit=crop&q=80",
+                    isVip: true,
+                    isFavorite: false
+                };
+
+                allRemixes.unshift(newTrack);
+                addedCount++;
+                
+                const percent = Math.round(((i + 1) / files.length) * 100);
+                progressBar.style.width = percent + '%';
+                statusText.textContent = `Procesando ${i + 1} de ${files.length} (${percent}%)...`;
+                await new Promise(r => setTimeout(r, 60));
+            }
+
+            saveToLocalStorage();
+            renderPortalsSidebar();
+            renderTracksTable();
+            updateSummaryCounts();
+
+            statusText.textContent = "¡Completado y publicado con éxito!";
+            progressBar.style.width = '100%';
+            closeBtn.classList.remove('hidden');
+        }
+    </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<script>
+// ====== CONFIGURACIÓN: pega aquí tus datos (ver instrucciones) ======
+const SUPABASE_URL = 'https://hyqbijwqaqgyxyafrdcb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_o9UhlLGtfZkb730nPyX9kw_t1HKglgs';
+const PAYPAL_ME = 'https://paypal.me/mamijordan23';
+// ====================================================================
+const configured = !SUPABASE_URL.includes('PEGA_AQUI');
+const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const BUCKET = 'remixes';
+const DEFAULT_COVER = 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=100&auto=format&fit=crop&q=80';
+let favs = JSON.parse(localStorage.getItem('vip_favs') || '[]');
+
+function saveToLocalStorage() { localStorage.setItem('vip_favs', JSON.stringify(favs)); }
+function toggleFavorite(i) {
+    const t = allRemixes[i]; t.isFavorite = !t.isFavorite;
+    favs = t.isFavorite ? [...favs, t.id] : favs.filter(x => x !== t.id);
+    saveToLocalStorage(); renderTracksTable();
+}
+
+async function loadTracks() {
+    const { data, error } = await sb.from('tracks').select('*').order('created_at', { ascending: false });
+    if (error) { alert('No se pudo cargar el catálogo: ' + error.message); return; }
+    allRemixes = data.map(t => ({ id: t.id, title: t.title, artist: t.artist || '', portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
+        date: t.created_at.slice(0, 10), path: t.storage_path, ext: t.ext || 'mp3', coverUrl: t.cover_url || DEFAULT_COVER, isVip: true, isFavorite: favs.includes(t.id) }));
+    renderPortalsSidebar(); renderTracksTable(); updateSummaryCounts();
+}
+
+async function loadSession() {
+    const { data: { session } } = await sb.auth.getSession();
+    currentUser = null; isAdmin = false;
+    if (session) {
+        const { data: p } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+        currentUser = { id: session.user.id, username: (p && p.username) || session.user.email, membershipExpires: p && p.membership_expires };
+        isAdmin = !!(p && p.is_admin);
+    }
+    updateAuthHeader(); renderPortalsSidebar(); renderTracksTable();
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+    if (!configured) { alert('Falta configurar Supabase: abre index.html y pega tu URL y tu anon key al inicio del último <script>.'); return; }
+    await loadSession(); await loadTracks();
+});
+
+async function handleRegisterSubmit(e) {
+    e.preventDefault();
+    const username = regUsername.value.trim(), email = regEmail.value.trim(), password = regPassword.value;
+    if (password.length < 6) { alert('La contraseña debe tener al menos 6 caracteres.'); return; }
+    const { error } = await sb.auth.signUp({ email, password, options: { data: { username } } });
+    if (error) { alert(error.message); return; }
+    alert('¡Registro exitoso! Si te llega un correo de confirmación, ábrelo y luego inicia sesión.');
+    closeRegisterModal(); openLoginModal();
+}
+
+async function handleLoginSubmit(e) {
+    e.preventDefault();
+    const { error } = await sb.auth.signInWithPassword({ email: loginEmail.value.trim(), password: loginPassword.value });
+    if (error) { alert('Correo o contraseña incorrectos.'); return; }
+    await loadSession(); closeLoginModal();
+}
+
+async function logoutUser() {
+    await sb.auth.signOut();
+    audioPlayer.pause(); isPlaying = false; currentPlayingId = null; updatePlayPauseUI();
+    await loadSession(); resetFilters();
+}
+
+async function playTrack(index) {
+    const t = allRemixes[index]; if (!t) return;
+    if (currentPlayingId === t.id) { togglePlayPause(); return; }
+    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(t.path, 3600);
+    if (error) { currentUser ? openPaywallModal() : openLoginModal(); return; }
+    currentPlayingId = t.id; currentPlayingIndex = index;
+    audioPlayer.src = data.signedUrl; audioPlayer.play().catch(console.error); isPlaying = true;
+    playerTrackTitle.textContent = t.title; playerTrackArtist.textContent = t.artist;
+    playerCoverArt.innerHTML = `<img src="${t.coverUrl}" class="w-full h-full object-cover">`;
+    updatePlayPauseUI(); renderTracksTable();
+}
+
+async function handleDownloadClick(i) {
+    const t = allRemixes[i];
+    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(t.path, 60, { download: `${t.title} - ${t.artist}.${t.ext}` });
+    if (error) { currentUser ? openPaywallModal() : openLoginModal(); return; }
+    const a = document.createElement('a'); a.href = data.signedUrl; document.body.appendChild(a); a.click(); a.remove();
+}
+
+function simulatePayment(plan, amount) {
+    if (!currentUser) { alert('Inicia sesión primero para adquirir tu membresía.'); closePaywallModal(); openLoginModal(); return; }
+    window.open(`${PAYPAL_ME}/${amount}USD`, '_blank');
+    alert(`Cuando completes el pago de "${plan}" en PayPal, el administrador activará tu membresía (usa el mismo correo de tu cuenta: ${currentUser.username}).`);
+}
+
+async function deleteTrack(i) {
+    if (!isAdmin) return;
+    const t = allRemixes[i];
+    if (!confirm('¿Estás seguro de eliminar este remix permanentemente?')) return;
+    if (t.id === currentPlayingId) { audioPlayer.pause(); isPlaying = false; currentPlayingId = null; updatePlayPauseUI(); }
+    await sb.storage.from(BUCKET).remove([t.path]);
+    const { error } = await sb.from('tracks').delete().eq('id', t.id);
+    if (error) { alert(error.message); return; }
+    await loadTracks();
+}
+
+async function processBulkUpload() {
+    if (!isAdmin) { alert('Acceso denegado.'); return; }
+    const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
+    const files = Array.from(bulkAudioFiles.files).slice(0, 50);
+    if (!files.length) { alert('Selecciona al menos un archivo de audio.'); return; }
+    uploadProgressContainer.classList.remove('hidden'); uploadSubmitBtn.classList.add('hidden');
+    let failed = 0;
+    for (let i = 0; i < files.length; i++) {
+        const f = files[i], title = f.name.replace(/\.[^/.]+$/, ''), ext = (f.name.match(/\.([^.]+)$/) || [])[1] || 'mp3';
+        const path = `${crypto.randomUUID()}.${ext}`;
+        uploadStatusText.textContent = `Subiendo ${i + 1} de ${files.length}...`;
+        const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || 'audio/mpeg' });
+        if (up.error) { failed++; continue; }
+        const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || null;
+        const ins = await sb.from('tracks').insert({ title, artist: 'DJ Anthonymejia VIP', portal, genre, bpm, storage_path: path, ext });
+        if (ins.error) { await sb.storage.from(BUCKET).remove([path]); failed++; }
+        uploadProgressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
+    }
+    await loadTracks();
+    uploadStatusText.textContent = failed ? `Listo, pero ${failed} archivo(s) fallaron.` : '¡Completado y publicado con éxito!';
+    uploadCloseBtn.classList.remove('hidden');
+}
+
+async function renderAdminDashboard() {
+    const box = document.querySelector('#adminDashboardView > div:last-child');
+    const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error) { box.textContent = error.message; return; }
+    const rows = data.map(u => {
+        const exp = u.membership_expires ? new Date(u.membership_expires) : null, active = exp && exp > new Date();
+        return `<tr class="border-b border-brand-border/40"><td class="py-2 pr-3 text-white">${escapeHtml(u.username || '')}<div class="text-slate-500">${escapeHtml(u.email || '')}</div></td>
+        <td class="py-2 pr-3 ${active ? 'text-emerald-400' : 'text-slate-500'}">${active ? 'Activa hasta ' + exp.toLocaleDateString() : 'Sin membresía'}</td>
+        <td class="py-2 text-right whitespace-nowrap"><button onclick="activateMember('${u.id}',30)" class="bg-brand-crimson text-white px-2.5 py-1 rounded-lg mr-1">+30 días</button><button onclick="activateMember('${u.id}',365)" class="bg-brand-cardBg border border-brand-border text-white px-2.5 py-1 rounded-lg">+1 año</button></td></tr>`;
+    }).join('');
+    box.innerHTML = `<p class="text-sm text-slate-300 mb-4">Remixes: <b>${allRemixes.length}</b> &middot; Usuarios: <b>${data.length}</b></p><div class="overflow-x-auto"><table class="w-full text-xs text-left">${rows}</table></div>`;
+}
+
+async function activateMember(id, days) {
+    const { error } = await sb.rpc('activate_member', { target: id, days });
+    if (error) { alert(error.message); return; }
+    renderAdminDashboard();
+}
+</script>
+
+<script>
+// Client ID de PayPal (es público). Ver instrucciones.
+const PAYPAL_CLIENT_ID = 'AYPVI8XyFUYcKQfu7p8Ti0nH4o4XppD_GTSCtP9SmaEfRgvhH_EOxiOyU9Rzh2ZY5amRg_uCeyiIx68t';
+let paypalSdk = null;
+function loadPaypalSdk() {
+    if (!paypalSdk) paypalSdk = new Promise((res, rej) => {
+        const sc = document.createElement('script');
+        sc.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
+        sc.onload = res; sc.onerror = rej; document.head.appendChild(sc);
+    });
+    return paypalSdk;
+}
+
+async function renderPaypalButtons() {
+    const plans = [['paypal-1m', 20, 'Membresía 1 Mes VIP'], ['paypal-12m', 100, 'Membresía 12 Meses VIP']];
+    const btn = (click, text) => `<button onclick="${click}" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg">${text}</button>`;
+    if (!currentUser) { plans.forEach(([id]) => { document.getElementById(id).innerHTML = btn('openLoginModal()', 'Inicia sesión para comprar'); }); return; }
+    if (PAYPAL_CLIENT_ID.includes('PEGA_AQUI')) {
+        plans.forEach(([id, amt, name]) => { document.getElementById(id).innerHTML = btn(`simulatePayment('${name}',${amt})`, `Pagar $${amt} con PayPal`); }); return;
+    }
+    try { await loadPaypalSdk(); } catch (e) { alert('No se pudo cargar PayPal. Revisa tu conexión.'); return; }
+    plans.forEach(([id, amt, name]) => {
+        const el = document.getElementById(id); el.innerHTML = '';
+        paypal.Buttons({
+            style: { layout: 'horizontal', color: 'gold', tagline: false, height: 45 },
+            createOrder: (d, a) => a.order.create({ purchase_units: [{ description: name, amount: { currency_code: 'USD', value: amt.toFixed(2) } }] }),
+            onApprove: async (data) => {
+                const { data: { session } } = await sb.auth.getSession();
+                const r = await fetch('/.netlify/functions/paypal-capture', { method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+                    body: JSON.stringify({ orderID: data.orderID }) });
+                const j = await r.json().catch(() => ({}));
+                if (!r.ok) { alert('No se pudo activar tu membresía: ' + (j.error || r.status) + '. Si te cobraron, contáctanos con tu correo.'); return; }
+                await loadSession();
+                alert('¡Pago confirmado! Tu membresía está activa hasta el ' + new Date(j.expires).toLocaleDateString() + '.');
+                resetFilters();
+            },
+            onError: () => alert('Hubo un problema con PayPal. Intenta de nuevo.')
+        }).render('#' + id);
+    });
+}
+
+function showPlansView() {
+    mainViewContainer.classList.add('hidden');
+    membershipsViewContainer.classList.remove('hidden');
+    adminDashboardView.classList.add('hidden');
+    renderPaypalButtons();
+}
+</script>
+</body>
+</html>
