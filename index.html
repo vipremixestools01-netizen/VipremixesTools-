@@ -411,7 +411,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Género Musical Asignado</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Género por defecto (si no se detecta)</label>
                     <select id="bulkGenreTarget" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
                         <option value="Reggaeton">Reggaeton</option><option value="Bachata">Bachata</option><option value="Guaracha">Guaracha</option><option value="Dembow">Dembow</option><option value="Salsa">Salsa</option><option value="Merengue">Merengue</option><option value="Cumbia">Cumbia</option><option value="Electro">Electro</option><option value="Trap">Trap</option>
                     </select>
@@ -420,6 +420,7 @@
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Audio (.mp3 / .wav)</label>
                     <input type="file" id="bulkAudioFiles" multiple accept="audio/*" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
                 </div>
+                <div id="bulkReview" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
                 <div id="uploadProgressContainer" class="hidden">
                     <p id="uploadStatusText" class="text-xs font-semibold text-rose-400 mb-1">Subiendo y procesando...</p>
                     <div class="w-full bg-brand-cardBg h-2.5 rounded-full overflow-hidden border border-brand-border">
@@ -1177,6 +1178,142 @@ async function deleteTrack(i) {
     await loadTracks();
 }
 
+
+// ====== Detección automática de género por canción ======
+const GENRE_KEYWORDS = [
+    // Los más específicos primero, para que "cumbia sonidera" no caiga en "cumbia" ni "rock en espanol" en "rock"
+    ['Nortenas con Sax', /nortenas? con sax/],
+    ['Rock en Espanol', /rock (en )?espanol/],
+    ['Cumbia Sonidera', /sonidera/],
+    ['Cumbia Wepa', /wepa/],
+    ['Bacharengue', /bacharengue/],
+    ['Banda Bailable', /banda bailable/],
+    ['Regional Mexicano', /regional mexicano/],
+    ['Navidad / Año Nuevo', /navidad|navideno|ano nuevo|christmas|xmas|new year/],
+    ['Transition / Segway', /transition|segway|segue/],
+    ['Acapella Starter', /acapella|starter/],
+    ['Guaracha', /guaracha|aleteo|zapateo/],
+    ['Dembow', /dembow|dembou/],
+    ['Moombah', /moombah/],
+    ['Cubaton', /cubaton/],
+    ['Cumbia', /cumbia/],
+    ['Bachata', /bachata/],
+    ['Merengue', /merengue/],
+    ['Salsa', /\bsalsa\b/],
+    ['Mambo', /\bmambo\b/],
+    ['Punta', /\bpunta\b/],
+    ['Tipico', /\btipico\b/],
+    ['Vallenato', /vallenato/],
+    ['Quebradita', /quebradita/],
+    ['Duranguense', /duranguense/],
+    ['Huapango', /huapango/],
+    ['Norteno', /nortena|norteno/],
+    ['Banda Bailable', /\bbanda\b/],
+    ['Ecuatoriana', /ecuatorian/],
+    ['Tribal', /\btribal\b/],
+    ['Dancehall', /dancehall/],
+    ['Halloween', /halloween/],
+    ['Drops', /\bdrops?\b/],
+    ['Trap', /\btrap\b/],
+    ['Techno', /techno/],
+    ['Electro', /electro|\bedm\b|\bhouse\b/],
+    ['Reggaeton', /reggaeton|reguetón|regueton|perreo/],
+    ['Reggae / HipHop', /reggae|hip[\s-]?hop/],
+    ['Rock', /\brock\b/],
+    ['Pop', /\bpop\b/],
+    ['Latin / Urban', /\blatin\b|urban[oa]?\b/]
+];
+function matchGenre(text) {
+    if (!text) return null;
+    const t = String(text).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    for (const [g, re] of GENRE_KEYWORDS) if (re.test(t)) return g;
+    return null;
+}
+
+function id3Text(bytes) {
+    if (!bytes.length) return '';
+    const enc = bytes[0], body = bytes.slice(1);
+    let label = 'iso-8859-1';
+    if (enc === 1) label = (body[0] === 0xFE && body[1] === 0xFF) ? 'utf-16be' : 'utf-16le';
+    else if (enc === 2) label = 'utf-16be';
+    else if (enc === 3) label = 'utf-8';
+    return new TextDecoder(label).decode(body).replace(/\0/g, ' ').replace(/^\uFEFF/, '').trim();
+}
+
+// Lee la etiqueta ID3v2 del MP3 (género, BPM, título, artista). Si no hay etiqueta, devuelve {}.
+async function readId3(file) {
+    const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
+    if (head.length < 10 || String.fromCharCode(head[0], head[1], head[2]) !== 'ID3') return {};
+    const ver = head[3];
+    const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
+    const buf = new Uint8Array(await file.slice(10, 10 + Math.min(size, 6 * 1024 * 1024)).arrayBuffer());
+    const out = {}, idLen = ver === 2 ? 3 : 4, hdrLen = ver === 2 ? 6 : 10;
+    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist' }
+                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist' };
+    let pos = 0;
+    while (pos + hdrLen <= buf.length) {
+        const id = String.fromCharCode(...buf.slice(pos, pos + idLen));
+        if (!/^[A-Z0-9]+$/.test(id)) break;
+        let fsize;
+        if (ver === 2) fsize = (buf[pos + 3] << 16) | (buf[pos + 4] << 8) | buf[pos + 5];
+        else if (ver === 4) fsize = ((buf[pos + 4] & 0x7f) << 21) | ((buf[pos + 5] & 0x7f) << 14) | ((buf[pos + 6] & 0x7f) << 7) | (buf[pos + 7] & 0x7f);
+        else fsize = (buf[pos + 4] * 16777216) + (buf[pos + 5] << 16) + (buf[pos + 6] << 8) + buf[pos + 7];
+        if (fsize <= 0 || pos + hdrLen + fsize > buf.length) break;
+        if (map[id]) out[map[id]] = id3Text(buf.slice(pos + hdrLen, pos + hdrLen + fsize));
+        pos += hdrLen + fsize;
+    }
+    if (out.genre) out.genre = out.genre.replace(/\(\d+\)/g, ' ').trim();
+    if (out.bpm) out.bpm = parseInt(out.bpm, 10) || null;
+    return out;
+}
+
+let bulkItems = [];
+const SRC_BADGE = {
+    'etiqueta': ['text-emerald-400', 'Etiqueta del archivo'],
+    'nombre': ['text-sky-400', 'Por el nombre'],
+    'manual': ['text-slate-400', 'Elegido por ti'],
+    'revisar': ['text-amber-400', 'Revisar']
+};
+function badgeHtml(i) {
+    const it = bulkItems[i], k = it.genre ? it.source : 'revisar';
+    return `<span id="bb${i}" class="${SRC_BADGE[k][0]} shrink-0 w-28 text-right">${SRC_BADGE[k][1]}</span>`;
+}
+function renderBulkReview() {
+    const box = document.getElementById('bulkReview');
+    const opts = g => Array.from(bulkGenreTarget.options).map(o => `<option value="${o.value}"${o.value === g ? ' selected' : ''}>${o.value}</option>`).join('');
+    const sinDetectar = bulkItems.filter(x => !x.genre).length;
+    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado: se usará el género por defecto; cámbialo si no es el correcto.' : 'Revisa que cada género sea el correcto antes de subir.'}</p>` +
+        bulkItems.map((it, i) => `<div class="flex items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
+            <span class="truncate flex-1 text-slate-200" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
+            ${badgeHtml(i)}
+            <select onchange="setBulkGenre(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">${opts(it.genre || bulkGenreTarget.value)}</select>
+        </div>`).join('');
+}
+function setBulkGenre(i, g) {
+    bulkItems[i].genre = g; bulkItems[i].source = 'manual';
+    const el = document.getElementById('bb' + i);
+    el.className = SRC_BADGE.manual[0] + ' shrink-0 w-28 text-right'; el.textContent = SRC_BADGE.manual[1];
+}
+async function buildBulkReview() {
+    const files = Array.from(bulkAudioFiles.files).slice(0, 50), box = document.getElementById('bulkReview');
+    bulkItems = [];
+    if (!files.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.classList.remove('hidden');
+    box.innerHTML = '<p class="text-xs text-slate-400">Analizando archivos...</p>';
+    for (const f of files) {
+        let tag = {};
+        try { tag = await readId3(f); } catch (e) { console.error(e); }
+        let genre = matchGenre(tag.genre), source = genre ? 'etiqueta' : '';
+        if (!genre) { genre = matchGenre([f.name, tag.title, tag.artist].join(' ')); source = genre ? 'nombre' : ''; }
+        bulkItems.push({ file: f, genre, source, bpm: tag.bpm || null });
+    }
+    renderBulkReview();
+}
+window.addEventListener('DOMContentLoaded', () => {
+    bulkAudioFiles.addEventListener('change', buildBulkReview);
+    bulkGenreTarget.addEventListener('change', () => { if (bulkItems.some(x => !x.genre)) renderBulkReview(); });
+});
+
 async function processBulkUpload() {
     if (!isAdmin) { alert('Acceso denegado.'); return; }
     const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
@@ -1194,8 +1331,9 @@ async function processBulkUpload() {
             const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: mimeFromExt(ext, f.type), upsert: false });
             if (up.error) throw new Error(up.error.message);
         } catch (e) { console.error(e); failed++; lastError = e.message; continue; }
-        const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || null;
-        const ins = await sb.from('tracks').insert({ title, artist: 'DJ Anthonymejia VIP', portal, genre, bpm, storage_path: path, ext });
+        const it = bulkItems.find(x => x.file === f) || {};
+        const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
+        const ins = await sb.from('tracks').insert({ title, artist: 'DJ Anthonymejia VIP', portal, genre: it.genre || genre, bpm, storage_path: path, ext });
         if (ins.error) { try { await sb.storage.from(BUCKET).remove([path]); } catch (e) {} failed++; lastError = ins.error.message; }
         uploadProgressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
     }
