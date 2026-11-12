@@ -994,19 +994,17 @@ async function logoutUser() {
     await loadSession(); resetFilters();
 }
 
-// Todo el audio vive en Cloudflare R2. La función de Netlify verifica quién eres y entrega enlaces temporales.
-async function r2Api(action, payload) {
+// Todo el audio vive en Supabase Storage (bucket privado). Se entregan enlaces temporales.
+async function requireSession() {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) throw new Error('Debes iniciar sesión.');
-    const r = await fetch('/.netlify/functions/r2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
-        body: JSON.stringify({ action, ...payload })
-    });
-    let data = {};
-    try { data = await r.json(); } catch (e) {}
-    if (!r.ok) throw new Error(data.error || ('Error ' + r.status));
-    return data;
+    return session;
+}
+async function signedUrl(key, seconds, options) {
+    await requireSession();
+    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(key, seconds, options);
+    if (error) throw new Error(error.message);
+    return data.signedUrl;
 }
 
 const AUDIO_MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', ogg: 'audio/ogg', mp4: 'audio/mp4' };
@@ -1048,7 +1046,7 @@ async function playTrack(index) {
     if (!currentUser) { openLoginModal(); return; }
     // Escuchar: cualquier usuario registrado. Descargar: solo socios (ver handleDownloadClick).
     let url;
-    try { url = (await r2Api('play', { key: t.path })).url; }
+    try { url = await signedUrl(t.path, 3600); }
     catch (e) { alert('No se pudo cargar el audio: ' + e.message); return; }
     currentPlayingId = t.id; currentPlayingIndex = index;
     audioPlayer.dataset.blob = ''; audioPlayer.src = url; audioPlayer.play().catch(console.error); isPlaying = true;
@@ -1062,7 +1060,7 @@ async function handleDownloadClick(i) {
     if (!currentUser) { openLoginModal(); return; }
     if (!hasMembership()) { openPaywallModal(); return; }
     try {
-        const { url } = await r2Api('download', { key: t.path, filename: `${t.title} - ${t.artist}.${t.ext}` });
+        const url = await signedUrl(t.path, 120, { download: `${t.title} - ${t.artist}.${t.ext}` });
         const a = document.createElement('a'); a.href = url; document.body.appendChild(a); a.click(); a.remove();
     } catch (e) { alert(e.message); }
 }
@@ -1078,7 +1076,7 @@ async function deleteTrack(i) {
     const t = allRemixes[i];
     if (!confirm('¿Estás seguro de eliminar este remix permanentemente?')) return;
     if (t.id === currentPlayingId) { audioPlayer.pause(); isPlaying = false; currentPlayingId = null; updatePlayPauseUI(); }
-    try { await r2Api('delete', { key: t.path }); } catch (e) { alert('No se pudo borrar el archivo: ' + e.message); return; }
+    { const { error: delErr } = await sb.storage.from(BUCKET).remove([t.path]); if (delErr) { alert('No se pudo borrar el archivo: ' + delErr.message); return; } }
     const { error } = await sb.from('tracks').delete().eq('id', t.id);
     if (error) { alert(error.message); return; }
     await loadTracks();
@@ -1096,14 +1094,14 @@ async function processBulkUpload() {
         uploadStatusText.textContent = `Subiendo ${i + 1} de ${files.length}: ${title}`;
         let path;
         try {
-            const sign = await r2Api('upload', { ext });
-            path = sign.key;
-            const put = await fetch(sign.url, { method: 'PUT', headers: { 'Content-Type': sign.contentType || mimeFromExt(ext, f.type) }, body: f });
-            if (!put.ok) throw new Error('R2 respondió ' + put.status);
+            await requireSession();
+            path = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)) + '.' + ext.toLowerCase();
+            const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: mimeFromExt(ext, f.type), upsert: false });
+            if (up.error) throw new Error(up.error.message);
         } catch (e) { console.error(e); failed++; lastError = e.message; continue; }
         const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || null;
         const ins = await sb.from('tracks').insert({ title, artist: 'DJ Anthonymejia VIP', portal, genre, bpm, storage_path: path, ext });
-        if (ins.error) { try { await r2Api('delete', { key: path }); } catch (e) {} failed++; lastError = ins.error.message; }
+        if (ins.error) { try { await sb.storage.from(BUCKET).remove([path]); } catch (e) {} failed++; lastError = ins.error.message; }
         uploadProgressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
     }
     await loadTracks();
