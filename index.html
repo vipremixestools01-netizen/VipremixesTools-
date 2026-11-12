@@ -336,6 +336,55 @@
                     <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
                 </div>
                 <button type="submit" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2">Entrar a la Plataforma</button>
+                <button type="button" onclick="openForgotModal()" class="w-full text-center text-xs text-slate-400 hover:text-white underline pt-1">¿Olvidaste tu contraseña?</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: OLVIDÉ MI CONTRASEÑA -->
+    <div id="forgotModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-md w-full p-6 relative shadow-2xl">
+            <button onclick="closeForgotModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-black/30 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-key text-lg"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Recuperar contraseña</h3>
+                    <p class="text-xs text-slate-400">Te enviaremos un enlace a tu correo registrado</p>
+                </div>
+            </div>
+            <form onsubmit="handleForgotSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
+                    <input type="email" id="forgotEmail" required placeholder="tu@correo.com" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                </div>
+                <p id="forgotMsg" class="text-xs hidden"></p>
+                <button type="submit" id="forgotBtn" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm">Enviar enlace de recuperación</button>
+                <button type="button" onclick="closeForgotModal(); openLoginModal();" class="w-full text-center text-xs text-slate-400 hover:text-white underline">Volver a iniciar sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: NUEVA CONTRASEÑA (al abrir el enlace del correo) -->
+    <div id="resetModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-md w-full p-6 relative shadow-2xl">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-lock text-lg"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Crea tu nueva contraseña</h3>
+                    <p class="text-xs text-slate-400">Mínimo 6 caracteres</p>
+                </div>
+            </div>
+            <form onsubmit="handleResetSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nueva contraseña</label>
+                    <input type="password" id="newPassword" required minlength="6" placeholder="••••••••" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Repite la contraseña</label>
+                    <input type="password" id="newPassword2" required minlength="6" placeholder="••••••••" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                </div>
+                <p id="resetMsg" class="text-xs hidden"></p>
+                <button type="submit" id="resetBtn" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm">Guardar contraseña</button>
             </form>
         </div>
     </div>
@@ -936,6 +985,14 @@ const PAYPAL_ME = 'https://paypal.me/mamijordan23';
 // ====================================================================
 const configured = !SUPABASE_URL.includes('PEGA_AQUI');
 const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// Recuperación de contraseña: al abrir el enlace del correo, Supabase dispara PASSWORD_RECOVERY
+if (sb) sb.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+        ['loginModal', 'registerModal', 'forgotModal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        document.getElementById('resetModal').classList.remove('hidden');
+    }
+});
 const BUCKET = 'remixes';
 const DEFAULT_COVER = 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=100&auto=format&fit=crop&q=80';
 let favs = JSON.parse(localStorage.getItem('vip_favs') || '[]');
@@ -986,6 +1043,44 @@ async function handleLoginSubmit(e) {
     const { error } = await sb.auth.signInWithPassword({ email: loginEmail.value.trim(), password: loginPassword.value });
     if (error) { alert('Correo o contraseña incorrectos.'); return; }
     await loadSession(); closeLoginModal();
+}
+
+function showMsg(id, text, ok) {
+    const el = document.getElementById(id);
+    el.textContent = text; el.className = 'text-xs ' + (ok ? 'text-emerald-400' : 'text-rose-400');
+}
+function openForgotModal() {
+    forgotEmail.value = loginEmail.value.trim();
+    document.getElementById('forgotMsg').classList.add('hidden');
+    document.getElementById('loginModal').classList.add('hidden');
+    document.getElementById('forgotModal').classList.remove('hidden');
+}
+function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
+
+async function handleForgotSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('forgotBtn'); btn.disabled = true;
+    const { error } = await sb.auth.resetPasswordForEmail(forgotEmail.value.trim(), { redirectTo: location.origin + location.pathname });
+    btn.disabled = false;
+    if (error) {
+        showMsg('forgotMsg', /rate|seconds|limit/i.test(error.message) ? 'Espera un momento antes de pedir otro enlace.' : 'No se pudo enviar el correo: ' + error.message, false);
+        return;
+    }
+    showMsg('forgotMsg', 'Listo. Si ese correo está registrado, te enviamos un enlace para crear una nueva contraseña. Revisa también la carpeta de spam.', true);
+}
+
+async function handleResetSubmit(e) {
+    e.preventDefault();
+    if (newPassword.value.length < 6) { showMsg('resetMsg', 'La contraseña debe tener al menos 6 caracteres.', false); return; }
+    if (newPassword.value !== newPassword2.value) { showMsg('resetMsg', 'Las contraseñas no coinciden.', false); return; }
+    const btn = document.getElementById('resetBtn'); btn.disabled = true;
+    const { error } = await sb.auth.updateUser({ password: newPassword.value });
+    btn.disabled = false;
+    if (error) { showMsg('resetMsg', 'No se pudo cambiar la contraseña: ' + error.message, false); return; }
+    document.getElementById('resetModal').classList.add('hidden');
+    history.replaceState(null, '', location.pathname);
+    await loadSession();
+    alert('¡Contraseña actualizada! Ya puedes usar la plataforma.');
 }
 
 async function logoutUser() {
