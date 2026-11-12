@@ -774,29 +774,6 @@
             document.body.removeChild(a);
         }
 
-        function simulatePayment(planName, amount, daysValid) {
-            if (!currentUser && !isAdmin) {
-                alert("Debes iniciar sesión primero para adquirir tu membresía.");
-                closePaywallModal();
-                openLoginModal();
-                return;
-            }
-            if(isAdmin) {
-                isAdmin = true;
-            } else {
-                currentUser.membershipActive = true;
-                currentUser.membershipPlan = planName;
-                currentUser.membershipExpires = new Date(Date.now() + daysValid * 86400000).toISOString();
-                const ru = registeredUsers.find(u => u.username === currentUser.username);
-                if (ru) { ru.membershipPlan = planName; ru.membershipExpires = currentUser.membershipExpires; }
-            }
-            saveToLocalStorage();
-            closePaywallModal();
-            alert(`¡Pago confirmado con éxito! Membresía "${planName}" activada correctamente.`);
-            updateAuthHeader();
-            renderTracksTable();
-        }
-
         function deleteTrack(index) {
             if(!isAdmin) return;
             if(confirm("¿Estás seguro de eliminar este remix permanentemente?")) {
@@ -1112,6 +1089,7 @@ async function loadSession() {
         isAdmin = !!(p && p.is_admin);
     }
     updateAuthHeader(); renderPortalsSidebar(); renderTracksTable();
+    if (typeof renderPaypalButtons === 'function' && !membershipsViewContainer.classList.contains('hidden')) renderPaypalButtons();
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -1454,12 +1432,12 @@ async function activateMember(id, days) {
 
 <script>
 // Client ID de PayPal (es público). Ver instrucciones.
-const PAYPAL_CLIENT_ID = 'AYPVI8XyFUYcKQfu7p8Ti0nH4o4XppD_GTSCtP9SmaEfRgvhH_EOxiOyU9Rzh2ZY5amRg_uCeyiIx68t';
+const PAYPAL_CLIENT_ID = 'BAA11Z_Yme4m7fNf3IAI48k90osksEDZLZ9OBSJ2f_awbOPZEIxDulhI9h1WdaYnKrZGrXV0B4s3J1AUZE';
 let paypalSdk = null;
 function loadPaypalSdk() {
     if (!paypalSdk) paypalSdk = new Promise((res, rej) => {
         const sc = document.createElement('script');
-        sc.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
+        sc.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture&components=buttons&enable-funding=card`;
         sc.onload = res; sc.onerror = rej; document.head.appendChild(sc);
     });
     return paypalSdk;
@@ -1475,11 +1453,11 @@ async function renderPaypalButtons() {
     try { await loadPaypalSdk(); } catch (e) { alert('No se pudo cargar PayPal. Revisa tu conexión.'); return; }
     plans.forEach(([id, amt, name]) => {
         const el = document.getElementById(id); el.innerHTML = '';
-        paypal.Buttons({
-            style: { layout: 'horizontal', color: 'gold', tagline: false, height: 45 },
+        const common = {
             createOrder: (d, a) => a.order.create({ purchase_units: [{ description: name, amount: { currency_code: 'USD', value: amt.toFixed(2) } }] }),
             onApprove: async (data) => {
                 const { data: { session } } = await sb.auth.getSession();
+                if (!session) { alert('Tu sesión expiró. Inicia sesión de nuevo. Si te cobraron, contáctanos con tu correo.'); return; }
                 const r = await fetch('/.netlify/functions/paypal-capture', { method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
                     body: JSON.stringify({ orderID: data.orderID }) });
@@ -1489,8 +1467,13 @@ async function renderPaypalButtons() {
                 alert('¡Pago confirmado! Tu membresía está activa hasta el ' + new Date(j.expires).toLocaleDateString() + '.');
                 resetFilters();
             },
+            onCancel: () => {},
             onError: () => alert('Hubo un problema con PayPal. Intenta de nuevo.')
-        }).render('#' + id);
+        };
+        el.innerHTML = '<div class="pp-btn mb-2"></div><div class="card-btn"></div>';
+        paypal.Buttons({ ...common, fundingSource: paypal.FUNDING.PAYPAL, style: { color: 'gold', height: 45 } }).render(el.querySelector('.pp-btn'));
+        const card = paypal.Buttons({ ...common, fundingSource: paypal.FUNDING.CARD, style: { color: 'black', height: 45 } });
+        if (card.isEligible()) card.render(el.querySelector('.card-btn'));
     });
 }
 
