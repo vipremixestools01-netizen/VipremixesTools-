@@ -142,7 +142,12 @@
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
-                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar por título, artista o género..." class="w-full bg-brand-panelBg border border-brand-border rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-crimson transition-all shadow-inner">
+                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar por título, artista, género o mes..." class="w-full bg-brand-panelBg border border-brand-border rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-crimson transition-all shadow-inner">
+                    </div>
+                    <div class="w-full md:w-56">
+                        <select id="monthSelectFilter" onchange="filterByMonth(this.value)" class="w-full bg-brand-panelBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson transition-all">
+                            <option value="ALL">Mes (Todos)</option>
+                        </select>
                     </div>
                     <div class="w-full md:w-64">
                         <select id="genreSelectFilter" onchange="filterByDropdownGenre(this.value)" class="w-full bg-brand-panelBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson transition-all">
@@ -408,6 +413,7 @@
 
         let currentPortalFilter = "ALL";
         let currentGenreFilter = "ALL";
+        let currentMonthFilter = "ALL";
         let searchQuery = "";
         let currentPlayingIndex = null;
         let isPlaying = false;
@@ -515,8 +521,29 @@
             select.innerHTML = html;
         }
 
+        const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        function monthLabel(ym) { const [y, m] = ym.split('-'); return `${MESES[parseInt(m, 10) - 1]} ${y}`; }
+        function renderMonthFilter() {
+            const select = document.getElementById('monthSelectFilter');
+            if (!select) return;
+            const nowYm = new Date().toLocaleDateString('en-CA').slice(0, 7);
+            const months = [...new Set(allRemixes.map(r => (r.date || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+            let html = `<option value="ALL">Mes (Todos)</option>`;
+            months.forEach(ym => {
+                const count = allRemixes.filter(r => (r.date || '').startsWith(ym)).length;
+                html += `<option value="${ym}" ${currentMonthFilter === ym ? 'selected' : ''}>${monthLabel(ym)}${ym === nowYm ? ' (este mes)' : ''} · ${count}</option>`;
+            });
+            select.innerHTML = html;
+        }
+        function filterByMonth(ym) { currentMonthFilter = ym; renderTracksTable(); }
+
         function updateSummaryCounts() {
             document.getElementById('poolCountsSummary').textContent = `Todo (${allRemixes.length})`;
+            renderMonthFilter();
+        }
+
+        function normalizeText(str) {
+            return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9ñ ]+/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
         function renderTracksTable() {
@@ -527,12 +554,12 @@
             let filtered = allRemixes.filter(track => {
                 const matchesPortal = currentPortalFilter === "ALL" || track.portal === currentPortalFilter;
                 const matchesGenre = currentGenreFilter === "ALL" || track.genre === currentGenreFilter;
-                const q = searchQuery.toLowerCase();
-                const matchesSearch = track.title.toLowerCase().includes(q) || 
-                                      track.artist.toLowerCase().includes(q) || 
-                                      track.genre.toLowerCase().includes(q) ||
-                                      track.portal.toLowerCase().includes(q);
-                return matchesPortal && matchesGenre && matchesSearch;
+                const matchesMonth = currentMonthFilter === "ALL" || (track.date || '').startsWith(currentMonthFilter);
+                const monthText = track.date ? monthLabel(track.date.slice(0, 7)) : '';
+                const haystack = normalizeText([track.title, track.artist, track.genre, track.portal, monthText, track.bpm ? track.bpm + ' bpm' : ''].join(' '));
+                const words = normalizeText(searchQuery).split(' ').filter(Boolean);
+                const matchesSearch = words.every(w => haystack.includes(w));
+                return matchesPortal && matchesGenre && matchesMonth && matchesSearch;
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
@@ -581,7 +608,7 @@
                             <div class="flex items-center justify-end space-x-2">
                                 <button onclick="toggleFavorite(${realIndex})" class="p-2 rounded-xl hover:bg-black/40 transition"><i class="${favClass} text-sm"></i></button>
                                 <button onclick="handleDownloadClick(${realIndex})" class="bg-brand-crimson hover:bg-red-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5">
-                                    <i class="fa-solid fa-download text-xs"></i> Descargar
+                                    <i class="fa-solid ${hasMembership() ? 'fa-download' : 'fa-lock'} text-xs"></i> Descargar
                                 </button>
                                 ${isAdmin ? `
                                     <button onclick="deleteTrack(${realIndex})" class="bg-red-950/80 hover:bg-red-800 text-red-300 p-2 rounded-xl transition" title="Eliminar Remix"><i class="fa-solid fa-trash text-xs"></i></button>
@@ -696,8 +723,10 @@
         function resetFilters() {
             currentPortalFilter = "ALL";
             currentGenreFilter = "ALL";
+            currentMonthFilter = "ALL";
             searchQuery = "";
             document.getElementById('searchInput').value = "";
+            renderMonthFilter();
             document.getElementById('genreSelectFilter').value = "ALL";
             filterByPortal("ALL");
         }
@@ -969,8 +998,10 @@ async function logoutUser() {
 async function playTrack(index) {
     const t = allRemixes[index]; if (!t) return;
     if (currentPlayingId === t.id) { togglePlayPause(); return; }
+    if (!currentUser) { openLoginModal(); return; }
+    // Escuchar: cualquier usuario registrado. Descargar: solo socios (ver handleDownloadClick).
     const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(t.path, 3600);
-    if (error) { currentUser ? openPaywallModal() : openLoginModal(); return; }
+    if (error) { alert('No se pudo cargar el audio: ' + error.message); return; }
     currentPlayingId = t.id; currentPlayingIndex = index;
     audioPlayer.src = data.signedUrl; audioPlayer.play().catch(console.error); isPlaying = true;
     playerTrackTitle.textContent = t.title; playerTrackArtist.textContent = t.artist;
@@ -980,6 +1011,8 @@ async function playTrack(index) {
 
 async function handleDownloadClick(i) {
     const t = allRemixes[i];
+    if (!currentUser) { openLoginModal(); return; }
+    if (!hasMembership()) { openPaywallModal(); return; }
     const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(t.path, 60, { download: `${t.title} - ${t.artist}.${t.ext}` });
     if (error) { currentUser ? openPaywallModal() : openLoginModal(); return; }
     const a = document.createElement('a'); a.href = data.signedUrl; document.body.appendChild(a); a.click(); a.remove();
