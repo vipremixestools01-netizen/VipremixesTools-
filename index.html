@@ -432,8 +432,7 @@
             });
             audioPlayer.addEventListener('error', () => {
                 if (currentPlayingId === null) return;
-                isPlaying = false; updatePlayPauseUI(); renderTracksTable();
-                alert('No se pudo reproducir este audio. Si lo subiste antes de recargar la página, el archivo ya no está disponible: vuelve a subirlo.');
+                handleAudioError();
             });
             updateAuthHeader();
             renderPortalsSidebar();
@@ -995,15 +994,64 @@ async function logoutUser() {
     await loadSession(); resetFilters();
 }
 
+// Todo el audio vive en Cloudflare R2. La función de Netlify verifica quién eres y entrega enlaces temporales.
+async function r2Api(action, payload) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error('Debes iniciar sesión.');
+    const r = await fetch('/.netlify/functions/r2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+        body: JSON.stringify({ action, ...payload })
+    });
+    let data = {};
+    try { data = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error(data.error || ('Error ' + r.status));
+    return data;
+}
+
+const AUDIO_MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', ogg: 'audio/ogg', mp4: 'audio/mp4' };
+function mimeFromExt(ext, fallback) { return AUDIO_MIME[String(ext).toLowerCase()] || fallback || 'audio/mpeg'; }
+
+function stopPlaybackUI() { isPlaying = false; updatePlayPauseUI(); renderTracksTable(); }
+
+// Si el navegador no logra reproducir la URL directa, se descarga el audio y se reproduce desde memoria.
+// Si tampoco funciona, se muestra el motivo real en lugar de un mensaje genérico.
+async function handleAudioError() {
+    if (currentPlayingId === null) return;
+    const t = allRemixes.find(r => r.id === currentPlayingId);
+    const code = audioPlayer.error ? audioPlayer.error.code : 0;
+    if (audioPlayer.dataset.blob === '1' || !/^https?:/.test(audioPlayer.src)) {
+        stopPlaybackUI();
+        alert(code === 4
+            ? 'Tu navegador no puede reproducir este archivo (formato o códec no compatible). Conviértelo a MP3 y vuelve a subirlo.'
+            : 'No se pudo reproducir el audio (código ' + code + '). Revisa tu conexión e inténtalo de nuevo.');
+        return;
+    }
+    try {
+        const r = await fetch(audioPlayer.src);
+        if (!r.ok) throw new Error('El servidor respondió ' + r.status);
+        const blob = await r.blob();
+        const ext = t ? t.ext : 'mp3';
+        const url = URL.createObjectURL(new Blob([blob], { type: mimeFromExt(ext) }));
+        audioPlayer.dataset.blob = '1';
+        audioPlayer.src = url;
+        await audioPlayer.play();
+    } catch (e) {
+        stopPlaybackUI();
+        alert('No se pudo cargar el audio: ' + (e && e.message ? e.message : e));
+    }
+}
+
 async function playTrack(index) {
     const t = allRemixes[index]; if (!t) return;
     if (currentPlayingId === t.id) { togglePlayPause(); return; }
     if (!currentUser) { openLoginModal(); return; }
     // Escuchar: cualquier usuario registrado. Descargar: solo socios (ver handleDownloadClick).
-    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(t.path, 3600);
-    if (error) { alert('No se pudo cargar el audio: ' + error.message); return; }
+    let url;
+    try { url = (await r2Api('play', { key: t.path })).url; }
+    catch (e) { alert('No se pudo cargar el audio: ' + e.message); return; }
     currentPlayingId = t.id; currentPlayingIndex = index;
-    audioPlayer.src = data.signedUrl; audioPlayer.play().catch(console.error); isPlaying = true;
+    audioPlayer.dataset.blob = ''; audioPlayer.src = url; audioPlayer.play().catch(console.error); isPlaying = true;
     playerTrackTitle.textContent = t.title; playerTrackArtist.textContent = t.artist;
     playerCoverArt.innerHTML = `<img src="${t.coverUrl}" class="w-full h-full object-cover">`;
     updatePlayPauseUI(); renderTracksTable();
@@ -1013,9 +1061,10 @@ async function handleDownloadClick(i) {
     const t = allRemixes[i];
     if (!currentUser) { openLoginModal(); return; }
     if (!hasMembership()) { openPaywallModal(); return; }
-    const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(t.path, 60, { download: `${t.title} - ${t.artist}.${t.ext}` });
-    if (error) { currentUser ? openPaywallModal() : openLoginModal(); return; }
-    const a = document.createElement('a'); a.href = data.signedUrl; document.body.appendChild(a); a.click(); a.remove();
+    try {
+        const { url } = await r2Api('download', { key: t.path, filename: `${t.title} - ${t.artist}.${t.ext}` });
+        const a = document.createElement('a'); a.href = url; document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { alert(e.message); }
 }
 
 function simulatePayment(plan, amount) {
@@ -1029,7 +1078,7 @@ async function deleteTrack(i) {
     const t = allRemixes[i];
     if (!confirm('¿Estás seguro de eliminar este remix permanentemente?')) return;
     if (t.id === currentPlayingId) { audioPlayer.pause(); isPlaying = false; currentPlayingId = null; updatePlayPauseUI(); }
-    await sb.storage.from(BUCKET).remove([t.path]);
+    try { await r2Api('delete', { key: t.path }); } catch (e) { alert('No se pudo borrar el archivo: ' + e.message); return; }
     const { error } = await sb.from('tracks').delete().eq('id', t.id);
     if (error) { alert(error.message); return; }
     await loadTracks();
@@ -1041,20 +1090,24 @@ async function processBulkUpload() {
     const files = Array.from(bulkAudioFiles.files).slice(0, 50);
     if (!files.length) { alert('Selecciona al menos un archivo de audio.'); return; }
     uploadProgressContainer.classList.remove('hidden'); uploadSubmitBtn.classList.add('hidden');
-    let failed = 0;
+    let failed = 0, lastError = '';
     for (let i = 0; i < files.length; i++) {
         const f = files[i], title = f.name.replace(/\.[^/.]+$/, ''), ext = (f.name.match(/\.([^.]+)$/) || [])[1] || 'mp3';
-        const path = `${crypto.randomUUID()}.${ext}`;
-        uploadStatusText.textContent = `Subiendo ${i + 1} de ${files.length}...`;
-        const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || 'audio/mpeg' });
-        if (up.error) { failed++; continue; }
+        uploadStatusText.textContent = `Subiendo ${i + 1} de ${files.length}: ${title}`;
+        let path;
+        try {
+            const sign = await r2Api('upload', { ext });
+            path = sign.key;
+            const put = await fetch(sign.url, { method: 'PUT', headers: { 'Content-Type': sign.contentType || mimeFromExt(ext, f.type) }, body: f });
+            if (!put.ok) throw new Error('R2 respondió ' + put.status);
+        } catch (e) { console.error(e); failed++; lastError = e.message; continue; }
         const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || null;
         const ins = await sb.from('tracks').insert({ title, artist: 'DJ Anthonymejia VIP', portal, genre, bpm, storage_path: path, ext });
-        if (ins.error) { await sb.storage.from(BUCKET).remove([path]); failed++; }
+        if (ins.error) { try { await r2Api('delete', { key: path }); } catch (e) {} failed++; lastError = ins.error.message; }
         uploadProgressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
     }
     await loadTracks();
-    uploadStatusText.textContent = failed ? `Listo, pero ${failed} archivo(s) fallaron.` : '¡Completado y publicado con éxito!';
+    uploadStatusText.textContent = failed ? `Listo, pero ${failed} archivo(s) fallaron. Motivo: ${lastError}` : '¡Completado y publicado con éxito!';
     uploadCloseBtn.classList.remove('hidden');
 }
 
