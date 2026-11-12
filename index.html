@@ -220,12 +220,12 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col md:flex-row items-center gap-4 mb-6">
+                <div id="searchBar" class="flex flex-col md:flex-row items-center gap-4 mb-6" style="scroll-margin-top:96px">
                     <div class="relative flex-1 w-full">
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
-                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar por título, artista, género o mes..." class="w-full bg-white border border-brand-border rounded-xl pl-11 pr-4 py-3.5 text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:border-brand-crimson transition-all">
+                        <input type="text" id="searchInput" oninput="handleSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSearch();}" placeholder="Buscar por título, artista, género o mes..." class="w-full bg-white border border-brand-border rounded-xl pl-11 pr-4 py-3.5 text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:border-brand-crimson transition-all">
                     </div>
                     <div class="w-full md:w-56">
                         <select id="monthSelectFilter" onchange="filterByMonth(this.value)" class="w-full bg-white border border-brand-border rounded-xl px-4 py-3.5 text-sm text-slate-800 focus:outline-none focus:border-brand-crimson transition-all">
@@ -868,6 +868,11 @@
         function handleSearch() {
             searchQuery = document.getElementById('searchInput').value;
             renderTracksTable();
+            // El banner es alto: lleva la vista a los resultados para que se note que buscó
+            const bar = document.getElementById('searchBar');
+            if (searchQuery.trim() && bar && bar.getBoundingClientRect().top > 140) {
+                bar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         function playTrack(index) {
