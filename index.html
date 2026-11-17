@@ -253,6 +253,7 @@
                                     <th class="py-4 px-4">Version</th>
                                     <th class="py-4 px-4">Remixer</th>
                                     <th class="py-4 px-4 w-28">BPM</th>
+                                    <th class="py-4 px-4 w-28 text-center"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-2 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
                                     <th class="py-4 px-4">Genre</th>
                                     <th class="py-4 px-4 text-right w-40">Download</th>
                                 </tr>
@@ -373,7 +374,7 @@
                         <div><label class="block text-xs font-semibold mb-1" for="djKeyTrack">Remix del catálogo</label><select id="djKeyTrack" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
                         <div><label class="block text-xs font-semibold mb-1" for="djKeyValue">Tonalidad</label><select id="djKeyValue" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
                     </div>
-                    <div class="flex flex-wrap gap-2 mt-3"><button id="djSaveKeyBtn" onclick="djSaveKey()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold">Guardar tonalidad</button><button id="djAnalyzeCatalogBtn" onclick="djAnalyzePendingCatalog()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg px-4 py-2.5 text-xs font-bold">Analizar catálogo pendiente</button></div>
+                    <div class="flex flex-wrap gap-2 mt-3"><button id="djSaveKeyBtn" onclick="djSaveKey()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold">Guardar tonalidad</button><button id="djAnalyzeCatalogBtn" onclick="djAnalyzePendingCatalog()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg px-4 py-2.5 text-xs font-bold">Analizar catálogo pendiente</button><button id="djStopAnalyzeBtn" onclick="djAnalyzeStop=true" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button></div>
                     <p id="djKeyNotice" class="text-xs text-slate-500 mt-3">La tonalidad se detecta sola al subir lotes. Aquí puedes analizar remixes antiguos pendientes (tarda; deja la página abierta) o corregir una tonalidad.</p>
                 </div>
             </section>
@@ -809,6 +810,30 @@ function parseTrackInfo(t) {
     return (t._info = { artist, song: song || String(t.title || ''), version: [...new Set(version)].join(' · '), remixer, rating });
 }
 
+        // ---- KEY: etiquetas de color según la rueda Camelot ----
+        const CAMELOT_HUES = {1:'#7ee0cf',2:'#8ee59a',3:'#b4e36e',4:'#e6d96a',5:'#f4a98a',6:'#f48aa0',7:'#f08ac4',8:'#d48ae0',9:'#a98af0',10:'#8aa6f4',11:'#8ad6f4',12:'#7ee0e0'};
+        function keyPillHtml(track) {
+            const cam = String(track.camelotKey || '').toUpperCase().match(/^(\d{1,2})([AB])$/);
+            if (!cam) return '<span class="text-slate-300">—</span>';
+            const base = CAMELOT_HUES[Number(cam[1])] || '#cbd5e1';
+            // A (menor) en tono suave; B (mayor) en tono más intenso
+            const bg = cam[2] === 'A' ? base + '55' : base + 'cc';
+            const tip = track.musicalKey ? ` title="${escapeHtml(track.musicalKey)}"` : '';
+            return `<span${tip} class="inline-block min-w-[56px] px-3 py-1.5 rounded-full text-sm font-extrabold text-slate-900" style="background:${bg}">${cam[1]}${cam[2]}</span>`;
+        }
+        let keySortDir = null; // null | 'asc' | 'desc'
+        function camelotRank(t) {
+            const m = String(t.camelotKey || '').toUpperCase().match(/^(\d{1,2})([AB])$/);
+            return m ? Number(m[1]) * 2 + (m[2] === 'B' ? 1 : 0) : null;
+        }
+        function toggleKeySort() {
+            keySortDir = keySortDir === null ? 'asc' : keySortDir === 'asc' ? 'desc' : null;
+            const up = document.getElementById('keySortUp'), down = document.getElementById('keySortDown');
+            if (up) up.className = 'fa-solid fa-caret-up ' + (keySortDir === 'asc' ? 'text-slate-800' : 'text-slate-400');
+            if (down) down.className = 'fa-solid fa-caret-down ' + (keySortDir === 'desc' ? 'text-slate-800' : 'text-slate-400');
+            renderTracksTable();
+        }
+
         function renderTracksTable() {
             const tbody = document.getElementById('tracksTableBody');
             const idx = allRemixes.findIndex(r => r.id === currentPlayingId);
@@ -826,11 +851,22 @@ function parseTrackInfo(t) {
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+            if (keySortDir) {
+                const dir = keySortDir === 'asc' ? 1 : -1;
+                // Las canciones sin key siempre quedan al final
+                filtered = [...filtered].sort((a, b) => {
+                    const ra = camelotRank(a), rb = camelotRank(b);
+                    if (ra === null && rb === null) return 0;
+                    if (ra === null) return 1;
+                    if (rb === null) return -1;
+                    return (ra - rb) * dir;
+                });
+            }
 
             if(filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="py-12 text-center text-slate-400">
+                        <td colspan="8" class="py-12 text-center text-slate-400">
                             <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
                             <p class="text-sm font-semibold">No hay remixes subidos con este filtro.</p>
                             <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
@@ -869,7 +905,8 @@ function parseTrackInfo(t) {
                         <td class="py-3.5 px-4 text-slate-600">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3.5 px-4">${ratingHtml || versionHtml ? ratingHtml + versionHtml : '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3.5 px-4 text-sm text-slate-600">${escapeHtml(info.remixer) || '<span class="text-slate-300">—</span>'}</td>
-                        <td class="py-3.5 px-4 text-sm text-slate-500"><div>${track.bpm ? escapeHtml(track.bpm) : '—'}</div><div class="text-[10px] font-semibold text-blue-600 mt-1">${track.musicalKey ? escapeHtml(track.musicalKey)+' · '+escapeHtml(track.camelotKey||'') : 'Key pendiente'}</div></td>
+                        <td class="py-3.5 px-4 text-sm text-slate-500">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
+                        <td class="py-3.5 px-4 text-center">${keyPillHtml(track)}</td>
                         <td class="py-3.5 px-4"><span class="bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-xs inline-block">${escapeHtml(track.genre)}</span></td>
                         <td class="py-3.5 px-4 text-right">
                             <div class="flex items-center justify-end space-x-1">
@@ -1159,7 +1196,15 @@ function toggleFavorite(i) {
 
 async function loadTracks() {
     if (!sb) return;
-    const { data, error } = await sb.from('tracks').select('*').order('created_at', { ascending: false });
+    // Supabase devuelve máximo 1000 filas por consulta: se pide por páginas para traer TODO el catálogo.
+    let data = [], error = null;
+    for (let from = 0; ; from += 1000) {
+        const r = await sb.from('tracks').select('*').order('created_at', { ascending: false }).order('id', { ascending: true }).range(from, from + 999);
+        if (r.error) { error = r.error; break; }
+        const page = Array.isArray(r.data) ? r.data : [];
+        data = data.concat(page);
+        if (page.length < 1000) break;
+    }
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
     allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
         date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
@@ -1886,28 +1931,70 @@ async function djAddTrackToPlaylist(trackId){
  const {error}=await sb.from('playlist_tracks').insert({playlist_id:playlistId,track_id:track.id,position});
  if(error){alert('No se pudo agregar: '+(error.code==='23505'?'Ese remix ya está en la playlist.':error.message));return;}await djLoadPlaylists();
 }
+let djAnalyzeStop=false;
+async function djFetchTrackFile(t){
+ let lastErr;
+ for(let attempt=0;attempt<3;attempt++){
+  try{
+   const url=await signedUrl(t.path,3600),res=await fetch(url);
+   if(!res.ok)throw new Error('No se pudo descargar el audio ('+res.status+').');
+   const blob=await res.blob();
+   return new File([blob],`${t.title}.${t.ext||'mp3'}`,{type:blob.type||mimeFromExt(t.ext)});
+  }catch(e){lastErr=e;await new Promise(r=>setTimeout(r,800*(attempt+1)));}
+ }
+ throw lastErr;
+}
 async function djAnalyzePendingCatalog(){
  if(!isAdmin){alert('Solo el administrador puede analizar el catálogo.');return;}
- const btn=document.getElementById('djAnalyzeCatalogBtn'),notice=document.getElementById('djKeyNotice');
+ const btn=document.getElementById('djAnalyzeCatalogBtn'),stopBtn=document.getElementById('djStopAnalyzeBtn'),notice=document.getElementById('djKeyNotice');
  const pending=allRemixes.filter(t=>!t.musicalKey);
  if(!pending.length){notice.textContent='Todo el catálogo ya tiene tonalidad registrada.';return;}
- if(!confirm(`Se analizarán ${pending.length} remixes sin tonalidad. El proceso puede tardar. ¿Continuar?`))return;
- btn.disabled=true;let ok=0,fail=0;
+ if(!confirm(`Se analizarán ${pending.length} remixes sin tonalidad, uno por uno. Puede tardar bastante: deja esta pestaña abierta. Si lo detienes, lo ya analizado se conserva. ¿Continuar?`))return;
+ btn.disabled=true;stopBtn.classList.remove('hidden');djAnalyzeStop=false;
+ let ok=0,fail=0,done=0;const failures=[];let wake=null;
+ try{wake=navigator.wakeLock?await navigator.wakeLock.request('screen'):null;}catch(_){}
+ const fmt=ms=>{const m=Math.round(ms/60000);return m>=60?`${Math.floor(m/60)} h ${m%60} min`:`${m} min`;};
+ const started=Date.now();
  try{
   await requireSession();
+  let nextFile=pending[0].path?djFetchTrackFile(pending[0]).catch(e=>e):Promise.resolve(new Error('La canción no tiene archivo registrado.'));
   for(let i=0;i<pending.length;i++){
-   const t=pending[i];notice.textContent=`Analizando ${i+1}/${pending.length}: ${t.title}`;
+   if(djAnalyzeStop)break;
+   const t=pending[i];
+   const eta=done>2?` · faltan ~${fmt((Date.now()-started)/done*(pending.length-done))}`:'';
+   notice.textContent=`Analizando ${i+1}/${pending.length}: ${t.title} (${ok} listas, ${fail} fallidas${eta})`;
    try{
-    const url=await signedUrl(t.path,3600),res=await fetch(url);if(!res.ok)throw new Error('No se pudo descargar el audio ('+res.status+').');
-    const blob=await res.blob();const file=new File([blob],`${t.title}.${t.ext||'mp3'}`,{type:blob.type||mimeFromExt(t.ext)});
-    const detected=await detectMusicalKey(file);
+    const file=await nextFile;
+    // Descarga la siguiente mientras se analiza esta
+    const n=pending[i+1];nextFile=n?(n.path?djFetchTrackFile(n).catch(e=>e):Promise.resolve(new Error('La canción no tiene archivo registrado.'))):null;
+    if(file instanceof Error)throw file;
+    if(i%25===24&&keyAnalysisAudioContext){try{await keyAnalysisAudioContext.close();}catch(_){}keyAnalysisAudioContext=null;}
+    let detected;
+    try{detected=await detectMusicalKey(file);}
+    catch(e){ // Si el contexto de audio quedó en mal estado, se recrea y se reintenta una vez
+     try{await keyAnalysisAudioContext.close();}catch(_){}keyAnalysisAudioContext=null;detected=await detectMusicalKey(file);
+    }
     const {error}=await sb.from('tracks').update({musical_key:detected.musicalKey,camelot_key:detected.camelotKey,duration_seconds:detected.duration,key_analysis_status:'analyzed',key_analyzed_at:new Date().toISOString()}).eq('id',t.id);
-    if(error)throw error;Object.assign(t,{musicalKey:detected.musicalKey,camelotKey:detected.camelotKey,duration:detected.duration,keyStatus:'analyzed'});ok++;
-   }catch(e){console.warn('Análisis de catálogo falló:',t.title,e);fail++;}
+    if(error)throw new Error('Supabase: '+error.message);
+    Object.assign(t,{musicalKey:detected.musicalKey,camelotKey:detected.camelotKey,duration:detected.duration,keyStatus:'analyzed'});ok++;
+   }catch(e){console.warn('Análisis de catálogo falló:',t.title,e);fail++;failures.push({title:t.title,reason:e&&e.message||String(e)});
+    // Si el error es de permisos en la base, no tiene sentido seguir con cientos más
+    if(/Supabase:.*(permission|policy|row-level|JWT)/i.test(e.message||'')&&failures.length>=3&&ok===0){notice.textContent='Se detuvo: la base de datos rechaza guardar las tonalidades. '+e.message;break;}
+   }
+   done++;
+   if(done%10===0){djPopulateSelectors();renderTracksTable();}
   }
-  djPopulateSelectors();djBatchSearch();notice.textContent=`Análisis terminado: ${ok} correcto(s), ${fail} sin detectar. Puedes revisar manualmente los fallidos.`;
+ }finally{
+  btn.disabled=false;stopBtn.classList.add('hidden');try{if(wake)wake.release();}catch(_){}
+  djPopulateSelectors();djBatchSearch();renderTracksTable();updateSummaryCounts();
+  const left=allRemixes.filter(t=>!t.musicalKey).length;
+  let msg=`${djAnalyzeStop?'Detenido':'Terminado'}: ${ok} analizada(s), ${fail} con error. Sin tonalidad aún: ${left}.`;
+  if(failures.length)msg+=` Primer error: "${failures[0].title}" → ${failures[0].reason}`;
+  if(left)msg+=' Puedes volver a pulsar el botón para reintentar las que faltan.';
+  notice.textContent=msg;
+  if(failures.length)console.table(failures);
   if(document.getElementById('djCompatibleKey').value)djFindCompatible();
- }finally{btn.disabled=false;}
+ }
 }
 async function djLoadPlaylists(){
  const box=document.getElementById('djPlaylistResults');box.innerHTML='<p>Cargando playlists…</p>';
