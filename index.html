@@ -33,6 +33,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        #portalsListContainer { max-height: calc(100vh - 220px - var(--player-h, 0px)); }
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #0f172a; }
         .logo-font { font-weight: 300; letter-spacing: -0.02em; }
         .glow-button { box-shadow: 0 0 25px rgba(37, 99, 235, 0.25); }
@@ -164,11 +165,11 @@
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Portales / Pools</span>
                 <span id="poolCountsSummary" class="text-xs bg-brand-cardBg text-brand-crimson font-bold px-2.5 py-1 rounded-full border border-brand-border">Todo (0)</span>
             </div>
-            <div id="portalsListContainer" class="space-y-1.5 overflow-y-auto max-h-[calc(100vh-220px)] pr-1"></div>
+            <div id="portalsListContainer" class="space-y-1.5 overflow-y-auto pr-1"></div>
         </aside>
 
         <!-- MAIN CONTENT AREA -->
-        <main class="flex-1 p-4 lg:p-8 overflow-y-auto pb-36">
+        <main class="flex-1 p-4 lg:p-8 overflow-y-auto pb-8">
             <div id="mainViewContainer">
                 <div id="bannerCard" class="relative rounded-[28px] p-8 lg:p-14 mb-10 overflow-hidden shadow-xl text-center">
                     <div class="hero-bg" aria-hidden="true"><svg class="hero-decks" viewBox="0 0 1200 340" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
@@ -247,14 +248,13 @@
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="border-b border-brand-border text-slate-500 text-xs uppercase tracking-wider bg-slate-50">
-                                    <th class="py-4 px-4 w-24">Fecha</th>
-                                    <th class="py-4 px-4 w-16">Play</th>
-                                    <th class="py-4 px-4">Título / Remix</th>
-                                    <th class="py-4 px-4">Artista</th>
-                                    <th class="py-4 px-4">Portal</th>
-                                    <th class="py-4 px-4 w-28">BPM / KEY</th>
-                                    <th class="py-4 px-4">Género</th>
-                                    <th class="py-4 px-4 text-right w-40">Descargar</th>
+                                    <th class="py-4 px-4">Song Title</th>
+                                    <th class="py-4 px-4">Artist</th>
+                                    <th class="py-4 px-4">Version</th>
+                                    <th class="py-4 px-4">Remixer</th>
+                                    <th class="py-4 px-4 w-28">BPM</th>
+                                    <th class="py-4 px-4">Genre</th>
+                                    <th class="py-4 px-4 text-right w-40">Download</th>
                                 </tr>
                             </thead>
                             <tbody id="tracksTableBody" class="divide-y divide-brand-border text-sm"></tbody>
@@ -311,45 +311,70 @@
                     </div>
                 </div>
 
-                <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
-                    <h3 class="font-extrabold text-lg mb-1">Lotes por género, tonalidad y BPM</h3>
-                    <p class="text-xs text-slate-500 mb-4">Elige un género y una tonalidad (Camelot) para ver todas las canciones que coinciden, agrupadas por key y ordenadas por BPM. Luego descarga el lote o guárdalo como playlist.</p>
-                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-                        <div class="col-span-2 lg:col-span-1"><label class="block text-xs font-semibold mb-1" for="djBatchGenre">Género</label><select id="djBatchGenre" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
-                        <div><label class="block text-xs font-semibold mb-1" for="djBatchKey">Tonalidad</label><select id="djBatchKey" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
-                        <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMin">BPM mínimo</label><input id="djBatchBpmMin" type="number" min="0" placeholder="ej. 85" oninput="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
-                        <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMax">BPM máximo</label><input id="djBatchBpmMax" type="number" min="0" placeholder="ej. 100" oninput="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
-                        <div class="col-span-2 lg:col-span-1 flex gap-2"><button onclick="djBatchToggleAll(true)" class="flex-1 bg-slate-100 hover:bg-slate-200 rounded-lg px-2 py-2.5 text-xs font-bold">Marcar todo</button><button onclick="djBatchToggleAll(false)" class="flex-1 bg-slate-100 hover:bg-slate-200 rounded-lg px-2 py-2.5 text-xs font-bold">Ninguno</button></div>
-                    </div>
-                    <p id="djBatchInfo" class="text-xs text-slate-500 mt-3">Elige un género para empezar.</p>
-                    <div id="djBatchResults" class="mt-3 space-y-3 max-h-[28rem] overflow-y-auto pr-1"></div>
-                    <div class="mt-4 border-t border-brand-border pt-4 flex flex-col lg:flex-row gap-3 lg:items-center">
-                        <button id="djBatchDlBtn" onclick="djBatchDownload()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-download mr-1"></i> Descargar lote (0)</button>
-                        <button onclick="djDlCancel=true" class="bg-slate-200 text-slate-700 rounded-lg px-4 py-2.5 text-xs font-bold">Cancelar descarga</button>
-                        <div class="flex gap-2 flex-1"><input id="djBatchPlName" maxlength="100" placeholder="Nombre nuevo (vacío = usar la playlist elegida abajo)" class="min-w-0 flex-1 border border-brand-border rounded-lg px-3 py-2 text-sm"><button onclick="djBatchSave()" class="bg-slate-800 text-white rounded-lg px-3 py-2 text-xs font-bold whitespace-nowrap">Guardar como playlist</button></div>
-                    </div>
-                    <p id="djBatchStatus" class="text-xs text-slate-500 mt-3" role="status">Las descargas del lote salen una por una. Si el navegador pregunta, permite las descargas múltiples. Requiere membresía activa.</p>
+                <div class="flex flex-wrap gap-2" role="tablist">
+                    <button id="djTabBtn-batch" onclick="djShowTab('batch')" class="rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-layer-group mr-1.5"></i>Lotes</button>
+                    <button id="djTabBtn-playlists" onclick="djShowTab('playlists')" class="rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-list-music mr-1.5"></i>Mis playlists</button>
+                    <button id="djTabBtn-keys" onclick="djShowTab('keys')" class="hidden rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-key mr-1.5"></i>Tonalidades (admin)</button>
                 </div>
 
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                <!-- TAB 1: LOTES -->
+                <div id="djTab-batch" class="space-y-4">
                     <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
-                        <h3 class="font-extrabold text-lg mb-1">Tonalidad y Camelot</h3>
-                        <p class="text-xs text-slate-500 mb-4">La asignación manual de tonalidad está disponible únicamente para el administrador.</p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div><label class="block text-xs font-semibold mb-1" for="djKeyTrack">Remix del catálogo</label><select id="djKeyTrack" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
-                            <div><label class="block text-xs font-semibold mb-1" for="djKeyValue">Tonalidad</label><select id="djKeyValue" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
+                        <h3 class="font-extrabold text-lg">1 · Filtra</h3>
+                        <p class="text-xs text-slate-500 mb-4">Elige género y tonalidad (Camelot). Opcional: un rango de BPM.</p>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div class="col-span-2 lg:col-span-1"><label class="block text-xs font-semibold mb-1" for="djBatchGenre">Género</label><select id="djBatchGenre" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
+                            <div class="col-span-2 lg:col-span-1"><label class="block text-xs font-semibold mb-1" for="djBatchKey">Tonalidad</label><select id="djBatchKey" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
+                            <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMin">BPM mínimo</label><input id="djBatchBpmMin" type="number" min="0" placeholder="ej. 85" oninput="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
+                            <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMax">BPM máximo</label><input id="djBatchBpmMax" type="number" min="0" placeholder="ej. 100" oninput="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
                         </div>
-                        <div class="flex flex-wrap gap-2 mt-3"><button id="djSaveKeyBtn" onclick="djSaveKey()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold">Guardar tonalidad</button><button id="djAnalyzeCatalogBtn" onclick="djAnalyzePendingCatalog()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg px-4 py-2.5 text-xs font-bold">Analizar catálogo pendiente</button></div>
-                        <p id="djKeyNotice" class="text-xs text-slate-500 mt-3">La tonalidad se detecta automáticamente al subir lotes. El administrador también puede analizar remixes antiguos pendientes o corregir una tonalidad.</p>
                     </div>
+                    <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <div><h3 class="font-extrabold text-lg">2 · Revisa y marca</h3><p id="djBatchInfo" class="text-xs text-slate-500">Elige un género para empezar.</p></div>
+                            <div class="flex gap-2"><button onclick="djBatchToggleAll(true)" class="bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 text-xs font-bold">Marcar todo</button><button onclick="djBatchToggleAll(false)" class="bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 text-xs font-bold">Ninguno</button></div>
+                        </div>
+                        <div id="djBatchResults" class="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start"></div>
+                    </div>
+                    <div class="bg-white border border-brand-border rounded-2xl p-4 shadow-lg" style="position:sticky;bottom:calc(var(--player-h,0px) + 10px);z-index:30">
+                        <div class="flex flex-col xl:flex-row xl:items-center gap-3">
+                            <div class="flex gap-2"><button id="djBatchDlBtn" onclick="djBatchDownload()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-download mr-1"></i> Descargar lote (0)</button><button onclick="djDlCancel=true" class="bg-slate-200 text-slate-700 rounded-lg px-3 py-2.5 text-xs font-bold">Cancelar</button></div>
+                            <div class="flex flex-1 flex-col sm:flex-row gap-2"><select id="djBatchTarget" onchange="djBatchTargetChange()" class="border border-brand-border rounded-lg p-2.5 text-sm sm:w-56"><option value="new">+ Nueva playlist…</option></select><input id="djBatchPlName" maxlength="100" placeholder="Nombre de la nueva playlist" class="min-w-0 flex-1 border border-brand-border rounded-lg px-3 py-2 text-sm"><button onclick="djBatchSave()" class="bg-slate-800 text-white rounded-lg px-4 py-2.5 text-xs font-bold whitespace-nowrap">Guardar en playlist</button></div>
+                        </div>
+                        <p id="djBatchStatus" class="text-xs text-slate-500 mt-2" role="status">Las descargas salen una por una; si el navegador pregunta, permite descargas múltiples. Requiere membresía activa.</p>
+                    </div>
+                </div>
+
+                <!-- TAB 2: MIS PLAYLISTS -->
+                <div id="djTab-playlists" class="hidden grid grid-cols-1 xl:grid-cols-2 gap-5 items-start">
                     <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <h3 class="font-extrabold text-lg mb-1">Mis playlists</h3>
-                        <p class="text-xs text-slate-500 mb-4">Crea listas y agrega remixes de cualquier género. Puedes agruparlos por tonalidad compatible.</p>
-                        <div class="flex gap-2"><input id="djPlaylistName" maxlength="100" placeholder="Nombre de la playlist" class="min-w-0 flex-1 border border-brand-border rounded-lg px-3 py-2 text-sm"><button onclick="djCreatePlaylist()" class="bg-brand-crimson text-white rounded-lg px-3 py-2 text-xs font-bold">Crear</button></div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><select id="djPlaylistSelect" class="border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
-                        <div class="mt-4 border-t border-brand-border pt-4"><label for="djCompatibleKey" class="block text-xs font-semibold mb-2">Encontrar remixes compatibles (cualquier género)</label><div class="flex gap-2"><select id="djCompatibleKey" class="min-w-0 flex-1 border border-brand-border rounded-lg p-2.5 text-sm"></select><button onclick="djFindCompatible()" class="bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 text-xs font-bold">Buscar</button></div><div id="djCompatibleResults" class="mt-3 space-y-2 text-xs text-slate-600"></div></div>
+                        <p class="text-xs text-slate-500 mb-4">Crea listas vacías o llénalas desde la pestaña Lotes.</p>
+                        <div class="flex gap-2"><input id="djPlaylistName" maxlength="100" placeholder="Nombre de la playlist" class="min-w-0 flex-1 border border-brand-border rounded-lg px-3 py-2 text-sm"><button onclick="djCreatePlaylist()" class="bg-brand-crimson text-white rounded-lg px-4 py-2 text-xs font-bold">Crear</button></div>
                         <div id="djPlaylistResults" class="mt-4 space-y-2 text-xs text-slate-600"><p>Cargando playlists…</p></div>
                     </div>
+                    <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
+                        <h3 class="font-extrabold text-lg mb-1">Remixes compatibles</h3>
+                        <p class="text-xs text-slate-500 mb-4">Busca canciones de cualquier género que mezclen bien con una tonalidad y agrégalas a una playlist.</p>
+                        <label for="djPlaylistSelect" class="block text-xs font-semibold mb-1">Agregar a la playlist</label>
+                        <select id="djPlaylistSelect" class="w-full border border-brand-border rounded-lg p-2.5 text-sm mb-3"></select>
+                        <label for="djCompatibleKey" class="block text-xs font-semibold mb-1">Tonalidad de referencia</label>
+                        <div class="flex gap-2"><select id="djCompatibleKey" class="min-w-0 flex-1 border border-brand-border rounded-lg p-2.5 text-sm"></select><button onclick="djFindCompatible()" class="bg-slate-100 hover:bg-slate-200 rounded-lg px-4 py-2 text-xs font-bold">Buscar</button></div>
+                        <div id="djCompatibleResults" class="mt-3 space-y-2 text-xs text-slate-600 max-h-96 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: TONALIDADES (solo admin) -->
+                <div id="djTab-keys" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm max-w-3xl">
+                    <h3 class="font-extrabold text-lg mb-1">Tonalidad y Camelot</h3>
+                    <p class="text-xs text-slate-500 mb-1">Solo el administrador puede asignar o corregir tonalidades.</p>
+                    <p id="djPendingCount" class="text-xs font-bold text-blue-600 mb-4"></p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div><label class="block text-xs font-semibold mb-1" for="djKeyTrack">Remix del catálogo</label><select id="djKeyTrack" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
+                        <div><label class="block text-xs font-semibold mb-1" for="djKeyValue">Tonalidad</label><select id="djKeyValue" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-3"><button id="djSaveKeyBtn" onclick="djSaveKey()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold">Guardar tonalidad</button><button id="djAnalyzeCatalogBtn" onclick="djAnalyzePendingCatalog()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg px-4 py-2.5 text-xs font-bold">Analizar catálogo pendiente</button></div>
+                    <p id="djKeyNotice" class="text-xs text-slate-500 mt-3">La tonalidad se detecta sola al subir lotes. Aquí puedes analizar remixes antiguos pendientes (tarda; deja la página abierta) o corregir una tonalidad.</p>
                 </div>
             </section>
 
@@ -745,6 +770,45 @@
             return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9ñ ]+/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
+// ===== Interpretación del título: artista, versión, remixer y Dirty/Clean =====
+function ratingOf(text) {
+    const t = String(text || '').toLowerCase(), d = /\b(dirty|explicit)\b/.test(t), c = /\b(clean|censored)\b/.test(t);
+    return d && !c ? 'Dirty' : c && !d ? 'Clean' : '';
+}
+function parseTrackInfo(t) {
+    if (t._info) return t._info;
+    let s = String(t.title || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+    const groups = [];
+    s = s.replace(/[\(\[]([^\)\]]*)[\)\]]/g, (m, g) => { if (/^\s*(feat|ft|featuring|with|w\/)\b/i.test(g)) return m; groups.push(g.trim()); return ' '; });
+    let rating = '', remixer = '', version = [];
+    const GENERIC = /^(extended|original|club|radio|short|intro|outro|quick hit|instrumental|acapella|acapela|dub|main|album|single|official|video|transition|hype)$/i;
+    for (const g of groups) {
+        if (!g) continue;
+        let rest = g;
+        const r = ratingOf(g);
+        if (r) { if (!rating) rating = r; rest = g.replace(/\b(dirty|explicit|clean|censored)\b/ig, ' ').replace(/[\s,\/&+\-]+/g, ' ').trim(); }
+        if (!rest) continue;
+        const m = rest.match(/^(.+?)\s+(remix|edit|flip|bootleg|rework|refix|mashup|redrum|vip|mix)$/i);
+        if (m && !GENERIC.test(m[1].trim())) {
+            if (!remixer) remixer = m[1].trim();
+            version.push(m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase());
+        } else if (/(extended|intro|outro|quick ?hit|acapel+a|instrumental|radio|short|club|original|transition|mix|edit|dub|hype|segue)/i.test(rest)) version.push(rest);
+    }
+    s = s.replace(/\b\d{2,3}\s*bpm\b/ig, ' ').replace(/\s+/g, ' ').trim();
+    if (!rating) {
+        const tm = s.match(/^(.{4,}?)(?:\s+[-–]\s*|\s+)(dirty|clean|explicit)\s*$/i);
+        if (tm) { rating = ratingOf(tm[2]); s = tm[1].trim(); }
+    }
+    s = s.replace(/^\s*\d{1,3}[\.\)]\s+/, '').replace(/[\s\-–]+$/, '').trim();
+    let parts = s.split(/\s+[-–]\s+/).map(x => x.trim()).filter(Boolean);
+    while (parts.length > 1 && /^(\d{1,2}[AB]|\d{2,3})$/i.test(parts[0])) parts.shift();
+    let artist = String(t.artist || '').trim(), song;
+    if (artist) song = (parts.length > 1 && parts[0].toLowerCase() === artist.toLowerCase()) ? parts.slice(1).join(' - ') : parts.join(' - ');
+    else if (parts.length > 1) { artist = parts[0]; song = parts.slice(1).join(' - '); }
+    else song = parts[0] || '';
+    return (t._info = { artist, song: song || String(t.title || ''), version: [...new Set(version)].join(' · '), remixer, rating });
+}
+
         function renderTracksTable() {
             const tbody = document.getElementById('tracksTableBody');
             const idx = allRemixes.findIndex(r => r.id === currentPlayingId);
@@ -755,7 +819,7 @@
                 const matchesGenre = currentGenreFilter === "ALL" || track.genre === currentGenreFilter;
                 const matchesMonth = currentMonthFilter === "ALL" || (track.date || '').startsWith(currentMonthFilter);
                 const monthText = track.date ? monthLabel(track.date.slice(0, 7)) : '';
-                const haystack = normalizeText([track.title, track.artist, track.genre, track.portal, monthText, track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey].join(' '));
+                const haystack = normalizeText([track.title, track.artist, track.genre, track.portal, monthText, track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey, parseTrackInfo(track).rating, parseTrackInfo(track).remixer, parseTrackInfo(track).version].join(' '));
                 const words = normalizeText(searchQuery).split(' ').filter(Boolean);
                 const matchesSearch = words.every(w => haystack.includes(w));
                 return matchesPortal && matchesGenre && matchesMonth && matchesSearch;
@@ -766,7 +830,7 @@
             if(filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="py-12 text-center text-slate-400">
+                        <td colspan="7" class="py-12 text-center text-slate-400">
                             <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
                             <p class="text-sm font-semibold">No hay remixes subidos con este filtro.</p>
                             <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
@@ -781,26 +845,30 @@
                 const realIndex = allRemixes.findIndex(r => r.id === track.id);
                 const isCurrent = currentPlayingIndex === realIndex;
                 const favClass = track.isFavorite ? "fa-solid text-brand-crimson" : "fa-regular text-slate-400";
+                const info = parseTrackInfo(track);
+                const ratingHtml = info.rating ? `<span class="${info.rating === 'Dirty' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'} font-bold px-2.5 py-0.5 rounded-full text-[11px] inline-block">${info.rating}</span>` : '';
+                const versionHtml = info.version ? `<div class="text-xs text-slate-500 ${info.rating ? 'mt-1' : ''}">${escapeHtml(info.version)}</div>` : '';
 
                 html += `
                     <tr class="transition group ${isCurrent ? 'bg-blue-50' : ''}">
-                        <td class="py-3.5 px-4 text-xs text-slate-400 whitespace-nowrap">${escapeHtml(track.date || '')}</td>
-                        <td class="py-3.5 px-4">
-                            <button onclick="playTrack(${realIndex})" aria-label="Reproducir" class="w-9 h-9 rounded-full bg-brand-crimson hover:bg-red-600 flex items-center justify-center transition shrink-0 shadow-sm">
-                                <i class="fa-solid ${isCurrent && isPlaying ? 'fa-pause' : 'fa-play'} text-xs"></i>
-                            </button>
-                        </td>
                         <td class="py-3.5 px-4">
                             <div class="flex items-center gap-3">
+                                <button onclick="playTrack(${realIndex})" aria-label="Reproducir" class="w-9 h-9 rounded-full bg-brand-crimson hover:bg-red-600 flex items-center justify-center transition shrink-0 shadow-sm">
+                                    <i class="fa-solid ${isCurrent && isPlaying ? 'fa-pause' : 'fa-play'} text-xs"></i>
+                                </button>
                                 <div class="relative w-10 h-10 rounded-lg bg-brand-cardBg border border-brand-border overflow-hidden flex items-center justify-center shrink-0">
                                     <img src="${escapeHtml(safeMediaUrl(track.coverUrl, DEFAULT_COVER))}" alt="Cover" onerror="this.style.display='none'" class="w-full h-full object-cover">
                                     ${track.isVip ? '<span class="absolute top-0 right-0 bg-brand-crimson text-white text-[8px] font-bold px-1 rounded-bl">VIP</span>' : ''}
                                 </div>
-                                <span class="font-bold text-slate-900 truncate">${escapeHtml(track.title)}</span>
+                                <div class="min-w-0">
+                                    <div class="font-bold text-slate-900 truncate">${escapeHtml(info.song)}</div>
+                                    <div class="text-[11px] text-slate-400 truncate">${escapeHtml(track.date || '')}${track.portal ? ' · ' + escapeHtml(track.portal) : ''}</div>
+                                </div>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 text-slate-600">${escapeHtml(track.artist)}</td>
-                        <td class="py-3.5 px-4 text-xs font-semibold text-slate-800">${escapeHtml(track.portal)}</td>
+                        <td class="py-3.5 px-4 text-slate-600">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</td>
+                        <td class="py-3.5 px-4">${ratingHtml || versionHtml ? ratingHtml + versionHtml : '<span class="text-slate-300">—</span>'}</td>
+                        <td class="py-3.5 px-4 text-sm text-slate-600">${escapeHtml(info.remixer) || '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3.5 px-4 text-sm text-slate-500"><div>${track.bpm ? escapeHtml(track.bpm) : '—'}</div><div class="text-[10px] font-semibold text-blue-600 mt-1">${track.musicalKey ? escapeHtml(track.musicalKey)+' · '+escapeHtml(track.camelotKey||'') : 'Key pendiente'}</div></td>
                         <td class="py-3.5 px-4"><span class="bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-xs inline-block">${escapeHtml(track.genre)}</span></td>
                         <td class="py-3.5 px-4 text-right">
@@ -1431,6 +1499,11 @@ async function readId3(file) {
         else fsize = (buf[pos + 4] * 16777216) + (buf[pos + 5] << 16) + (buf[pos + 6] << 8) + buf[pos + 7];
         if (fsize <= 0 || pos + hdrLen + fsize > buf.length) break;
         if (map[id]) out[map[id]] = id3Text(buf.slice(pos + hdrLen, pos + hdrLen + fsize));
+        else if (/^(TIT3|TT3|TXXX|TXX|COMM|COM)$/.test(id)) {
+            const fb = buf.slice(pos + hdrLen, pos + hdrLen + fsize);
+            const data = /^(COMM|COM)$/.test(id) ? Uint8Array.from([fb[0], ...fb.slice(4)]) : fb;
+            out.notes = (out.notes || '') + ' | ' + id3Text(data);
+        }
         pos += hdrLen + fsize;
     }
     if (out.genre) out.genre = out.genre.replace(/\(\d+\)/g, ' ').trim();
@@ -1438,6 +1511,15 @@ async function readId3(file) {
     return out;
 }
 
+function detectRating(f, tag) {
+    const byName = parseTrackInfo({ title: f.name.replace(/\.[^/.]+$/, '') }).rating;
+    let byTag = parseTrackInfo({ title: tag.title || '' }).rating || ratingOf([tag.notes, tag.genre].join(' | '));
+    const ia = /itunesadvisory\s*([012])/i.exec(tag.notes || '');
+    if (ia) byTag = ia[1] === '1' ? 'Dirty' : ia[1] === '2' ? 'Clean' : byTag;
+    if (byName) return { rating: byName, source: 'nombre', conflict: byTag && byTag !== byName ? byTag : '' };
+    if (byTag) return { rating: byTag, source: 'etiqueta', conflict: '' };
+    return { rating: '', source: '', conflict: '' };
+}
 let bulkItems = [];
 const SRC_BADGE = {
     'etiqueta': ['text-emerald-400', 'Etiqueta del archivo'],
@@ -1455,10 +1537,14 @@ function renderBulkReview() {
     const sinDetectar = bulkItems.filter(x => !x.genre).length;
     const keysPending = bulkItems.filter(x => x.keyStatus === 'analyzing').length;
     const keysFound = bulkItems.filter(x => x.musicalKey).length;
-    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}.</p>` +
+    const nDirty = bulkItems.filter(x => x.rating === 'Dirty').length, nClean = bulkItems.filter(x => x.rating === 'Clean').length, nUndef = bulkItems.length - nDirty - nClean;
+    const ratingBadge = it => it.ratingConflict ? `<span class="text-amber-400 shrink-0 text-right">Revisar: ${escapeHtml(it.ratingSource)} dice ${escapeHtml(it.rating)}, etiqueta dice ${escapeHtml(it.ratingConflict)}</span>` : it.rating ? `<span class="${it.rating === 'Dirty' ? 'text-red-400' : 'text-emerald-400'} shrink-0 text-right">${it.rating} · ${it.ratingSource === 'manual' ? 'elegido por ti' : 'por ' + escapeHtml(it.ratingSource)}</span>` : '<span class="text-slate-500 shrink-0 text-right">Dirty/Clean sin definir</span>';
+    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}. Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
         bulkItems.map((it, i) => `<div class="flex flex-wrap items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
             <span class="truncate flex-1 min-w-32 text-slate-200" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
             ${badgeHtml(i)}
+            ${ratingBadge(it)}
+            <select aria-label="Versión Dirty o Clean" onchange="setBulkRating(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white"><option value=""${it.rating ? '' : ' selected'}>Sin definir</option><option value="Dirty"${it.rating === 'Dirty' ? ' selected' : ''}>Dirty</option><option value="Clean"${it.rating === 'Clean' ? ' selected' : ''}>Clean</option></select>
             <span class="w-24 text-center ${it.musicalKey ? 'text-emerald-400' : it.keyStatus === 'analyzing' ? 'text-amber-400' : 'text-slate-500'}">${it.musicalKey ? `${escapeHtml(it.musicalKey)} · ${escapeHtml(it.camelotKey)}` : it.keyStatus === 'analyzing' ? 'Analizando key…' : it.keyStatus === 'failed' ? 'No detectada' : 'Pendiente'}</span>
             <select aria-label="Género" onchange="setBulkGenre(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">${opts(it.genre || bulkGenreTarget.value)}</select>
         </div>`).join('');
@@ -1468,6 +1554,7 @@ function setBulkGenre(i, g) {
     const el = document.getElementById('bb' + i);
     el.className = SRC_BADGE.manual[0] + ' shrink-0 w-28 text-right'; el.textContent = SRC_BADGE.manual[1];
 }
+function setBulkRating(i, v) { Object.assign(bulkItems[i], { rating: v, ratingSource: 'manual', ratingConflict: '' }); renderBulkReview(); }
 let bulkReviewRun = 0;
 let keyAnalysisAudioContext = null;
 function fftInPlace(real, imag) {
@@ -1560,7 +1647,8 @@ async function buildBulkReview() {
         if (runId !== bulkReviewRun) return;
         let genre = matchGenre(tag.genre), source = genre ? 'etiqueta' : '';
         if (!genre) { genre = matchGenre([f.name, tag.title, tag.artist].join(' ')); source = genre ? 'nombre' : ''; }
-        const item={file:f,genre,source,bpm:tag.bpm||null,musicalKey:'',camelotKey:'',duration:null,keyStatus:'analyzing'};
+        const rt = detectRating(f, tag);
+        const item={file:f,genre,source,rating:rt.rating,ratingSource:rt.source,ratingConflict:rt.conflict,bpm:tag.bpm||null,musicalKey:'',camelotKey:'',duration:null,keyStatus:'analyzing'};
         bulkItems.push(item); renderBulkReview();
         try {
             const detected=await detectMusicalKey(f);
@@ -1612,8 +1700,9 @@ async function processBulkUpload() {
                 const up = await fetch(signed.url, { method: 'PUT', headers: { 'Content-Type': mimeFromExt(ext, f.type) }, body: f });
                 if (!up.ok) throw new Error('Backblaze respondió ' + up.status);
                 const it = bulkItems.find(x => x.file === f) || {};
+                const finalTitle = (it.rating && !parseTrackInfo({ title }).rating) ? `${title} (${it.rating})` : title;
                 const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
-                const ins = await sb.from('tracks').insert({ title, artist: '', portal, genre: it.genre || genre, bpm, storage_path: path, ext,
+                const ins = await sb.from('tracks').insert({ title: finalTitle, artist: '', portal, genre: it.genre || genre, bpm, storage_path: path, ext,
                     musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
                     key_analysis_status: it.musicalKey ? 'analyzed' : 'pending', key_analyzed_at: it.musicalKey ? new Date().toISOString() : null });
                 if (ins.error) throw new Error(ins.error.message);
@@ -1642,9 +1731,12 @@ async function renderAdminDashboard() {
     if (error) { box.textContent = error.message; return; }
     const rows = data.map(u => {
         const exp = u.membership_expires ? new Date(u.membership_expires) : null, active = exp && exp > new Date();
+        const state = active ? 'Activa hasta ' + exp.toLocaleDateString() : (exp ? 'Vencida el ' + exp.toLocaleDateString() : 'Sin membresía');
+        const stop = active ? `<button onclick="setMembership('${u.id}','deactivate')" class="bg-amber-600 text-white px-2.5 py-1 rounded-lg ml-1">Desactivar</button>` : '';
+        const del = exp ? `<button onclick="setMembership('${u.id}','delete')" class="bg-rose-700 text-white px-2.5 py-1 rounded-lg ml-1">Eliminar</button>` : '';
         return `<tr class="border-b border-brand-border/40"><td class="py-2 pr-3 text-white">${escapeHtml(u.username || '')}<div class="text-slate-500">${escapeHtml(u.email || '')}</div></td>
-        <td class="py-2 pr-3 ${active ? 'text-emerald-400' : 'text-slate-500'}">${active ? 'Activa hasta ' + exp.toLocaleDateString() : 'Sin membresía'}</td>
-        <td class="py-2 text-right whitespace-nowrap"><button onclick="activateMember('${u.id}',30)" class="bg-brand-crimson text-white px-2.5 py-1 rounded-lg mr-1">+30 días</button><button onclick="activateMember('${u.id}',365)" class="bg-brand-cardBg border border-brand-border text-white px-2.5 py-1 rounded-lg">+1 año</button></td></tr>`;
+        <td class="py-2 pr-3 ${active ? 'text-emerald-400' : 'text-slate-500'}">${state}</td>
+        <td class="py-2 text-right whitespace-nowrap"><button onclick="activateMember('${u.id}',30)" class="bg-brand-crimson text-white px-2.5 py-1 rounded-lg mr-1">+30 días</button><button onclick="activateMember('${u.id}',365)" class="bg-brand-cardBg border border-brand-border text-white px-2.5 py-1 rounded-lg">+1 año</button>${stop}${del}</td></tr>`;
     }).join('');
     box.innerHTML = `<p class="text-sm text-slate-300 mb-4">Remixes: <b>${allRemixes.length}</b> &middot; Usuarios: <b>${data.length}</b></p><div class="overflow-x-auto"><table class="w-full text-xs text-left">${rows}</table></div>`;
 }
@@ -1652,6 +1744,19 @@ async function renderAdminDashboard() {
 async function activateMember(id, days) {
     const { error } = await sb.rpc('activate_member', { target: id, days });
     if (error) { alert(error.message); return; }
+    renderAdminDashboard();
+}
+
+async function setMembership(id, mode) {
+    const msg = mode === 'delete' ? '¿Eliminar por completo la membresía de este usuario?' : '¿Desactivar la membresía de este usuario ahora mismo? Podrás reactivarla con +30 días o +1 año.';
+    if (!confirm(msg)) return;
+    const value = mode === 'delete' ? null : new Date().toISOString();
+    // Intento 1: actualización directa. Intento 2: función segura set_membership (ver SQL de instalación).
+    const r1 = await sb.from('profiles').update({ membership_expires: value }).eq('id', id).select('id');
+    if (r1.error || !r1.data || !r1.data.length) {
+        const r2 = await sb.rpc('set_membership', { target: id, new_expires: value });
+        if (r2.error) { alert('No se pudo cambiar la membresía. Falta crear la función set_membership en Supabase (ejecuta el SQL que te di). Detalle: ' + r2.error.message); return; }
+    }
     renderAdminDashboard();
 }
 </script>
@@ -1719,7 +1824,7 @@ function showPlansView() {
   </svg>
 </a>
 <style>
-.whatsapp-btn { position: fixed; right: 20px; bottom: 110px; width: 60px; height: 60px; background: #25D366; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,.25); z-index: 40; transition: transform .2s; }
+.whatsapp-btn { bottom: calc(var(--player-h, 100px) + 14px) !important; position: fixed; right: 20px; bottom: 110px; width: 60px; height: 60px; background: #25D366; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,.25); z-index: 40; transition: transform .2s; }
 .whatsapp-btn:hover { transform: scale(1.1); }
 @media (max-width: 767px) { .whatsapp-btn { bottom: 190px; right: 14px; width: 54px; height: 54px; } }
 </style>
@@ -1737,13 +1842,14 @@ function showDJStudioView(){
  document.getElementById('adminDashboardView').classList.add('hidden');
             document.getElementById('djStudioView').classList.add('hidden');
  document.getElementById('djStudioView').classList.remove('hidden');
- djPopulateSelectors(); djBatchInit(); djLoadPlaylists();
+ djPopulateSelectors(); djBatchInit(); djLoadPlaylists(); djShowTab(djTab); djBatchTargetChange();
 }
 function djPopulateSelectors(){
  const opts='<option value="">Selecciona un remix…</option>'+allRemixes.map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.title)}${t.bpm?' · '+escapeHtml(t.bpm)+' BPM':''}</option>`).join('');
  ['djKeyTrack'].forEach(id=>{const el=document.getElementById(id);if(el){const old=el.value;el.innerHTML=opts;if(old)el.value=old;}});
  const key=document.getElementById('djKeyValue'); if(key)key.innerHTML='<option value="">Selecciona tonalidad…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
  const compatible=document.getElementById('djCompatibleKey'); if(compatible&&!compatible.options.length)compatible.innerHTML='<option value="">Elige una tonalidad de referencia…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k} · ${DJ_CAMELOT[k]}</option>`).join('');
+ const kt=document.getElementById('djTabBtn-keys');if(kt)kt.classList.toggle('hidden',!isAdmin);const pc=document.getElementById('djPendingCount');if(pc){const n=allRemixes.filter(t=>!t.musicalKey).length;pc.textContent=n?`${n} canciones sin tonalidad`:'Todo el catálogo tiene tonalidad';}
  const analyze=document.getElementById('djAnalyzeCatalogBtn'); if(analyze){analyze.disabled=!isAdmin;analyze.classList.toggle('opacity-40',!isAdmin);analyze.title=isAdmin?'Analiza canciones antiguas sin tonalidad':'Solo el administrador puede ejecutar el análisis del catálogo';}
  const save=document.getElementById('djSaveKeyBtn'); if(save){save.disabled=!isAdmin;save.classList.toggle('opacity-40',!isAdmin);save.title=isAdmin?'Guardar tonalidad':'Solo el administrador puede editar tonalidades';}
 }
@@ -1799,7 +1905,7 @@ async function djAnalyzePendingCatalog(){
     if(error)throw error;Object.assign(t,{musicalKey:detected.musicalKey,camelotKey:detected.camelotKey,duration:detected.duration,keyStatus:'analyzed'});ok++;
    }catch(e){console.warn('Análisis de catálogo falló:',t.title,e);fail++;}
   }
-  djPopulateSelectors();notice.textContent=`Análisis terminado: ${ok} correcto(s), ${fail} sin detectar. Puedes revisar manualmente los fallidos.`;
+  djPopulateSelectors();djBatchSearch();notice.textContent=`Análisis terminado: ${ok} correcto(s), ${fail} sin detectar. Puedes revisar manualmente los fallidos.`;
   if(document.getElementById('djCompatibleKey').value)djFindCompatible();
  }finally{btn.disabled=false;}
 }
@@ -1808,6 +1914,7 @@ async function djLoadPlaylists(){
  const {data,error}=await sb.from('playlists').select('id,name,description,genre,updated_at').order('updated_at',{ascending:false});
  if(error){box.textContent='No se pudieron cargar las playlists: '+error.message;return;}
  djPlaylists=Array.isArray(data)?data:[];
+ {const t=document.getElementById('djBatchTarget');if(t){const old=t.value;t.innerHTML='<option value="new">+ Nueva playlist…</option>'+djPlaylists.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');if(old&&[...t.options].some(o=>o.value===old))t.value=old;djBatchTargetChange();}}
  const sel=document.getElementById('djPlaylistSelect');sel.innerHTML=djPlaylists.length?djPlaylists.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join(''):'<option value="">Crea una playlist primero…</option>';
  if(!djPlaylists.length){box.innerHTML='<p>Aún no tienes playlists. Crea la primera arriba.</p>';return;}
  box.innerHTML='';
@@ -1821,6 +1928,16 @@ async function djCreatePlaylist(){
  const {error}=await sb.from('playlists').insert({name});if(error){alert('No se pudo crear la playlist: '+error.message);return;}input.value='';await djLoadPlaylists();
 }
 // ===== LOTES POR GÉNERO / TONALIDAD / BPM =====
+let djTab='batch';
+function djShowTab(name){
+ if(name==='keys'&&!isAdmin)name='batch';djTab=name;
+ ['batch','playlists','keys'].forEach(n=>{
+  const p=document.getElementById('djTab-'+n),b=document.getElementById('djTabBtn-'+n);if(!p||!b)return;
+  p.classList.toggle('hidden',n!==name);
+  b.className=(b.classList.contains('hidden')?'hidden ':'')+'rounded-xl px-4 py-2.5 text-sm font-bold transition '+(n===name?'bg-brand-crimson text-white shadow':'bg-white border border-brand-border text-slate-600 hover:bg-slate-50');
+ });
+}
+function djBatchTargetChange(){const n=document.getElementById('djBatchPlName');if(n)n.classList.toggle('hidden',djV('djBatchTarget')!=='new');}
 let djBatchRows=[],djBatchSel=new Set(),djDlCancel=false;
 const djV=id=>document.getElementById(id).value;
 function djCamSort(a,b){const p=v=>{const m=/^(\d+)([AB])$/.exec(v);return m?[+m[1],m[2]]:[99,'Z'];};const x=p(a),y=p(b);return x[0]-y[0]||x[1].localeCompare(y[1]);}
@@ -1864,18 +1981,19 @@ async function djBatchDownload(){
 async function djBatchSave(){
  const list=djBatchRows.filter(t=>djBatchSel.has(t.id)),st=document.getElementById('djBatchStatus'),name=djV('djBatchPlName').trim();
  if(!list.length){alert('Selecciona al menos una canción.');return;}
- let pid=djV('djPlaylistSelect');
+ let pid=djV('djBatchTarget');
  try{
-  if(name){const g=djV('djBatchGenre');const {data,error}=await sb.from('playlists').insert({name,genre:g||null}).select('id').single();if(error)throw error;pid=data.id;}
+  if(pid==='new'){if(!name){alert('Escribe un nombre para la nueva playlist.');return;}const g=djV('djBatchGenre');const {data,error}=await sb.from('playlists').insert({name,genre:g||null}).select('id').single();if(error)throw error;pid=data.id;}
   if(!pid){alert('Escribe un nombre nuevo o elige una playlist existente.');return;}
   const {data:ex,error:e1}=await sb.from('playlist_tracks').select('track_id,position').eq('playlist_id',pid);if(e1)throw e1;
   const have=new Set((ex||[]).map(r=>r.track_id));let pos=(ex||[]).reduce((m,r)=>Math.max(m,Number(r.position)+1),0);
   const rows=list.filter(t=>!have.has(t.id)).map(t=>({playlist_id:pid,track_id:t.id,position:pos++}));
   if(rows.length){const {error}=await sb.from('playlist_tracks').insert(rows);if(error)throw error;}
   st.textContent=`Playlist guardada: ${rows.length} canción(es) agregadas${list.length-rows.length?` (${list.length-rows.length} ya estaban)`:''}.`;
-  document.getElementById('djBatchPlName').value='';await djLoadPlaylists();
+  document.getElementById('djBatchPlName').value='';await djLoadPlaylists();document.getElementById('djBatchTarget').value=pid;djBatchTargetChange();
  }catch(e){st.textContent='No se pudo guardar la playlist: '+(e.message||e);}
 }
+(function(){const f=document.getElementById('bottomPlayer');if(!f)return;const set=()=>{const h=f.offsetHeight;document.documentElement.style.setProperty('--player-h',h+'px');document.body.style.paddingBottom=(h+16)+'px';};set();if(window.ResizeObserver)new ResizeObserver(set).observe(f);window.addEventListener('resize',set);})();
 </script>
 
 </body>
