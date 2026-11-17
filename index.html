@@ -328,7 +328,7 @@
                             </div>
                             <div class="flex gap-2 shrink-0">
                                 <button id="djAnalyzeAllBtn" onclick="djAnalyzePendingCatalog()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold">Analizar todo el catálogo</button>
-                                <button id="djAnalyzeAllStopBtn" onclick="djAnalyzeStop=true" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button>
+                                <button id="djAnalyzeAllStopBtn" onclick="djRequestStop()" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button>
                             </div>
                         </div>
                         <div class="mt-4">
@@ -391,7 +391,7 @@
                         <div><label class="block text-xs font-semibold mb-1" for="djKeyTrack">Remix del catálogo</label><select id="djKeyTrack" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
                         <div><label class="block text-xs font-semibold mb-1" for="djKeyValue">Tonalidad</label><select id="djKeyValue" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
                     </div>
-                    <div class="flex flex-wrap gap-2 mt-3"><button id="djSaveKeyBtn" onclick="djSaveKey()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold">Guardar tonalidad</button><button id="djAnalyzeCatalogBtn" onclick="djAnalyzePendingCatalog()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg px-4 py-2.5 text-xs font-bold">Analizar catálogo pendiente</button><button id="djStopAnalyzeBtn" onclick="djAnalyzeStop=true" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button></div>
+                    <div class="flex flex-wrap gap-2 mt-3"><button id="djSaveKeyBtn" onclick="djSaveKey()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold">Guardar tonalidad</button><button id="djAnalyzeCatalogBtn" onclick="djAnalyzePendingCatalog()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg px-4 py-2.5 text-xs font-bold">Analizar catálogo pendiente</button><button id="djStopAnalyzeBtn" onclick="djRequestStop()" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button></div>
                     <p id="djKeyNotice" class="text-xs text-slate-500 mt-3">La tonalidad se detecta sola al subir lotes. Aquí puedes analizar remixes antiguos pendientes (tarda; deja la página abierta) o corregir una tonalidad.</p>
                 </div>
             </section>
@@ -1555,8 +1555,8 @@ async function readId3(file) {
     const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
     const buf = new Uint8Array(await file.slice(10, 10 + Math.min(size, 6 * 1024 * 1024)).arrayBuffer());
     const out = {}, idLen = ver === 2 ? 3 : 4, hdrLen = ver === 2 ? 6 : 10;
-    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist' }
-                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist' };
+    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist', TKE: 'key' }
+                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist', TKEY: 'key' };
     let pos = 0;
     while (pos + hdrLen <= buf.length) {
         const id = String.fromCharCode(...buf.slice(pos, pos + idLen));
@@ -1689,11 +1689,55 @@ function estimateKeyFromAudioBuffer(buffer) {
     const confidence=best.score-second;
     return {key:best.key,confidence};
 }
+// ---- Key ya escrita en el nombre o en la etiqueta (sin analizar audio) ----
+const DJ_CAMELOT_REV = {};
+function djKeyResult(musicalKey) { const cam = DJ_CAMELOT[musicalKey]; return cam ? { musicalKey, camelotKey: cam } : null; }
+function djKeyFromCamelot(num, letter) {
+    const code = Number(num) + String(letter).toUpperCase();
+    const musical = Object.keys(DJ_CAMELOT).find(k => DJ_CAMELOT[k] === code);
+    return musical ? { musicalKey: musical, camelotKey: code } : null;
+}
+function djParseKeyValue(raw) {
+    const v = String(raw || '').replace(/\0/g, '').trim();
+    if (!v) return null;
+    let m = v.match(/^(1[0-2]|[1-9])\s?([ABab])$/);
+    if (m) return djKeyFromCamelot(m[1], m[2]);
+    m = v.match(/^([A-Ga-g])\s?([#b\u266f\u266d]?)\s?(m|min|minor|maj|major)?$/);
+    if (!m) return null;
+    let note = m[1].toUpperCase() + ((m[2] === '#' || m[2] === '\u266f') ? '#' : (m[2] === 'b' || m[2] === '\u266d') ? 'b' : '');
+    const FLAT = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#', Cb: 'B', Fb: 'E' }, SHARP = { 'E#': 'F', 'B#': 'C' };
+    note = FLAT[note] || SHARP[note] || note;
+    const minor = !!m[3] && /^m(in|inor)?$/.test(m[3]) && m[3] !== 'maj';
+    return djKeyResult(note + (minor ? 'm' : ''));
+}
+function djKeyFromName(name) {
+    const base = String(name || '').replace(/\.(mp3|wav|m4a|aac|flac|ogg|mp4)$/i, '').replace(/_/g, ' ');
+    const found = [];
+    const reUp = /(?:^|[\s\-(\[])(1[0-2]|[1-9])\s?([AB])(?=$|[\s\-)\]])/g;
+    const reLow = /(?:^|[\s\-(\[])(1[0-2]|[1-9])([ab])(?=\s+\d{2,3}(?:$|[\s\-)\]]))/g;
+    let m;
+    while ((m = reUp.exec(base))) found.push({ i: m.index, n: m[1], l: m[2] });
+    while ((m = reLow.exec(base))) found.push({ i: m.index, n: m[1], l: m[2] });
+    if (!found.length) return null;
+    found.sort((a, b) => a.i - b.i);
+    const last = found[found.length - 1];
+    return djKeyFromCamelot(last.n, last.l);
+}
+function djKeyFromTag(tag) {
+    if (!tag) return null;
+    let k = djParseKeyValue(tag.key);
+    if (k) return k;
+    const notes = String(tag.notes || '');
+    const m = notes.match(/(?:initial\s*key|initialkey|\bkey)\W{0,4}(1[0-2]|[1-9])\s?([ABab])\b/i) || null;
+    if (m) return djKeyFromCamelot(m[1], m[2]);
+    const m2 = notes.match(/(?:initial\s*key|initialkey)\W{0,4}([A-G][#b]?m?)\b/);
+    return m2 ? djParseKeyValue(m2[1]) : null;
+}
 async function detectMusicalKey(file) {
     const AudioCtx=window.AudioContext||window.webkitAudioContext;
     if(!AudioCtx) throw new Error('Este navegador no permite analizar audio.');
     if(file.size>180*1024*1024) throw new Error('Archivo demasiado grande para analizarlo en el navegador.');
-    if(!keyAnalysisAudioContext) keyAnalysisAudioContext=new AudioCtx();
+    if(!keyAnalysisAudioContext||keyAnalysisAudioContext.state==='closed'){ try{keyAnalysisAudioContext=new AudioCtx({sampleRate:22050});}catch(_){keyAnalysisAudioContext=new AudioCtx();} }
     if(keyAnalysisAudioContext.state==='suspended') await keyAnalysisAudioContext.resume();
     const buffer=await keyAnalysisAudioContext.decodeAudioData(await file.arrayBuffer());
     const result=estimateKeyFromAudioBuffer(buffer);
@@ -1718,6 +1762,8 @@ async function buildBulkReview() {
         const rt = detectRating(f, tag);
         const item={file:f,genre,source,rating:rt.rating,ratingSource:rt.source,ratingConflict:rt.conflict,bpm:tag.bpm||null,musicalKey:'',camelotKey:'',duration:null,keyStatus:'analyzing'};
         bulkItems.push(item); renderBulkReview();
+        const preKey = djKeyFromName(f.name) || djKeyFromTag(tag);
+        if (preKey) { Object.assign(item, preKey, { keyStatus: 'analyzed' }); if (runId !== bulkReviewRun) return; renderBulkReview(); continue; }
         try {
             const detected=await detectMusicalKey(f);
             if(runId!==bulkReviewRun)return;
@@ -1963,7 +2009,13 @@ function djAnalyzeRefreshUI(){
  if(pc)pc.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
  const b=document.getElementById('djAnalyzeAllBtn');if(b&&!b.dataset.busy)b.textContent=total-withKey?`Analizar ${total-withKey} pendientes`:'Todo analizado';
 }
-let djAnalyzeStop=false;
+let djAnalyzeStop=false,djStopGraceResolve=null;
+function djRequestStop(){
+ djAnalyzeStop=true;
+ ['djStopAnalyzeBtn','djAnalyzeAllStopBtn'].forEach(i=>{const b=document.getElementById(i);if(b){b.disabled=true;b.textContent='Deteniendo…';}});
+ ['djKeyNotice','djAnalyzeNotice'].forEach(i=>{const n=document.getElementById(i);if(n)n.textContent='Deteniendo… guardando las canciones que ya se están procesando.';});
+ if(djStopGraceResolve)setTimeout(djStopGraceResolve,4000); // máximo 4 s de espera
+}
 async function djFetchTrackFile(t){
  let lastErr;
  for(let attempt=0;attempt<3;attempt++){
@@ -1976,6 +2028,37 @@ async function djFetchTrackFile(t){
  }
  throw lastErr;
 }
+let djPartialOk=null,djPartialFails=0;
+async function djAnalyzeOne(t){
+ if(!t.path)throw new Error('La canción no tiene archivo registrado.');
+ // 1) Key escrita en el nombre (ej. "… 3A 94"): instantáneo, sin descargar nada
+ let k=djKeyFromName(t.title)||djKeyFromName((t.path||'').split('/').pop());
+ if(k)return Object.assign({},k,{partial:true,source:'nombre'});
+ // 2) Etiqueta ID3 (TKEY) y 3) fragmento del centro: solo MP3 y si el servidor acepta Range
+ if(String(t.ext||'mp3').toLowerCase()==='mp3'&&djPartialOk!==false){
+  try{
+   const url=await signedUrl(t.path,3600);
+   const r=await fetch(url,{headers:{Range:'bytes=0-524287'}});
+   if(r.status!==206)throw new Error('sin rango');
+   const mm=(r.headers.get('Content-Range')||'').match(/\/(\d+)$/);if(!mm)throw new Error('sin tamaño');
+   const total=Number(mm[1]),headBlob=await r.blob();
+   djPartialOk=true;
+   try{k=djKeyFromTag(await readId3(new File([headBlob],'x.mp3')));}catch(_){}
+   if(k)return Object.assign({},k,{partial:true,source:'etiqueta'});
+   const CH=1536*1024;
+   if(total>CH*1.5){
+    const start=Math.floor(total*0.35);
+    const r2=await fetch(url,{headers:{Range:`bytes=${start}-${start+CH-1}`}});
+    if(r2.status!==206)throw new Error('sin rango');
+    const d=await detectMusicalKey(new File([await r2.blob()],`${t.title}.mp3`,{type:'audio/mpeg'}));
+    return Object.assign(d,{partial:true,source:'audio'});
+   }
+  }catch(e){djPartialFails++;if(djPartialOk!==true&&djPartialFails>=3)djPartialOk=false;}
+ }
+ // 4) Respaldo: archivo completo
+ return Object.assign(await detectMusicalKey(await djFetchTrackFile(t)),{source:'audio'});
+}
+const DJ_ANALYZE_CONCURRENCY=4;
 async function djAnalyzePendingCatalog(){
  if(!isAdmin){alert('Solo el administrador puede analizar el catálogo.');return;}
  const ids=['djAnalyzeCatalogBtn','djAnalyzeAllBtn'].map(i=>document.getElementById(i)).filter(Boolean),stops=['djStopAnalyzeBtn','djAnalyzeAllStopBtn'].map(i=>document.getElementById(i)).filter(Boolean),keyNotice=document.getElementById('djKeyNotice'),allNotice=document.getElementById('djAnalyzeNotice');
@@ -1984,48 +2067,45 @@ async function djAnalyzePendingCatalog(){
  const stopBtn={classList:{add(c){stops.forEach(b=>b.classList.add(c));},remove(c){stops.forEach(b=>b.classList.remove(c));}}};
  const pending=allRemixes.filter(t=>!t.musicalKey);
  if(!pending.length){notice.textContent='Todo el catálogo ya tiene tonalidad registrada.';return;}
- if(!confirm(`Se analizarán ${pending.length} remixes sin tonalidad, uno por uno. Puede tardar bastante: deja esta pestaña abierta. Si lo detienes, lo ya analizado se conserva. ¿Continuar?`))return;
- btn.disabled=true;stopBtn.classList.remove('hidden');djAnalyzeStop=false;
- let ok=0,fail=0,done=0;const failures=[];let wake=null;
+ if(!confirm(`Se analizarán ${pending.length} remixes sin tonalidad (${DJ_ANALYZE_CONCURRENCY} a la vez). Deja esta pestaña abierta; si la detienes, lo ya analizado se conserva. ¿Continuar?`))return;
+ btn.disabled=true;stopBtn.classList.remove('hidden');djAnalyzeStop=false;djPartialOk=null;djPartialFails=0;
+ stops.forEach(b=>{b.disabled=false;b.textContent='Detener';});let finished=false;
+ const stopGrace=new Promise(r=>{djStopGraceResolve=r;});
+ let ok=0,fail=0,done=0,next=0,abortMsg='';const bySrc={nombre:0,etiqueta:0,audio:0};const failures=[];let wake=null;
  try{wake=navigator.wakeLock?await navigator.wakeLock.request('screen'):null;}catch(_){}
- const fmt=ms=>{const m=Math.round(ms/60000);return m>=60?`${Math.floor(m/60)} h ${m%60} min`:`${m} min`;};
+ const fmt=ms=>{const m=Math.max(1,Math.round(ms/60000));return m>=60?`${Math.floor(m/60)} h ${m%60} min`:`${m} min`;};
  const started=Date.now();
+ const progress=(title)=>{if(finished||djAnalyzeStop)return;const eta=done>3?` · faltan ~${fmt((Date.now()-started)/done*(pending.length-done))}`:'';notice.textContent=`Analizadas ${done}/${pending.length} (${ok} listas, ${fail} fallidas${eta})${title?' · '+title:''}`;};
  try{
   await requireSession();
-  let nextFile=pending[0].path?djFetchTrackFile(pending[0]).catch(e=>e):Promise.resolve(new Error('La canción no tiene archivo registrado.'));
-  for(let i=0;i<pending.length;i++){
-   if(djAnalyzeStop)break;
-   const t=pending[i];
-   const eta=done>2?` · faltan ~${fmt((Date.now()-started)/done*(pending.length-done))}`:'';
-   notice.textContent=`Analizando ${i+1}/${pending.length}: ${t.title} (${ok} listas, ${fail} fallidas${eta})`;
-   try{
-    const file=await nextFile;
-    // Descarga la siguiente mientras se analiza esta
-    const n=pending[i+1];nextFile=n?(n.path?djFetchTrackFile(n).catch(e=>e):Promise.resolve(new Error('La canción no tiene archivo registrado.'))):null;
-    if(file instanceof Error)throw file;
-    if(i%25===24&&keyAnalysisAudioContext){try{await keyAnalysisAudioContext.close();}catch(_){}keyAnalysisAudioContext=null;}
-    let detected;
-    try{detected=await detectMusicalKey(file);}
-    catch(e){ // Si el contexto de audio quedó en mal estado, se recrea y se reintenta una vez
-     try{await keyAnalysisAudioContext.close();}catch(_){}keyAnalysisAudioContext=null;detected=await detectMusicalKey(file);
+  const worker=async()=>{
+   while(!djAnalyzeStop){
+    const i=next++;if(i>=pending.length)return;
+    const t=pending[i];progress(t.title);
+    try{
+     const d=await djAnalyzeOne(t);
+     const upd={musical_key:d.musicalKey,camelot_key:d.camelotKey,key_analysis_status:'analyzed',key_analyzed_at:new Date().toISOString()};
+     if(!d.partial)upd.duration_seconds=d.duration; // en análisis parcial la duración no es la real
+     const {error}=await sb.from('tracks').update(upd).eq('id',t.id);
+     if(error)throw new Error('Supabase: '+error.message);
+     Object.assign(t,{musicalKey:d.musicalKey,camelotKey:d.camelotKey,keyStatus:'analyzed'});if(!d.partial)t.duration=d.duration;ok++;bySrc[d.source||'audio']++;
+    }catch(e){console.warn('Análisis de catálogo falló:',t.title,e);fail++;failures.push({title:t.title,reason:e&&e.message||String(e)});
+     if(/Supabase:.*(permission|policy|row-level|JWT)/i.test(e.message||'')&&ok===0&&failures.length>=3){abortMsg='Se detuvo: la base de datos rechaza guardar las tonalidades. '+e.message;djAnalyzeStop=true;}
     }
-    const {error}=await sb.from('tracks').update({musical_key:detected.musicalKey,camelot_key:detected.camelotKey,duration_seconds:detected.duration,key_analysis_status:'analyzed',key_analyzed_at:new Date().toISOString()}).eq('id',t.id);
-    if(error)throw new Error('Supabase: '+error.message);
-    Object.assign(t,{musicalKey:detected.musicalKey,camelotKey:detected.camelotKey,duration:detected.duration,keyStatus:'analyzed'});ok++;
-   }catch(e){console.warn('Análisis de catálogo falló:',t.title,e);fail++;failures.push({title:t.title,reason:e&&e.message||String(e)});
-    // Si el error es de permisos en la base, no tiene sentido seguir con cientos más
-    if(/Supabase:.*(permission|policy|row-level|JWT)/i.test(e.message||'')&&failures.length>=3&&ok===0){notice.textContent='Se detuvo: la base de datos rechaza guardar las tonalidades. '+e.message;break;}
+    done++;progress('');
+    if(finished){djPopulateSelectors();renderTracksTable();djAnalyzeRefreshUI();}
+    else if(done%15===0){djPopulateSelectors();renderTracksTable();}
    }
-   done++;
-   if(done%10===0){djPopulateSelectors();renderTracksTable();}
-  }
+  };
+  await Promise.race([Promise.all(Array.from({length:Math.min(DJ_ANALYZE_CONCURRENCY,pending.length)},worker)),stopGrace]);
  }finally{
+  finished=true;djStopGraceResolve=null;
   btn.disabled=false;stopBtn.classList.add('hidden');try{if(wake)wake.release();}catch(_){}
   djPopulateSelectors();djBatchSearch();renderTracksTable();updateSummaryCounts();
   const left=allRemixes.filter(t=>!t.musicalKey).length;
-  let msg=`${djAnalyzeStop?'Detenido':'Terminado'}: ${ok} analizada(s), ${fail} con error. Sin tonalidad aún: ${left}.`;
-  if(failures.length)msg+=` Primer error: "${failures[0].title}" → ${failures[0].reason}`;
-  if(left)msg+=' Puedes volver a pulsar el botón para reintentar las que faltan.';
+  let msg=abortMsg||`${djAnalyzeStop?'Detenido. Se guardaron':'Terminado:'} ${ok} analizada(s) (${bySrc.nombre} por nombre, ${bySrc.etiqueta} por etiqueta, ${bySrc.audio} por audio), ${fail} con error. Sin tonalidad aún: ${left}.`;
+  if(!abortMsg&&failures.length)msg+=` Primer error: "${failures[0].title}" → ${failures[0].reason}`;
+  if(!abortMsg&&left)msg+=' Puedes volver a pulsar el botón para reintentar las que faltan.';
   notice.textContent=msg;
   if(failures.length)console.table(failures);
   if(document.getElementById('djCompatibleKey').value)djFindCompatible();
