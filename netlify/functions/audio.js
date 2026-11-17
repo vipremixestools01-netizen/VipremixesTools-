@@ -60,11 +60,19 @@ async function signedRequest({ method, host, path, accessKey, secret, region }) 
 }
 
 function b2Config() {
-  const accessKey = process.env.B2_KEY_ID || process.env.B2_APPLICATION_KEY_ID;
-  const secret = process.env.B2_APP_KEY || process.env.B2_APPLICATION_KEY;
-  const bucket = process.env.B2_BUCKET;
-  const host = String(process.env.B2_ENDPOINT || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
-  if (!accessKey || !secret || !bucket || !host) throw new Error('Faltan variables de Backblaze en Netlify');
+  const accessKey = (process.env.B2_KEY_ID || process.env.B2_APPLICATION_KEY_ID || '').trim();
+  const secret = (process.env.B2_APP_KEY || process.env.B2_APPLICATION_KEY || '').trim();
+  const bucket = (process.env.B2_BUCKET || '').trim();
+  const host = String(process.env.B2_ENDPOINT || '').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+
+  // Solo se muestran NOMBRES de variables, nunca sus valores.
+  const missing = [];
+  if (!accessKey) missing.push('B2_KEY_ID');
+  if (!secret) missing.push('B2_APP_KEY');
+  if (!bucket) missing.push('B2_BUCKET');
+  if (!host) missing.push('B2_ENDPOINT');
+  if (missing.length) throw new Error('Faltan variables de Backblaze en Netlify: ' + missing.join(', '));
+
   const m = host.match(/^s3\.([^.]+)\./);
   return { accessKey, secret, bucket, host, region: m ? m[1] : 'us-east-005' };
 }
@@ -101,7 +109,7 @@ exports.handler = async (event) => {
   if (!user) return reply(401, { error: 'Debes iniciar sesión.' });
 
   let cfg;
-  try { cfg = b2Config(); } catch (e) { return reply(500, { error: e.message }); }
+  try { cfg = b2Config(); } catch (e) { console.error('[audio] ' + e.message); return reply(500, { error: e.message }); }
   const objPath = `/${cfg.bucket}/${path}`;
   const base = { host: cfg.host, path: objPath, accessKey: cfg.accessKey, secret: cfg.secret, region: cfg.region };
 
