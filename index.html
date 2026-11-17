@@ -336,6 +336,20 @@
                             <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden"><div id="djAnalyzeBar" class="h-full rounded-full bg-emerald-500 transition-all" style="width:0%"></div></div>
                             <p id="djAnalyzeNotice" class="text-xs text-slate-500 mt-2"></p>
                         </div>
+                        <div class="mt-5 pt-4 border-t border-brand-border">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <h3 class="font-extrabold text-base"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-brand-crimson"></i>Analizar Dirty / Clean de todo el catálogo</h3>
+                                    <p class="text-xs text-slate-500 mt-1">Busca la palabra Dirty, Clean o Explicit en el nombre del archivo y después en la etiqueta del MP3 (rápido, no analiza el audio). Lo que no diga nada queda como “Sin definir”.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2 shrink-0">
+                                    <button id="djRatingBtn" onclick="djAnalyzeRatings()" class="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-bolt mr-1"></i>Analizar Dirty/Clean</button>
+                                    <button id="djRatingStopBtn" onclick="djRequestStop()" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button>
+                                </div>
+                            </div>
+                            <p id="djRatingSummary" class="text-xs font-semibold text-slate-700 mt-3"></p>
+                            <p id="djRatingNotice" class="text-xs text-slate-500 mt-1"></p>
+                        </div>
                     </div>
                     <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <h3 class="font-extrabold text-lg">1 · Filtra</h3>
@@ -827,7 +841,7 @@ function parseTrackInfo(t) {
     if (artist) song = (parts.length > 1 && parts[0].toLowerCase() === artist.toLowerCase()) ? parts.slice(1).join(' - ') : parts.join(' - ');
     else if (parts.length > 1) { artist = parts[0]; song = parts.slice(1).join(' - '); }
     else song = parts[0] || '';
-    return (t._info = { artist, song: song || String(t.title || ''), version: [...new Set(version)].join(' · '), remixer, rating });
+    return (t._info = { artist, song: song || String(t.title || ''), version: [...new Set(version)].join(' · '), remixer, rating: rating || t.rating || '' });
 }
 
         // ---- KEY: etiquetas de color según la rueda Camelot ----
@@ -1230,7 +1244,7 @@ async function loadTracks() {
     }
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
     allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
-        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
+        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
     renderPortalsSidebar(); renderTracksTable(); updateSummaryCounts();
 }
 
@@ -2016,12 +2030,16 @@ function djAnalyzeRefreshUI(){
  if(sum)sum.textContent=`${withKey} de ${total} remixes con tonalidad · ${total-withKey} pendientes`;
  if(pc)pc.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
  const b=document.getElementById('djAnalyzeAllBtn');if(b&&!b.dataset.busy)b.textContent=total-withKey?`Analizar ${total-withKey} pendientes`:'Todo analizado';
+ const rs=document.getElementById('djRatingSummary');
+ if(rs){let d=0,c=0,p=0;allRemixes.forEach(t=>{const r=parseTrackInfo(t).rating;if(r==='Dirty')d++;else if(r==='Clean')c++;else if(!t.ratingStatus)p++;});
+  rs.textContent=`${d} Dirty · ${c} Clean · ${total-d-c} sin definir (${p} por revisar)`;
+  const rb=document.getElementById('djRatingBtn');if(rb&&!rb.dataset.busy)rb.innerHTML=p?`<i class="fa-solid fa-bolt mr-1"></i>Analizar Dirty/Clean (${p})`:'<i class="fa-solid fa-check mr-1"></i>Dirty/Clean revisado';}
 }
 let djAnalyzeStop=false,djStopGraceResolve=null;
 function djRequestStop(){
  djAnalyzeStop=true;
- ['djStopAnalyzeBtn','djAnalyzeAllStopBtn'].forEach(i=>{const b=document.getElementById(i);if(b){b.disabled=true;b.textContent='Deteniendo…';}});
- ['djKeyNotice','djAnalyzeNotice'].forEach(i=>{const n=document.getElementById(i);if(n)n.textContent='Deteniendo… guardando las canciones que ya se están procesando.';});
+ ['djStopAnalyzeBtn','djAnalyzeAllStopBtn','djRatingStopBtn'].forEach(i=>{const b=document.getElementById(i);if(b){b.disabled=true;b.textContent='Deteniendo…';}});
+ ['djKeyNotice','djAnalyzeNotice','djRatingNotice'].forEach(i=>{const n=document.getElementById(i);if(n)n.textContent='Deteniendo… guardando las canciones que ya se están procesando.';});
  if(djStopGraceResolve)setTimeout(djStopGraceResolve,4000); // máximo 4 s de espera
 }
 async function djFetchBlob(url,opts,ms,skipFull){
@@ -2084,9 +2102,90 @@ async function djAnalyzeAudio(t){
  return Object.assign(await detectMusicalKey(file),{source:'audio'});
 }
 const DJ_ANALYZE_CONCURRENCY=3;
+
+// ===== Dirty / Clean: nombre del archivo y etiqueta ID3 (sin analizar audio) =====
+// Requiere en Supabase:  alter table tracks add column if not exists rating text, add column if not exists rating_status text;
+let djRatingRunning=false;
+const DJ_RATING_SQL="alter table tracks add column if not exists rating text, add column if not exists rating_status text;";
+function djRatingFromTag(tag){
+ let r=parseTrackInfo({title:tag.title||''}).rating||ratingOf([tag.notes,tag.genre].join(' | '));
+ const ia=/itunesadvisory\s*([012])/i.exec(tag.notes||'');
+ if(ia)r=ia[1]==='1'?'Dirty':ia[1]==='2'?'Clean':r;
+ return r||'';
+}
+async function djRatingStageTag(t){
+ const url=await djTimeout(signedUrl(t.path,3600),20000,'enlace de descarga');
+ const r=await djFetchBlob(url,{headers:{Range:'bytes=0-524287'}},30000,true);
+ if(r.status===200)throw new Error('NORANGE');
+ if(r.status!==206||!r.blob)throw new Error('sin rango ('+r.status+')');
+ return djRatingFromTag(await readId3(new File([r.blob],'x.mp3')));
+}
+async function djAnalyzeRatings(){
+ if(!isAdmin){alert('Solo el administrador puede analizar el catálogo.');return;}
+ if(djRatingRunning)return;
+ const kb=document.getElementById('djAnalyzeAllBtn');
+ if(kb&&kb.dataset.busy){alert('Espera a que termine el análisis de tonalidad.');return;}
+ const btn=document.getElementById('djRatingBtn'),stop=document.getElementById('djRatingStopBtn'),notice=document.getElementById('djRatingNotice');
+ const say=v=>{if(notice)notice.textContent=v;};
+ const pending=allRemixes.filter(t=>!parseTrackInfo(t).rating&&!t.ratingStatus);
+ if(!pending.length){say('Todo el catálogo ya fue revisado por nombre y etiqueta.');return;}
+ const pre=await sb.from('tracks').select('rating,rating_status').limit(1);
+ if(pre.error){say('Falta crear las columnas en Supabase. Corre este SQL en el SQL Editor y vuelve a intentar: '+DJ_RATING_SQL);alert('Antes de analizar, corre esto en Supabase (SQL Editor):\n\n'+DJ_RATING_SQL);return;}
+ if(!confirm(`Se revisará el nombre del archivo y la etiqueta de ${pending.length} remixes sin Dirty/Clean (rápido, no analiza el audio). Lo encontrado se guarda al instante. ¿Continuar?`))return;
+ djRatingRunning=true;djAnalyzeStop=false;
+ btn.disabled=true;btn.dataset.busy='1';stop.classList.remove('hidden');stop.disabled=false;stop.textContent='Detener';
+ let phase='',pd=0,pt=0,fail=0,noRange=0,tagOff=false,abortMsg='';const by={nombre:0,etiqueta:0,ninguno:0};const failures=[];
+ const progress=()=>say(`${phase}: ${pd}/${pt} · ${by.nombre} por nombre, ${by.etiqueta} por etiqueta, ${fail} con error`);
+ const start=(n,total)=>{phase=n;pd=0;pt=total;progress();};
+ const save=async(t,r,src)=>{
+  const {error}=await sb.from('tracks').update({rating:r||null,rating_status:src}).eq('id',t.id);
+  if(error)throw new Error('Supabase: '+error.message);
+  t.rating=r||'';t.ratingStatus=src;delete t._info;
+  if(src==='nombre')by.nombre++;else if(src==='etiqueta')by.etiqueta++;else by.ninguno++;
+ };
+ const onFail=(t,e)=>{fail++;failures.push({title:t.title,reason:e&&e.message||String(e)});
+  if(/Supabase:.*(permission|policy|row-level|JWT)/i.test(e.message||'')&&!by.nombre&&!by.etiqueta&&failures.length>=3){abortMsg='Se detuvo: la base de datos rechaza guardar. '+e.message;djAnalyzeStop=true;}};
+ const pool=async(items,conc,fn)=>{let n=0;const w=async()=>{while(!djAnalyzeStop){const i=n++;if(i>=items.length)return;await fn(items[i]);pd++;progress();if(pd%50===0)renderTracksTable();}};
+  await Promise.all(Array.from({length:Math.min(conc,items.length)},w));};
+ try{
+  await requireSession();
+  // Fase 1: nombre del archivo (el título ya se leyó al cargar; aquí se mira el nombre del archivo guardado)
+  const hits=[];
+  for(const t of pending){
+   const base=String((t.path||'').split('/').pop()||'').replace(/\.[^/.]+$/,'').replace(/_/g,' ');
+   const r=base?parseTrackInfo({title:base}).rating:'';
+   if(r)hits.push([t,r]);
+  }
+  start('1/2 Nombres',hits.length);
+  await pool(hits,8,async([t,r])=>{try{await save(t,r,'nombre');}catch(e){onFail(t,e);}});
+  if(!djAnalyzeStop){
+   // Fase 2: etiqueta ID3 (solo MP3). Los que no son MP3 no tienen etiqueta legible aquí: se marcan como revisados.
+   const rest=pending.filter(t=>!t.ratingStatus);
+   const tagItems=rest.filter(t=>t.path&&String(t.ext||'mp3').toLowerCase()==='mp3');
+   const noTag=rest.filter(t=>!(t.path&&String(t.ext||'mp3').toLowerCase()==='mp3'));
+   start('2/2 Etiquetas',tagItems.length);
+   await pool(tagItems,8,async t=>{
+    if(tagOff)return;
+    try{const r=await djTimeout(djRatingStageTag(t),60000,'etiqueta');await save(t,r,r?'etiqueta':'ninguno');}
+    catch(e){if(e.message==='NORANGE'){noRange++;if(noRange>=3&&!by.etiqueta&&!by.ninguno)tagOff=true;}else onFail(t,e);}
+   });
+   if(!djAnalyzeStop&&!tagOff){for(const t of noTag){try{await save(t,'','ninguno');}catch(e){onFail(t,e);break;}}}
+  }
+ }catch(e){abortMsg='Error: '+(e&&e.message||e);}
+ finally{
+  djRatingRunning=false;btn.disabled=false;delete btn.dataset.busy;stop.classList.add('hidden');
+  renderTracksTable();updateSummaryCounts();djAnalyzeRefreshUI();if(typeof djBatchSearch==='function')djBatchSearch();
+  const left=allRemixes.filter(t=>!parseTrackInfo(t).rating&&!t.ratingStatus).length;
+  let msg=abortMsg||`${djAnalyzeStop?'Detenido. Se guardaron':'Terminado:'} ${by.nombre} por nombre, ${by.etiqueta} por etiqueta, ${by.ninguno} sin ninguna marca (quedan como Sin definir), ${fail} con error. Por revisar aún: ${left}.`;
+  if(!abortMsg&&tagOff)msg+=' Las etiquetas no se pudieron leer: el almacenamiento no acepta descargas parciales.';
+  if(!abortMsg&&failures.length)msg+=` Primer error: "${failures[0].title}" → ${failures[0].reason}`;
+  say(msg);if(failures.length)console.table(failures);
+ }
+}
 async function djAnalyzePendingCatalog(mode){
  mode=mode==='fast'?'fast':'full';
  if(!isAdmin){alert('Solo el administrador puede analizar el catálogo.');return;}
+ if(djRatingRunning){alert('Espera a que termine el análisis de Dirty/Clean.');return;}
  const ids=['djAnalyzeCatalogBtn','djAnalyzeAllBtn','djAnalyzeFastBtn'].map(i=>document.getElementById(i)).filter(Boolean),stops=['djStopAnalyzeBtn','djAnalyzeAllStopBtn'].map(i=>document.getElementById(i)).filter(Boolean),keyNotice=document.getElementById('djKeyNotice'),allNotice=document.getElementById('djAnalyzeNotice');
  const notice={set textContent(v){if(keyNotice)keyNotice.textContent=v;if(allNotice)allNotice.textContent=v;djAnalyzeRefreshUI();}};
  const btn={set disabled(v){ids.forEach(b=>{b.disabled=v;if(v)b.dataset.busy='1';else delete b.dataset.busy;});}};
