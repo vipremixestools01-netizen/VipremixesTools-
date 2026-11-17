@@ -244,19 +244,19 @@
                 </div>
 
                 <div class="bg-white rounded-2xl border border-brand-border overflow-hidden shadow-sm">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                    <div class="overflow-x-hidden">
+                        <table class="w-full table-fixed text-left border-collapse">
                             <thead>
                                 <tr class="border-b border-brand-border text-slate-500 text-xs uppercase tracking-wider bg-slate-50">
-                                    <th class="py-4 px-4">Song Title</th>
-                                    <th class="py-4 px-4">Artist</th>
-                                    <th class="py-4 px-4">Version</th>
-                                    <th class="py-4 px-4">Remixer</th>
-                                    <th class="py-4 px-4 w-28">BPM</th>
-                                    <th class="py-4 px-4 w-28 text-center"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-2 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
-                                    <th class="py-4 px-4">Genre</th>
-                                    <th class="py-4 px-4 text-right w-40">Download</th>
-                                </tr>
+                                    <th class="py-4 px-3">Song Title</th>
+                                    <th class="py-4 px-3 w-[16%] hidden sm:table-cell">Artist</th>
+                                    <th class="py-4 px-3 w-[16%] hidden md:table-cell">Version</th>
+                                    <th class="py-4 px-3 w-[10%] hidden xl:table-cell">Remixer</th>
+                                    <th class="py-4 px-3 w-[6%] hidden md:table-cell">BPM</th>
+                                    <th class="py-4 px-2 w-[76px] text-center"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
+                                    <th class="py-4 px-3 w-[10%] hidden lg:table-cell">Genre</th>
+                                    <th class="py-4 px-2 text-right w-[104px] sm:w-[132px]">Download</th>
+                                    </tr>
                             </thead>
                             <tbody id="tracksTableBody" class="divide-y divide-brand-border text-sm"></tbody>
                         </table>
@@ -320,6 +320,23 @@
 
                 <!-- TAB 1: LOTES -->
                 <div id="djTab-batch" class="space-y-4">
+                    <div id="djAnalyzeCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <h3 class="font-extrabold text-lg"><i class="fa-solid fa-key mr-2 text-brand-crimson"></i>Analizar tonalidad de todo el catálogo</h3>
+                                <p class="text-xs text-slate-500 mt-1">Detecta la key de cada remix que aún no la tiene, una por una. Deja esta pestaña abierta mientras trabaja.</p>
+                            </div>
+                            <div class="flex gap-2 shrink-0">
+                                <button id="djAnalyzeAllBtn" onclick="djAnalyzePendingCatalog()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold">Analizar todo el catálogo</button>
+                                <button id="djAnalyzeAllStopBtn" onclick="djAnalyzeStop=true" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-xs font-semibold mb-1.5"><span id="djAnalyzeSummary" class="text-slate-700"></span><span id="djAnalyzePct" class="text-slate-500"></span></div>
+                            <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden"><div id="djAnalyzeBar" class="h-full rounded-full bg-emerald-500 transition-all" style="width:0%"></div></div>
+                            <p id="djAnalyzeNotice" class="text-xs text-slate-500 mt-2"></p>
+                        </div>
+                    </div>
                     <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <h3 class="font-extrabold text-lg">1 · Filtra</h3>
                         <p class="text-xs text-slate-500 mb-4">Elige género y tonalidad (Camelot). Opcional: un rango de BPM.</p>
@@ -788,6 +805,7 @@ function parseTrackInfo(t) {
         let rest = g;
         const r = ratingOf(g);
         if (r) { if (!rating) rating = r; rest = g.replace(/\b(dirty|explicit|clean|censored)\b/ig, ' ').replace(/[\s,\/&+\-]+/g, ' ').trim(); }
+        rest = rest.replace(/[\(\)\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
         if (!rest) continue;
         const m = rest.match(/^(.+?)\s+(remix|edit|flip|bootleg|rework|refix|mashup|redrum|vip|mix)$/i);
         if (m && !GENERIC.test(m[1].trim())) {
@@ -819,7 +837,7 @@ function parseTrackInfo(t) {
             // A (menor) en tono suave; B (mayor) en tono más intenso
             const bg = cam[2] === 'A' ? base + '55' : base + 'cc';
             const tip = track.musicalKey ? ` title="${escapeHtml(track.musicalKey)}"` : '';
-            return `<span${tip} class="inline-block min-w-[56px] px-3 py-1.5 rounded-full text-sm font-extrabold text-slate-900" style="background:${bg}">${cam[1]}${cam[2]}</span>`;
+            return `<span${tip} class="inline-block min-w-[48px] px-2.5 py-1 rounded-full text-sm font-extrabold text-slate-900" style="background:${bg}">${cam[1]}${cam[2]}</span>`;
         }
         let keySortDir = null; // null | 'asc' | 'desc'
         function camelotRank(t) {
@@ -887,29 +905,30 @@ function parseTrackInfo(t) {
 
                 html += `
                     <tr class="transition group ${isCurrent ? 'bg-blue-50' : ''}">
-                        <td class="py-3.5 px-4">
-                            <div class="flex items-center gap-3">
+                        <td class="py-3 px-3">
+                            <div class="flex items-center gap-2.5">
                                 <button onclick="playTrack(${realIndex})" aria-label="Reproducir" class="w-9 h-9 rounded-full bg-brand-crimson hover:bg-red-600 flex items-center justify-center transition shrink-0 shadow-sm">
                                     <i class="fa-solid ${isCurrent && isPlaying ? 'fa-pause' : 'fa-play'} text-xs"></i>
                                 </button>
-                                <div class="relative w-10 h-10 rounded-lg bg-brand-cardBg border border-brand-border overflow-hidden flex items-center justify-center shrink-0">
+                                <div class="relative w-10 h-10 hidden sm:flex rounded-lg bg-brand-cardBg border border-brand-border overflow-hidden flex items-center justify-center shrink-0">
                                     <img src="${escapeHtml(safeMediaUrl(track.coverUrl, DEFAULT_COVER))}" alt="Cover" onerror="this.style.display='none'" class="w-full h-full object-cover">
                                     ${track.isVip ? '<span class="absolute top-0 right-0 bg-brand-crimson text-white text-[8px] font-bold px-1 rounded-bl">VIP</span>' : ''}
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="font-bold text-slate-900 truncate">${escapeHtml(info.song)}</div>
+                                    <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${escapeHtml(info.song)}</div>
+                                    ${info.artist ? `<div class="sm:hidden text-xs text-slate-500 truncate">${escapeHtml(info.artist)}</div>` : ''}
                                     <div class="text-[11px] text-slate-400 truncate">${escapeHtml(track.date || '')}${track.portal ? ' · ' + escapeHtml(track.portal) : ''}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3.5 px-4 text-slate-600">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</td>
-                        <td class="py-3.5 px-4">${ratingHtml || versionHtml ? ratingHtml + versionHtml : '<span class="text-slate-300">—</span>'}</td>
-                        <td class="py-3.5 px-4 text-sm text-slate-600">${escapeHtml(info.remixer) || '<span class="text-slate-300">—</span>'}</td>
-                        <td class="py-3.5 px-4 text-sm text-slate-500">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
-                        <td class="py-3.5 px-4 text-center">${keyPillHtml(track)}</td>
-                        <td class="py-3.5 px-4"><span class="bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-xs inline-block">${escapeHtml(track.genre)}</span></td>
-                        <td class="py-3.5 px-4 text-right">
-                            <div class="flex items-center justify-end space-x-1">
+                        <td class="py-3 px-3 text-slate-600 hidden sm:table-cell break-words">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</td>
+                        <td class="py-3 px-3 hidden md:table-cell break-words">${ratingHtml || versionHtml ? ratingHtml + versionHtml : '<span class="text-slate-300">—</span>'}</td>
+                        <td class="py-3 px-3 text-sm text-slate-600 hidden xl:table-cell break-words">${escapeHtml(info.remixer) || '<span class="text-slate-300">—</span>'}</td>
+                        <td class="py-3 px-3 text-sm text-slate-500 hidden md:table-cell">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
+                        <td class="py-3 px-2 text-center">${keyPillHtml(track)}</td>
+                        <td class="py-3 px-3 hidden lg:table-cell"><span class="bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-xs inline-block">${escapeHtml(track.genre)}</span></td>
+                        <td class="py-3 px-2 text-right">
+                            <div class="flex items-center justify-end gap-0.5">
                                 <button onclick="toggleFavorite(${realIndex})" aria-label="Favorito" class="p-2 rounded-full hover:bg-slate-100 transition"><i class="${favClass} text-sm"></i></button>
                                 <button onclick="handleDownloadClick(${realIndex})" title="Descargar" aria-label="Descargar" class="w-9 h-9 rounded-full text-slate-600 hover:bg-blue-50 hover:text-brand-crimson transition flex items-center justify-center">
                                     <i class="fa-solid ${hasMembership() ? 'fa-download' : 'fa-lock'}"></i>
@@ -1155,6 +1174,8 @@ function parseTrackInfo(t) {
             localStorage.removeItem('vip_is_admin');
             localStorage.removeItem('vip_current_user');
             updateAuthHeader();
+            if (typeof djAnalyzeRefreshUI === 'function') djAnalyzeRefreshUI();
+            if (typeof djShowTab === 'function' && typeof djTab !== 'undefined' && djTab === 'keys') djShowTab('batch');
             resetFilters();
             alert("Has cerrado sesión correctamente.");
         }
@@ -1220,6 +1241,8 @@ async function loadSession() {
         isAdmin = !!(p && p.is_admin);
     }
     updateAuthHeader(); renderPortalsSidebar(); renderTracksTable();
+    if (typeof djAnalyzeRefreshUI === 'function') djAnalyzeRefreshUI();
+    if (!isAdmin && typeof djShowTab === 'function' && typeof djTab !== 'undefined' && djTab === 'keys') djShowTab('batch');
     if (typeof renderPaypalButtons === 'function' && !membershipsViewContainer.classList.contains('hidden')) renderPaypalButtons();
 }
 
@@ -1894,7 +1917,7 @@ function djPopulateSelectors(){
  ['djKeyTrack'].forEach(id=>{const el=document.getElementById(id);if(el){const old=el.value;el.innerHTML=opts;if(old)el.value=old;}});
  const key=document.getElementById('djKeyValue'); if(key)key.innerHTML='<option value="">Selecciona tonalidad…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
  const compatible=document.getElementById('djCompatibleKey'); if(compatible&&!compatible.options.length)compatible.innerHTML='<option value="">Elige una tonalidad de referencia…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k} · ${DJ_CAMELOT[k]}</option>`).join('');
- const kt=document.getElementById('djTabBtn-keys');if(kt)kt.classList.toggle('hidden',!isAdmin);const pc=document.getElementById('djPendingCount');if(pc){const n=allRemixes.filter(t=>!t.musicalKey).length;pc.textContent=n?`${n} canciones sin tonalidad`:'Todo el catálogo tiene tonalidad';}
+ const kt=document.getElementById('djTabBtn-keys');if(kt)kt.classList.toggle('hidden',!isAdmin);djAnalyzeRefreshUI();const pc=document.getElementById('djPendingCount');if(pc){const n=allRemixes.filter(t=>!t.musicalKey).length;pc.textContent=n?`${n} canciones sin tonalidad`:'Todo el catálogo tiene tonalidad';}
  const analyze=document.getElementById('djAnalyzeCatalogBtn'); if(analyze){analyze.disabled=!isAdmin;analyze.classList.toggle('opacity-40',!isAdmin);analyze.title=isAdmin?'Analiza canciones antiguas sin tonalidad':'Solo el administrador puede ejecutar el análisis del catálogo';}
  const save=document.getElementById('djSaveKeyBtn'); if(save){save.disabled=!isAdmin;save.classList.toggle('opacity-40',!isAdmin);save.title=isAdmin?'Guardar tonalidad':'Solo el administrador puede editar tonalidades';}
 }
@@ -1931,6 +1954,15 @@ async function djAddTrackToPlaylist(trackId){
  const {error}=await sb.from('playlist_tracks').insert({playlist_id:playlistId,track_id:track.id,position});
  if(error){alert('No se pudo agregar: '+(error.code==='23505'?'Ese remix ya está en la playlist.':error.message));return;}await djLoadPlaylists();
 }
+function djAnalyzeRefreshUI(){
+ const card=document.getElementById('djAnalyzeCard');if(!card)return;
+ card.classList.toggle('hidden',!isAdmin);if(!isAdmin)return;
+ const total=allRemixes.length,withKey=allRemixes.filter(t=>t.musicalKey).length,pct=total?Math.round(withKey/total*100):0;
+ const sum=document.getElementById('djAnalyzeSummary'),pc=document.getElementById('djAnalyzePct'),bar=document.getElementById('djAnalyzeBar');
+ if(sum)sum.textContent=`${withKey} de ${total} remixes con tonalidad · ${total-withKey} pendientes`;
+ if(pc)pc.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
+ const b=document.getElementById('djAnalyzeAllBtn');if(b&&!b.dataset.busy)b.textContent=total-withKey?`Analizar ${total-withKey} pendientes`:'Todo analizado';
+}
 let djAnalyzeStop=false;
 async function djFetchTrackFile(t){
  let lastErr;
@@ -1946,7 +1978,10 @@ async function djFetchTrackFile(t){
 }
 async function djAnalyzePendingCatalog(){
  if(!isAdmin){alert('Solo el administrador puede analizar el catálogo.');return;}
- const btn=document.getElementById('djAnalyzeCatalogBtn'),stopBtn=document.getElementById('djStopAnalyzeBtn'),notice=document.getElementById('djKeyNotice');
+ const ids=['djAnalyzeCatalogBtn','djAnalyzeAllBtn'].map(i=>document.getElementById(i)).filter(Boolean),stops=['djStopAnalyzeBtn','djAnalyzeAllStopBtn'].map(i=>document.getElementById(i)).filter(Boolean),keyNotice=document.getElementById('djKeyNotice'),allNotice=document.getElementById('djAnalyzeNotice');
+ const notice={set textContent(v){if(keyNotice)keyNotice.textContent=v;if(allNotice)allNotice.textContent=v;djAnalyzeRefreshUI();}};
+ const btn={set disabled(v){ids.forEach(b=>{b.disabled=v;if(v)b.dataset.busy='1';else delete b.dataset.busy;});}};
+ const stopBtn={classList:{add(c){stops.forEach(b=>b.classList.add(c));},remove(c){stops.forEach(b=>b.classList.remove(c));}}};
  const pending=allRemixes.filter(t=>!t.musicalKey);
  if(!pending.length){notice.textContent='Todo el catálogo ya tiene tonalidad registrada.';return;}
  if(!confirm(`Se analizarán ${pending.length} remixes sin tonalidad, uno por uno. Puede tardar bastante: deja esta pestaña abierta. Si lo detienes, lo ya analizado se conserva. ¿Continuar?`))return;
@@ -2017,7 +2052,7 @@ async function djCreatePlaylist(){
 // ===== LOTES POR GÉNERO / TONALIDAD / BPM =====
 let djTab='batch';
 function djShowTab(name){
- if(name==='keys'&&!isAdmin)name='batch';djTab=name;
+ if(name==='keys'&&!isAdmin)name='batch';djTab=name;djAnalyzeRefreshUI();
  ['batch','playlists','keys'].forEach(n=>{
   const p=document.getElementById('djTab-'+n),b=document.getElementById('djTabBtn-'+n);if(!p||!b)return;
   p.classList.toggle('hidden',n!==name);
