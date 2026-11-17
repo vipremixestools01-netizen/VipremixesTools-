@@ -305,58 +305,30 @@
                         <div>
                             <span class="text-xs font-bold uppercase tracking-widest text-brand-crimson">VIPREMIXESTOOLS</span>
                             <h2 class="text-3xl font-black mt-1">DJ Studio</h2>
-                            <p class="text-sm text-slate-500 mt-1">Mezcla dos remixes del catálogo y organiza tus playlists por tonalidad.</p>
+                            <p class="text-sm text-slate-500 mt-1">Arma playlists por género, tonalidad y BPM, y descarga tus lotes.</p>
                         </div>
                         <span class="text-xs bg-blue-50 text-blue-700 border border-blue-100 rounded-full px-3 py-2 font-bold"><i class="fa-solid fa-music mr-1"></i> Catálogo conectado</span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                    <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
-                        <div class="flex items-center justify-between mb-4"><h3 class="font-extrabold text-lg">Deck A</h3><span class="text-xs font-bold text-blue-600">PLAYER 1</span></div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-2" for="djTrackA">Selecciona un remix</label>
-                        <select id="djTrackA" onchange="djSelectTrack('A',this.value)" class="w-full border border-brand-border rounded-xl p-3 text-sm bg-white"></select>
-                        <div class="mt-4 p-4 rounded-xl bg-slate-50 border border-brand-border">
-                            <div id="djTitleA" class="font-bold text-sm truncate">Ninguna canción seleccionada</div>
-                            <div id="djMetaA" class="text-xs text-slate-500 mt-1">BPM: — · Key: — · Camelot: —</div>
-                            <div class="flex gap-2 mt-4">
-                                <button onclick="djPlay('A')" class="bg-brand-crimson text-white rounded-lg px-4 py-2 text-xs font-bold"><i class="fa-solid fa-play mr-1"></i> Play</button>
-                                <button onclick="djPause('A')" class="bg-slate-200 text-slate-700 rounded-lg px-4 py-2 text-xs font-bold"><i class="fa-solid fa-pause mr-1"></i> Pause</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
-                        <div class="flex items-center justify-between mb-4"><h3 class="font-extrabold text-lg">Deck B</h3><span class="text-xs font-bold text-blue-600">PLAYER 2</span></div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-2" for="djTrackB">Selecciona otro remix</label>
-                        <select id="djTrackB" onchange="djSelectTrack('B',this.value)" class="w-full border border-brand-border rounded-xl p-3 text-sm bg-white"></select>
-                        <div class="mt-4 p-4 rounded-xl bg-slate-50 border border-brand-border">
-                            <div id="djTitleB" class="font-bold text-sm truncate">Ninguna canción seleccionada</div>
-                            <div id="djMetaB" class="text-xs text-slate-500 mt-1">BPM: — · Key: — · Camelot: —</div>
-                            <div class="flex gap-2 mt-4">
-                                <button onclick="djPlay('B')" class="bg-brand-crimson text-white rounded-lg px-4 py-2 text-xs font-bold"><i class="fa-solid fa-play mr-1"></i> Play</button>
-                                <button onclick="djPause('B')" class="bg-slate-200 text-slate-700 rounded-lg px-4 py-2 text-xs font-bold"><i class="fa-solid fa-pause mr-1"></i> Pause</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
-                    <div class="flex items-center justify-between flex-wrap gap-2"><h3 class="font-extrabold text-lg">Mezclador</h3><span class="text-xs text-slate-500">Previsualización de dos decks</span></div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
-                        <div><label for="djCrossfader" class="flex justify-between text-xs font-semibold mb-2"><span>Deck A</span><span>Crossfader</span><span>Deck B</span></label><input id="djCrossfader" type="range" min="0" max="100" value="50" oninput="djSetCrossfader(this.value)" class="w-full accent-blue-600"><div class="flex justify-between text-[11px] text-slate-400 mt-1"><span>A</span><span>Centro</span><span>B</span></div></div>
-                        <div><label for="djTempo" class="block text-xs font-semibold mb-2">Velocidad Deck B <span id="djTempoLabel" class="text-brand-crimson">100%</span></label><input id="djTempo" type="range" min="70" max="130" value="100" oninput="djSetTempo(this.value)" class="w-full accent-blue-600"><div class="text-[11px] text-slate-400 mt-1">Ajuste de velocidad manual</div></div>
+                    <h3 class="font-extrabold text-lg mb-1">Lotes por género, tonalidad y BPM</h3>
+                    <p class="text-xs text-slate-500 mb-4">Elige un género y una tonalidad (Camelot) para ver todas las canciones que coinciden, agrupadas por key y ordenadas por BPM. Luego descarga el lote o guárdalo como playlist.</p>
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                        <div class="col-span-2 lg:col-span-1"><label class="block text-xs font-semibold mb-1" for="djBatchGenre">Género</label><select id="djBatchGenre" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
+                        <div><label class="block text-xs font-semibold mb-1" for="djBatchKey">Tonalidad</label><select id="djBatchKey" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
+                        <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMin">BPM mínimo</label><input id="djBatchBpmMin" type="number" min="0" placeholder="ej. 85" oninput="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
+                        <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMax">BPM máximo</label><input id="djBatchBpmMax" type="number" min="0" placeholder="ej. 100" oninput="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
+                        <div class="col-span-2 lg:col-span-1 flex gap-2"><button onclick="djBatchToggleAll(true)" class="flex-1 bg-slate-100 hover:bg-slate-200 rounded-lg px-2 py-2.5 text-xs font-bold">Marcar todo</button><button onclick="djBatchToggleAll(false)" class="flex-1 bg-slate-100 hover:bg-slate-200 rounded-lg px-2 py-2.5 text-xs font-bold">Ninguno</button></div>
                     </div>
-                    <div class="mt-5 border-t border-brand-border pt-4">
-                        <h4 class="font-bold text-sm mb-3">Puntos de entrada y transición</h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div><label class="block text-xs font-semibold mb-1" for="djStartA">Deck A empieza en (mm:ss)</label><input id="djStartA" type="text" inputmode="numeric" value="00:00" placeholder="01:30" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
-                            <div><label class="block text-xs font-semibold mb-1" for="djStartB">Deck B entra desde (mm:ss)</label><input id="djStartB" type="text" inputmode="numeric" value="00:00" placeholder="00:45" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
-                            <div><label class="block text-xs font-semibold mb-1" for="djFadeSeconds">Duración del crossfade</label><select id="djFadeSeconds" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"><option value="4">4 segundos</option><option value="8" selected>8 segundos</option><option value="16">16 segundos</option><option value="24">24 segundos</option><option value="32">32 segundos</option></select></div>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mt-2">El mashup comienza en el punto elegido de Deck A. Deck B entra en el punto elegido cuando empieza la transición; ambos se funden gradualmente. Usa mm:ss, por ejemplo 01:35.</p>
+                    <p id="djBatchInfo" class="text-xs text-slate-500 mt-3">Elige un género para empezar.</p>
+                    <div id="djBatchResults" class="mt-3 space-y-3 max-h-[28rem] overflow-y-auto pr-1"></div>
+                    <div class="mt-4 border-t border-brand-border pt-4 flex flex-col lg:flex-row gap-3 lg:items-center">
+                        <button id="djBatchDlBtn" onclick="djBatchDownload()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-download mr-1"></i> Descargar lote (0)</button>
+                        <button onclick="djDlCancel=true" class="bg-slate-200 text-slate-700 rounded-lg px-4 py-2.5 text-xs font-bold">Cancelar descarga</button>
+                        <div class="flex gap-2 flex-1"><input id="djBatchPlName" maxlength="100" placeholder="Nombre nuevo (vacío = usar la playlist elegida abajo)" class="min-w-0 flex-1 border border-brand-border rounded-lg px-3 py-2 text-sm"><button onclick="djBatchSave()" class="bg-slate-800 text-white rounded-lg px-3 py-2 text-xs font-bold whitespace-nowrap">Guardar como playlist</button></div>
                     </div>
-                    <div class="mt-5 flex flex-wrap items-center gap-3"><button id="djExportBtn" onclick="djExportMp3()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-file-audio mr-1"></i> Exportar mashup MP3</button><span id="djExportStatus" class="text-xs text-slate-500">Elige los puntos de entrada para crear una transición más limpia.</span></div>
-                    <p id="djStatus" class="text-xs text-slate-500 mt-4" role="status">Selecciona una canción en cada deck para comenzar.</p>
+                    <p id="djBatchStatus" class="text-xs text-slate-500 mt-3" role="status">Las descargas del lote salen una por una. Si el navegador pregunta, permite las descargas múltiples. Requiere membresía activa.</p>
                 </div>
 
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -374,7 +346,7 @@
                         <h3 class="font-extrabold text-lg mb-1">Mis playlists</h3>
                         <p class="text-xs text-slate-500 mb-4">Crea listas y agrega remixes de cualquier género. Puedes agruparlos por tonalidad compatible.</p>
                         <div class="flex gap-2"><input id="djPlaylistName" maxlength="100" placeholder="Nombre de la playlist" class="min-w-0 flex-1 border border-brand-border rounded-lg px-3 py-2 text-sm"><button onclick="djCreatePlaylist()" class="bg-brand-crimson text-white rounded-lg px-3 py-2 text-xs font-bold">Crear</button></div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><select id="djPlaylistSelect" class="border border-brand-border rounded-lg p-2.5 text-sm"></select><button onclick="djAddDeckTrackToPlaylist()" class="bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 text-xs font-bold">Agregar Deck A</button></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3"><select id="djPlaylistSelect" class="border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
                         <div class="mt-4 border-t border-brand-border pt-4"><label for="djCompatibleKey" class="block text-xs font-semibold mb-2">Encontrar remixes compatibles (cualquier género)</label><div class="flex gap-2"><select id="djCompatibleKey" class="min-w-0 flex-1 border border-brand-border rounded-lg p-2.5 text-sm"></select><button onclick="djFindCompatible()" class="bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 text-xs font-bold">Buscar</button></div><div id="djCompatibleResults" class="mt-3 space-y-2 text-xs text-slate-600"></div></div>
                         <div id="djPlaylistResults" class="mt-4 space-y-2 text-xs text-slate-600"><p>Cargando playlists…</p></div>
                     </div>
@@ -1086,7 +1058,6 @@
     </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
 <script>
 // ====== CONFIGURACIÓN: pega aquí tus datos (ver instrucciones) ======
 const SUPABASE_URL = 'https://' + 'kcpeklaegzvmeiikcmra' + '.supabase' + '.co'; // partida en trozos para que el escáner de Netlify no la marque
@@ -1757,7 +1728,7 @@ function showPlansView() {
 // ===== VIPREMIXESTOOLS DJ STUDIO =====
 const DJ_KEYS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B','Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm','G#m','Am','A#m','Bm'];
 const DJ_CAMELOT = {'C':'8B','G':'9B','D':'10B','A':'11B','E':'12B','B':'1B','F#':'2B','C#':'3B','G#':'4B','D#':'5B','A#':'6B','F':'7B','Am':'8A','Em':'9A','Bm':'10A','F#m':'11A','C#m':'12A','G#m':'1A','D#m':'2A','A#m':'3A','Fm':'4A','Cm':'5A','Gm':'6A','Dm':'7A'};
-let djAudioA = new Audio(), djAudioB = new Audio(), djTrackA = null, djTrackB = null, djPlaylists = [];
+let djPlaylists = [];
 function djSetStatus(msg, bad=false){const el=document.getElementById('djStatus'); if(el){el.textContent=msg;el.className='text-xs mt-4 '+(bad?'text-rose-600':'text-slate-500');}}
 function showDJStudioView(){
  if(!currentUser){openLoginModal();return;}
@@ -1766,31 +1737,16 @@ function showDJStudioView(){
  document.getElementById('adminDashboardView').classList.add('hidden');
             document.getElementById('djStudioView').classList.add('hidden');
  document.getElementById('djStudioView').classList.remove('hidden');
- djPopulateSelectors(); djLoadPlaylists();
+ djPopulateSelectors(); djBatchInit(); djLoadPlaylists();
 }
 function djPopulateSelectors(){
  const opts='<option value="">Selecciona un remix…</option>'+allRemixes.map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.title)}${t.bpm?' · '+escapeHtml(t.bpm)+' BPM':''}</option>`).join('');
- ['djTrackA','djTrackB','djKeyTrack'].forEach(id=>{const el=document.getElementById(id);if(el){const old=el.value;el.innerHTML=opts;if(old)el.value=old;}});
+ ['djKeyTrack'].forEach(id=>{const el=document.getElementById(id);if(el){const old=el.value;el.innerHTML=opts;if(old)el.value=old;}});
  const key=document.getElementById('djKeyValue'); if(key)key.innerHTML='<option value="">Selecciona tonalidad…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
  const compatible=document.getElementById('djCompatibleKey'); if(compatible&&!compatible.options.length)compatible.innerHTML='<option value="">Elige una tonalidad de referencia…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k} · ${DJ_CAMELOT[k]}</option>`).join('');
  const analyze=document.getElementById('djAnalyzeCatalogBtn'); if(analyze){analyze.disabled=!isAdmin;analyze.classList.toggle('opacity-40',!isAdmin);analyze.title=isAdmin?'Analiza canciones antiguas sin tonalidad':'Solo el administrador puede ejecutar el análisis del catálogo';}
  const save=document.getElementById('djSaveKeyBtn'); if(save){save.disabled=!isAdmin;save.classList.toggle('opacity-40',!isAdmin);save.title=isAdmin?'Guardar tonalidad':'Solo el administrador puede editar tonalidades';}
 }
-async function djSelectTrack(deck,id){
- const t=allRemixes.find(x=>x.id===id); if(deck==='A')djTrackA=t||null;else djTrackB=t||null;
- const audio=deck==='A'?djAudioA:djAudioB; audio.pause(); audio.removeAttribute('src'); audio.load();
- document.getElementById('djTitle'+deck).textContent=t?t.title:'Ninguna canción seleccionada';
- document.getElementById('djMeta'+deck).textContent=t?`BPM: ${t.bpm||'—'} · Key: ${t.musicalKey||'Sin asignar'} · Camelot: ${t.camelotKey||'—'}`:'BPM: — · Key: — · Camelot: —';
- if(!t){djSetStatus('Selecciona una canción en cada deck para comenzar.');return;}
- try{
-   const url=await signedUrl(t.path,3600); audio.preload='auto'; audio.src=url; audio.load();
-   djSetStatus(`Deck ${deck}: ${t.title} está listo para reproducirse.`);
- }catch(e){djSetStatus(`No se pudo cargar Deck ${deck}: ${e.message}`,true);}
-}
-async function djPlay(deck){const audio=deck==='A'?djAudioA:djAudioB;const track=deck==='A'?djTrackA:djTrackB;if(!track){djSetStatus(`Selecciona un remix para Deck ${deck}.`,true);return;}try{if(!audio.src)await djSelectTrack(deck,track.id);await audio.play();djSetStatus(`Reproduciendo Deck ${deck}: ${track.title}`);}catch(e){djSetStatus(`No se pudo reproducir Deck ${deck}: ${e.message}`,true);}}
-function djPause(deck){(deck==='A'?djAudioA:djAudioB).pause();djSetStatus(`Deck ${deck} pausado.`);}
-function djSetCrossfader(value){const x=Number(value)/100;djAudioA.volume=Math.cos(x*Math.PI/2);djAudioB.volume=Math.sin(x*Math.PI/2);}
-function djSetTempo(value){const rate=Number(value)/100;djAudioB.playbackRate=rate;document.getElementById('djTempoLabel').textContent=value+'%';}
 async function djSaveKey(){
  if(!isAdmin){alert('Solo el administrador puede modificar los datos musicales.');return;}
  const id=document.getElementById('djKeyTrack').value, key=document.getElementById('djKeyValue').value;
@@ -1800,7 +1756,7 @@ async function djSaveKey(){
  try{const {error}=await sb.from('tracks').update({musical_key:key,camelot_key:camelot,key_analysis_status:'manual',key_analyzed_at:new Date().toISOString()}).eq('id',id);if(error)throw error;
    const t=allRemixes.find(x=>x.id===id);if(t){t.musicalKey=key;t.camelotKey=camelot;t.keyStatus='manual';}
    djPopulateSelectors();document.getElementById('djKeyTrack').value=id;document.getElementById('djKeyValue').value=key;
-   if(djTrackA&&djTrackA.id===id)djSelectTrack('A',id);if(djTrackB&&djTrackB.id===id)djSelectTrack('B',id);
+   djBatchSearch();
    document.getElementById('djKeyNotice').textContent=`Guardado: ${key} (${camelot}).`;
  }catch(e){alert('No se pudo guardar la tonalidad: '+e.message);}finally{btn.disabled=false;}
 }
@@ -1847,56 +1803,6 @@ async function djAnalyzePendingCatalog(){
   if(document.getElementById('djCompatibleKey').value)djFindCompatible();
  }finally{btn.disabled=false;}
 }
-function djParseTime(value,label){
- const raw=String(value||'0').trim();let seconds;
- if(/^\d+(\.\d+)?$/.test(raw)) seconds=Number(raw);
- else {const m=raw.match(/^(\d{1,3}):(\d{1,2})(?:\.(\d+))?$/);if(!m||Number(m[2])>59)throw new Error(`${label}: usa mm:ss, por ejemplo 01:25.`);seconds=Number(m[1])*60+Number(m[2])+Number('0.'+(m[3]||'0'));}
- if(!Number.isFinite(seconds)||seconds<0)throw new Error(`${label}: tiempo no válido.`);return seconds;
-}
-async function djExportMp3(){
- const btn=document.getElementById('djExportBtn'),status=document.getElementById('djExportStatus');
- if(!djTrackA||!djTrackB){alert('Selecciona un remix en Deck A y otro en Deck B.');return;}
- if(!window.lamejs){alert('No se pudo cargar el codificador MP3. Recarga la página e inténtalo de nuevo.');return;}
- btn.disabled=true;status.textContent='Preparando los audios…';let ctx;
- try{
-  const offsetA=djParseTime(document.getElementById('djStartA').value,'Entrada Deck A');
-  const offsetB=djParseTime(document.getElementById('djStartB').value,'Entrada Deck B');
-  const fade=Number(document.getElementById('djFadeSeconds').value)||8;
-  const [urlA,urlB]=await Promise.all([signedUrl(djTrackA.path,3600),signedUrl(djTrackB.path,3600)]);
-  const [resA,resB]=await Promise.all([fetch(urlA),fetch(urlB)]);if(!resA.ok||!resB.ok)throw new Error('No se pudieron descargar los audios para la mezcla.');
-  const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)throw new Error('Este navegador no soporta mezcla de audio.');
-  ctx=new AudioCtx();const [bufA,bufB]=await Promise.all([ctx.decodeAudioData(await resA.arrayBuffer()),ctx.decodeAudioData(await resB.arrayBuffer())]);
-  if(offsetA>=bufA.duration||offsetB>=bufB.duration)throw new Error('Uno de los puntos de entrada supera la duración de su canción.');
-  const rate=Number(document.getElementById('djTempo').value)/100;
-  const remainingA=bufA.duration-offsetA,remainingB=(bufB.duration-offsetB)/rate;
-  const transition=Math.min(fade,remainingA,remainingB);
-  if(transition<1)throw new Error('No hay suficiente audio después de uno de los puntos de entrada.');
-  // Deck A comienza inmediatamente. Deck B entra cuando inicia el crossfade.
-  const bStart=Math.max(0,remainingA-transition);
-  const duration=Math.min(900,Math.max(remainingA,bStart+remainingB));
-  if(duration>=900)throw new Error('La mezcla supera 15 minutos. Elige segmentos más cortos.');
-  const sampleRate=44100,offline=new OfflineAudioContext(2,Math.ceil(duration*sampleRate),sampleRate);
-  const a=offline.createBufferSource(),b=offline.createBufferSource(),ga=offline.createGain(),gb=offline.createGain();
-  a.buffer=bufA;b.buffer=bufB;b.playbackRate.value=rate;
-  const x=Number(document.getElementById('djCrossfader').value)/100;
-  const gainA=Math.cos(x*Math.PI/2),gainB=Math.sin(x*Math.PI/2);
-  // Crossfade equal-power automatizado para evitar cortes bruscos y saltos de volumen.
-  ga.gain.setValueAtTime(gainA,0);ga.gain.setValueAtTime(gainA,Math.max(0,bStart));ga.gain.linearRampToValueAtTime(0,bStart+transition);
-  gb.gain.setValueAtTime(0,0);gb.gain.setValueAtTime(0,bStart);gb.gain.linearRampToValueAtTime(gainB,bStart+transition);gb.gain.setValueAtTime(gainB,duration);
-  a.connect(ga).connect(offline.destination);b.connect(gb).connect(offline.destination);
-  a.start(0,offsetA);b.start(bStart,offsetB);
-  status.textContent=`Mezclando desde A ${document.getElementById('djStartA').value} y B ${document.getElementById('djStartB').value}…`;
-  const mixed=await offline.startRendering();await ctx.close();ctx=null;
-  const left=mixed.getChannelData(0),right=mixed.getChannelData(1),encoder=new lamejs.Mp3Encoder(2,sampleRate,192),chunks=[],frame=1152;
-  const l=new Int16Array(frame),r=new Int16Array(frame);
-  for(let pos=0;pos<left.length;pos+=frame){const n=Math.min(frame,left.length-pos);for(let i=0;i<n;i++){l[i]=Math.max(-1,Math.min(1,left[pos+i]))*32767;r[i]=Math.max(-1,Math.min(1,right[pos+i]))*32767;}const out=encoder.encodeBuffer(l.subarray(0,n),r.subarray(0,n));if(out.length)chunks.push(new Uint8Array(out));if(pos%(frame*250)===0)status.textContent=`Codificando MP3… ${Math.round(pos/left.length*100)}%`;}
-  const tail=encoder.flush();if(tail.length)chunks.push(new Uint8Array(tail));const blob=new Blob(chunks,{type:'audio/mpeg'}),url=URL.createObjectURL(blob),aTag=document.createElement('a');
-  aTag.href=url;aTag.download=`VIPREMIXESTOOLS_MASHUP_${Date.now()}.mp3`;document.body.appendChild(aTag);aTag.click();aTag.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-  status.textContent=`Mashup MP3 exportado (${(blob.size/1048576).toFixed(1)} MB). Entrada A ${document.getElementById('djStartA').value}, entrada B ${document.getElementById('djStartB').value}, transición ${transition.toFixed(0)} s.`;
- }catch(e){console.error('Exportación MP3:',e);status.textContent='No se pudo exportar: '+(e.message||e);alert('No se pudo exportar el mashup: '+(e.message||e));}
- finally{if(ctx)try{await ctx.close();}catch(_){}btn.disabled=false;}
-}
-
 async function djLoadPlaylists(){
  const box=document.getElementById('djPlaylistResults');box.innerHTML='<p>Cargando playlists…</p>';
  const {data,error}=await sb.from('playlists').select('id,name,description,genre,updated_at').order('updated_at',{ascending:false});
@@ -1914,16 +1820,62 @@ async function djCreatePlaylist(){
  const input=document.getElementById('djPlaylistName'),name=input.value.trim();if(!name){alert('Escribe un nombre para la playlist.');return;}
  const {error}=await sb.from('playlists').insert({name});if(error){alert('No se pudo crear la playlist: '+error.message);return;}input.value='';await djLoadPlaylists();
 }
-async function djAddDeckTrackToPlaylist(){
- const playlistId=document.getElementById('djPlaylistSelect').value,track=djTrackA;
- if(!playlistId){alert('Crea o selecciona una playlist.');return;}if(!track){alert('Selecciona primero una canción en Deck A.');return;}
- const {data:existing,error:readError}=await sb.from('playlist_tracks').select('position').eq('playlist_id',playlistId).order('position',{ascending:false}).limit(1);
- if(readError){alert(readError.message);return;}
- const position=existing&&existing.length?Number(existing[0].position)+1:0;
- const {error}=await sb.from('playlist_tracks').insert({playlist_id:playlistId,track_id:track.id,position});
- if(error){alert('No se pudo agregar: '+(error.code==='23505'?'Ese remix ya está en la playlist.':error.message));return;}await djLoadPlaylists();
+// ===== LOTES POR GÉNERO / TONALIDAD / BPM =====
+let djBatchRows=[],djBatchSel=new Set(),djDlCancel=false;
+const djV=id=>document.getElementById(id).value;
+function djCamSort(a,b){const p=v=>{const m=/^(\d+)([AB])$/.exec(v);return m?[+m[1],m[2]]:[99,'Z'];};const x=p(a),y=p(b);return x[0]-y[0]||x[1].localeCompare(y[1]);}
+function djBatchInit(){
+ const g=document.getElementById('djBatchGenre'),k=document.getElementById('djBatchKey');
+ if(g&&!g.options.length){g.innerHTML='<option value="">Todos los géneros</option>'+genresList.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');}
+ if(k&&!k.options.length){const a=[];for(let n=1;n<=12;n++)a.push(n+'A',n+'B');k.innerHTML='<option value="">Todas las tonalidades</option>'+a.map(x=>`<option value="${x}">${x}</option>`).join('');}
+ djBatchSearch();
 }
-window.addEventListener('DOMContentLoaded',()=>{djAudioA.preload='none';djAudioB.preload='none';djSetCrossfader(50);djSetTempo(100);});
+function djBatchSearch(){
+ const g=djV('djBatchGenre'),k=djV('djBatchKey'),mn=Number(djV('djBatchBpmMin'))||0,mx=Number(djV('djBatchBpmMax'))||0;
+ const inG=allRemixes.filter(t=>!g||t.genre===g),pending=inG.filter(t=>!t.camelotKey).length;
+ djBatchRows=inG.filter(t=>t.camelotKey&&(!k||t.camelotKey===k)&&((!mn&&!mx)||(Number(t.bpm)&&(!mn||Number(t.bpm)>=mn)&&(!mx||Number(t.bpm)<=mx))));
+ djBatchSel=new Set(djBatchRows.map(t=>t.id));
+ const groups={};djBatchRows.forEach(t=>(groups[t.camelotKey]=groups[t.camelotKey]||[]).push(t));
+ const box=document.getElementById('djBatchResults');
+ box.innerHTML=Object.keys(groups).sort(djCamSort).map(key=>{
+  const rows=groups[key].sort((a,b)=>(Number(a.bpm)||999)-(Number(b.bpm)||999)||a.title.localeCompare(b.title));
+  return `<div class="border border-brand-border rounded-lg"><label class="flex items-center gap-2 bg-slate-50 px-3 py-2 text-xs font-bold rounded-t-lg"><input type="checkbox" checked class="accent-blue-600" onchange="djBatchToggleGroup('${key}',this.checked)"> ${escapeHtml(key)} · ${escapeHtml(rows[0].musicalKey||'')} <span class="font-normal text-slate-400">(${rows.length})</span></label>`+
+   rows.map(t=>`<label class="flex items-center gap-2 px-3 py-1.5 text-xs border-t border-brand-border"><input type="checkbox" checked data-key="${key}" data-id="${escapeHtml(t.id)}" class="accent-blue-600" onchange="djBatchToggle('${escapeHtml(t.id)}',this.checked)"><span class="min-w-0 flex-1 truncate">${escapeHtml(t.title)}</span><span class="text-slate-400 shrink-0">${t.bpm?escapeHtml(t.bpm)+' BPM':'—'}</span></label>`).join('')+'</div>';
+ }).join('');
+ document.getElementById('djBatchInfo').textContent=`${djBatchRows.length} canción(es) encontradas`+(pending?` · ${pending} de este género aún sin tonalidad (no aparecen).`:'.');
+ djBatchCount();
+}
+function djBatchCount(){document.getElementById('djBatchDlBtn').innerHTML=`<i class="fa-solid fa-download mr-1"></i> Descargar lote (${djBatchSel.size})`;}
+function djBatchToggle(id,on){on?djBatchSel.add(id):djBatchSel.delete(id);djBatchCount();}
+function djBatchToggleGroup(key,on){document.querySelectorAll(`#djBatchResults input[data-key="${key}"]`).forEach(c=>{c.checked=on;djBatchToggle(c.dataset.id,on);});}
+function djBatchToggleAll(on){document.querySelectorAll('#djBatchResults input').forEach(c=>c.checked=on);djBatchSel=on?new Set(djBatchRows.map(t=>t.id)):new Set();djBatchCount();}
+async function djBatchDownload(){
+ if(!currentUser){openLoginModal();return;}if(!hasMembership()){openPaywallModal();return;}
+ const list=djBatchRows.filter(t=>djBatchSel.has(t.id)),st=document.getElementById('djBatchStatus'),btn=document.getElementById('djBatchDlBtn');
+ if(!list.length){alert('Selecciona al menos una canción.');return;}
+ if(list.length>15&&!confirm(`Se descargarán ${list.length} canciones una por una. ¿Continuar?`))return;
+ djDlCancel=false;btn.disabled=true;let ok=0,fail=0;
+ try{for(let i=0;i<list.length&&!djDlCancel;i++){const t=list[i];st.textContent=`Descargando ${i+1} de ${list.length}: ${t.title}`;
+  try{const url=await signedUrl(t.path,120,{download:`${t.title}${t.artist?' - '+t.artist:''}.${t.ext}`});const a=document.createElement('a');a.href=url;document.body.appendChild(a);a.click();a.remove();ok++;}catch(e){console.warn(e);fail++;}
+  await new Promise(r=>setTimeout(r,1500));}
+  st.textContent=djDlCancel?`Cancelado tras ${ok} descarga(s).`:`Listo: ${ok} descargada(s)${fail?`, ${fail} con error`:''}.`;
+ }finally{btn.disabled=false;}
+}
+async function djBatchSave(){
+ const list=djBatchRows.filter(t=>djBatchSel.has(t.id)),st=document.getElementById('djBatchStatus'),name=djV('djBatchPlName').trim();
+ if(!list.length){alert('Selecciona al menos una canción.');return;}
+ let pid=djV('djPlaylistSelect');
+ try{
+  if(name){const g=djV('djBatchGenre');const {data,error}=await sb.from('playlists').insert({name,genre:g||null}).select('id').single();if(error)throw error;pid=data.id;}
+  if(!pid){alert('Escribe un nombre nuevo o elige una playlist existente.');return;}
+  const {data:ex,error:e1}=await sb.from('playlist_tracks').select('track_id,position').eq('playlist_id',pid);if(e1)throw e1;
+  const have=new Set((ex||[]).map(r=>r.track_id));let pos=(ex||[]).reduce((m,r)=>Math.max(m,Number(r.position)+1),0);
+  const rows=list.filter(t=>!have.has(t.id)).map(t=>({playlist_id:pid,track_id:t.id,position:pos++}));
+  if(rows.length){const {error}=await sb.from('playlist_tracks').insert(rows);if(error)throw error;}
+  st.textContent=`Playlist guardada: ${rows.length} canción(es) agregadas${list.length-rows.length?` (${list.length-rows.length} ya estaban)`:''}.`;
+  document.getElementById('djBatchPlName').value='';await djLoadPlaylists();
+ }catch(e){st.textContent='No se pudo guardar la playlist: '+(e.message||e);}
+}
 </script>
 
 </body>
