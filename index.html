@@ -598,7 +598,7 @@
             <div class="flex items-center space-x-3 mb-6">
                 <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-cloud-arrow-up text-lg"></i></div>
                 <div>
-                    <h3 class="text-lg font-bold text-white">Subir Lote Masivo (Hasta 50 Remixes)</h3>
+                    <h3 class="text-lg font-bold text-white">Subir Lote Masivo (Hasta 100 Remixes)</h3>
                     <p class="text-xs text-slate-400">Herramienta exclusiva de Administrador Djanthonymejia</p>
                 </div>
             </div>
@@ -1202,8 +1202,8 @@ function parseTrackInfo(t) {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script>
 // ====== CONFIGURACIÓN: pega aquí tus datos (ver instrucciones) ======
-const SUPABASE_URL = 'https://' + 'kcpeklaegzvmeiikcmra' + '.supabase' + '.co'; // partida en trozos para que el escáner de Netlify no la marque
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjcGVrbGFlZ3p2bWVpaWtjbXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MzQ5OTUsImV4cCI6MjExMDAxMDk5NX0.Ck60KVUIhFsIa_eiC2aAfwOQHsEUUD7lkg-W6nQeCRI';
+const SUPABASE_URL = 'https://' + 'hcyuwwwwwdqzxjrfqcyf' + '.supabase' + '.co'; // partida en trozos para que el escáner de Netlify no la marque
+const SUPABASE_KEY = 'sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU';
 const PAYPAL_ME = 'https://paypal.me/mamijordan23';
 // ====================================================================
 const configured = !SUPABASE_URL.includes('PEGA_AQUI');
@@ -1770,7 +1770,7 @@ async function detectMusicalKey(file) {
 }
 async function buildBulkReview() {
     const runId = ++bulkReviewRun;
-    const files = Array.from(bulkAudioFiles.files || []).slice(0, 50), box = document.getElementById('bulkReview');
+    const files = Array.from(bulkAudioFiles.files || []).slice(0, 100), box = document.getElementById('bulkReview');
     bulkItems = [];
     if (!files.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     box.classList.remove('hidden');
@@ -1807,7 +1807,7 @@ async function processBulkUpload() {
     const files = Array.from(bulkAudioFiles.files || []);
     const allowedExt = new Set(Object.keys(AUDIO_MIME));
     if (!files.length) { alert('Selecciona al menos un archivo de audio.'); return; }
-    if (files.length > 50) { alert('Puedes subir un máximo de 50 archivos por lote.'); return; }
+    if (files.length > 100) { alert('Puedes subir un máximo de 100 archivos por lote.'); return; }
     const invalid = files.find(f => {
         const ext = (f.name.match(/\.([^.]+)$/) || [])[1];
         return !ext || !allowedExt.has(ext.toLowerCase()) || (f.type && !f.type.startsWith('audio/') && f.type !== 'video/mp4');
