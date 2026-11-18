@@ -361,6 +361,7 @@
                             <div class="flex justify-between text-xs font-semibold mb-1.5"><span id="djAnalyzeSummary" class="text-slate-700"></span><span id="djAnalyzePct" class="text-slate-500"></span></div>
                             <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden"><div id="djAnalyzeBar" class="h-full rounded-full bg-emerald-500 transition-all" style="width:0%"></div></div>
                             <p id="djAnalyzeNotice" class="text-xs text-slate-500 mt-2"></p>
+                            <div id="djPendingList" class="mt-3 max-h-64 overflow-y-auto space-y-1 text-xs"></div>
                         </div>
                         <div class="mt-5 pt-4 border-t border-brand-border">
                             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -1425,7 +1426,7 @@ async function loadTracks() {
     }
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
     allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', remixer: t.remixer || '', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
-        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
+        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), fileSize: Number(t.file_size) || 0, musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
     buildDjRegistry(allRemixes);
     renderPortalsSidebar(); renderTracksTable(); updateSummaryCounts();
 }
@@ -2017,11 +2018,15 @@ function renderBulkReview() {
     const nDirty = bulkItems.filter(x => x.rating === 'Dirty').length, nClean = bulkItems.filter(x => x.rating === 'Clean').length, nUndef = bulkItems.length - nDirty - nClean;
     const ratingBadge = it => it.ratingConflict ? `<span class="text-amber-400 shrink-0 text-right">Revisar: ${escapeHtml(it.ratingSource)} dice ${escapeHtml(it.rating)}, etiqueta dice ${escapeHtml(it.ratingConflict)}</span>` : it.rating ? `<span class="${it.rating === 'Dirty' ? 'text-red-400' : 'text-emerald-400'} shrink-0 text-right">${it.rating} · ${it.ratingSource === 'manual' ? 'elegido por ti' : 'por ' + escapeHtml(it.ratingSource)}</span>` : '<span class="text-slate-500 shrink-0 text-right">Dirty/Clean sin definir</span>';
     const djBadge = it => it.remixer ? `<span class="text-emerald-400 shrink-0 text-right">DJ · ${it.remixerSource === 'manual' ? 'elegido por ti' : escapeHtml(it.remixerSource)}</span>` : '<span class="text-slate-500 shrink-0 text-right">DJ sin detectar</span>';
-    const big = bulkItems.length > BULK_PREANALYZE_MAX;
+    const big = true;
+    const exTitles = new Set(allRemixes.map(t => normalizeText(t.title))), exSizes = new Set(allRemixes.filter(t => t.fileSize).map(t => t.fileSize));
+    const isDup = it => { const base = it.file.name.replace(/\.[^/.]+$/, ''); return exTitles.has(normalizeText(base)) || exTitles.has(normalizeText(bulkFinalTitle(base, it))) || (it.file.size && exSizes.has(it.file.size)); };
+    const nDup = bulkItems.filter(isDup).length;
     const shown = bulkItems.slice(0, BULK_RENDER_MAX);
-    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} ${big ? 'Tonalidad: se detecta durante la subida.' : `Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}.`} DJs detectados: ${djsFound}/${bulkItems.length}. Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
+    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} ${big ? 'Tonalidad: solo si viene en el nombre o la etiqueta; el resto se analiza después desde el panel DJ.' : `Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}.`} DJs detectados: ${djsFound}/${bulkItems.length}.${nDup ? ` <b class="text-red-500">${nDup} ya existen en la web y se rechazarán al subir.</b>` : ''} Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
         shown.map((it, i) => `<div class="flex flex-wrap items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
             <span class="truncate flex-1 min-w-32 text-slate-200" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
+            ${isDup(it) ? '<span class="bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded-full text-[10px] shrink-0">Ya existe</span>' : ''}
             ${badgeHtml(i)}
             ${ratingBadge(it)}
             <select aria-label="Versión Dirty o Clean" onchange="setBulkRating(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white"><option value=""${it.rating ? '' : ' selected'}>Sin definir</option><option value="Dirty"${it.rating === 'Dirty' ? ' selected' : ''}>Dirty</option><option value="Clean"${it.rating === 'Clean' ? ' selected' : ''}>Clean</option></select>
@@ -2188,8 +2193,8 @@ async function buildBulkReview() {
     bulkItems = [];
     if (!files.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     box.classList.remove('hidden');
-    const big = files.length > BULK_PREANALYZE_MAX;
-    box.innerHTML = `<p class="text-xs text-slate-400">Leyendo etiquetas${big ? '' : ' y detectando tonalidad automáticamente'} de ${files.length} archivo(s)… Puede tardar según el tamaño.</p>`;
+    const big = true;
+    box.innerHTML = `<p class="text-xs text-slate-400">Leyendo etiquetas de ${files.length} archivo(s)… Puede tardar según el tamaño.</p>`;
     for (let n = 0; n < files.length; n++) {
         const f = files[n];
         let tag = {};
@@ -2228,6 +2233,16 @@ function stopBulkUpload() {
     if (b) { b.disabled = true; b.textContent = 'Deteniendo…'; }
 }
 const bulkBeforeUnload = e => { e.preventDefault(); e.returnValue = ''; };
+// Título final con el que se guarda un archivo (mismo cálculo para subir y para detectar repetidos)
+function bulkFinalTitle(title, it) {
+    let t = (it.rating && !parseTrackInfo({ title }).rating) ? `${title} (${it.rating})` : title;
+    const wanted = splitDjs(it.remixer || '').map(canonDj);
+    if (wanted.length) {
+        const have = parseTrackInfo({ title: t }).remixers.map(djKey);
+        if (!wanted.every(n => have.includes(djKey(n)))) t += ` (${wanted.join(' & ')} Remix)`;
+    }
+    return t;
+}
 async function processBulkUpload() {
     if (!isAdmin) { alert('Acceso denegado.'); return; }
     const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
@@ -2238,12 +2253,13 @@ async function processBulkUpload() {
         const ext = (f.name.match(/\.([^.]+)$/) || [])[1];
         return !!ext && allowedExt.has(ext.toLowerCase()) && !(f.type && !f.type.startsWith('audio/') && f.type !== 'video/mp4');
     };
-    const files = allFiles.filter(isValid), skipped = allFiles.length - files.length;
+    let files = allFiles.filter(isValid), skipped = allFiles.length - files.length;
     if (!files.length) { alert('Ningún archivo tiene un formato admitido. Usa MP3, WAV, M4A, AAC, FLAC, OGG o MP4.'); return; }
     if (skipped && !confirm(`${skipped} archivo(s) con formato no admitido se omitirán. ¿Continuar con los ${files.length} restantes?`)) return;
     if (files.length > 50 && !confirm(`Se subirán ${files.length} archivos uno por uno. Mantén esta pestaña abierta; puedes detener el lote cuando quieras. ¿Continuar?`)) return;
     if (!sb) { alert('La conexión con la base de datos no está configurada.'); return; }
-    const total = files.length, itemMap = new Map(bulkItems.map(x => [x.file, x])), sleep = ms => new Promise(r => setTimeout(r, ms));
+    let total = files.length; const itemMap = new Map(bulkItems.map(x => [x.file, x])), sleep = ms => new Promise(r => setTimeout(r, ms));
+    const dupNames = []; let hasSizeCol = false;
     const stopBtn = document.getElementById('uploadStopBtn');
     bulkCancel = false;
     if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = 'Detener lote'; stopBtn.classList.remove('hidden'); }
@@ -2255,16 +2271,23 @@ async function processBulkUpload() {
     const failedNames = [];
     try {
         await requireSession();
+        // Rechazar canciones que ya están en la web (o repetidas dentro del mismo lote)
+        uploadStatusText.textContent = 'Revisando si hay canciones repetidas…';
+        await loadTracks();
+        hasSizeCol = !(await sb.from('tracks').select('file_size').limit(1)).error;
+        const seen = new Set(allRemixes.map(t => normalizeText(t.title)));
+        const seenSizes = new Set(allRemixes.filter(t => t.fileSize).map(t => t.fileSize));
+        files = files.filter(f => {
+            const base = f.name.replace(/\.[^/.]+$/, ''), keys = [normalizeText(base), normalizeText(bulkFinalTitle(base, itemMap.get(f) || {}))];
+            if (keys.some(k => k && seen.has(k)) || (hasSizeCol && f.size && seenSizes.has(f.size))) { dupNames.push(f.name); return false; }
+            keys.forEach(k => seen.add(k)); if (hasSizeCol && f.size) seenSizes.add(f.size); return true;
+        });
+        total = files.length;
         for (let i = 0; i < total && !bulkCancel; i++) {
             const f = files[i], title = f.name.replace(/\.[^/.]+$/, ''), ext = (f.name.match(/\.([^.]+)$/) || [])[1].toLowerCase();
             const it = itemMap.get(f) || {};
             const counts = `✔ ${completed} · ✖ ${failed}`;
-            if (!it.musicalKey) {
-                uploadStatusText.textContent = `Analizando tonalidad ${i + 1} de ${total}: ${title}… (${counts})`;
-                try { const detected = await detectMusicalKey(f); Object.assign(it, detected, { keyStatus: 'analyzed' }); }
-                catch (analysisError) { console.warn('Análisis automático falló para', f.name, analysisError); it.keyStatus = 'failed'; it.keyError = analysisError.message; }
-            }
-            uploadStatusText.textContent = `Subiendo ${i + 1} de ${total}: ${title}${it.musicalKey ? ` · ${it.musicalKey} (${it.camelotKey})` : ' · key no detectada; se podrá reintentar'} (${counts})`;
+            uploadStatusText.textContent = `Subiendo ${i + 1} de ${total}: ${title}${it.musicalKey ? ` · ${it.musicalKey} (${it.camelotKey})` : ' · key pendiente de analizar'} (${counts})`;
             let path = null;
             try {
                 for (let attempt = 1; attempt <= 2; attempt++) {
@@ -2281,15 +2304,9 @@ async function processBulkUpload() {
                         await sleep(1500);
                     }
                 }
-                let finalTitle = (it.rating && !parseTrackInfo({ title }).rating) ? `${title} (${it.rating})` : title;
-                // DJ / remixer detectado por etiqueta o elegido a mano: se guarda en el título para que la columna lo muestre
-                const wanted = splitDjs(it.remixer || '').map(canonDj);
-                if (wanted.length) {
-                    const have = parseTrackInfo({ title: finalTitle }).remixers.map(djKey);
-                    if (!wanted.every(n => have.includes(djKey(n)))) finalTitle += ` (${wanted.join(' & ')} Remix)`;
-                }
+                const finalTitle = bulkFinalTitle(title, it);
                 const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
-                const ins = await sb.from('tracks').insert({ title: finalTitle, artist: '', portal, genre: it.genre || genre, bpm, storage_path: path, ext,
+                const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal, genre: it.genre || genre, bpm, storage_path: path, ext,
                     musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
                     key_analysis_status: it.musicalKey ? 'analyzed' : 'pending', key_analyzed_at: it.musicalKey ? new Date().toISOString() : null });
                 if (ins.error) throw new Error(ins.error.message);
@@ -2302,8 +2319,10 @@ async function processBulkUpload() {
             uploadProgressBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
         }
         await loadTracks();
+        if (typeof djPopulateSelectors === 'function') djPopulateSelectors();
         const cancelled = bulkCancel ? ` Lote detenido: quedaron ${total - completed - failed} sin subir.` : '';
-        uploadStatusText.textContent = (failed ? `Subida terminada: ${completed} correcto(s), ${failed} fallido(s). Último error: ${lastError}. Fallidos: ${failedNames.slice(0, 5).join(', ')}${failedNames.length > 5 ? ` y ${failedNames.length - 5} más (ver consola)` : ''}.` : (bulkCancel ? `${completed} archivo(s) publicados.` : '¡Completado y publicado con éxito!')) + cancelled;
+        uploadStatusText.textContent = (failed ? `Subida terminada: ${completed} correcto(s), ${failed} fallido(s). Último error: ${lastError}. Fallidos: ${failedNames.slice(0, 5).join(', ')}${failedNames.length > 5 ? ` y ${failedNames.length - 5} más (ver consola)` : ''}.` : (bulkCancel ? `${completed} archivo(s) publicados.` : '¡Completado y publicado con éxito!')) + cancelled + (hasSizeCol ? '' : ' Aviso: para detectar repetidos también por tamaño, corre en Supabase: alter table tracks add column if not exists file_size bigint;') + (dupNames.length ? ` Rechazados por ya existir: ${dupNames.length}${dupNames.length <= 5 ? ' (' + dupNames.join(', ') + ')' : ' (ver consola)'}.` : '');
+        if (dupNames.length) console.warn('Rechazados por repetidos:', dupNames);
         if (failedNames.length) console.warn('Archivos fallidos:', failedNames);
     } catch (e) {
         console.error('Error general en la subida:', e);
@@ -2436,7 +2455,7 @@ function showDJStudioView(){
  djPopulateSelectors(); djBatchInit(); djLoadPlaylists(); djShowTab(djTab); djBatchTargetChange();
 }
 function djPopulateSelectors(){
- const opts='<option value="">Selecciona un remix…</option>'+allRemixes.map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.title)}${t.bpm?' · '+escapeHtml(t.bpm)+' BPM':''}</option>`).join('');
+ const opts='<option value="">Selecciona un remix pendiente…</option>'+allRemixes.filter(t=>!t.musicalKey).map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.title)}${t.bpm?' · '+escapeHtml(t.bpm)+' BPM':''}</option>`).join('');
  ['djKeyTrack'].forEach(id=>{const el=document.getElementById(id);if(el){const old=el.value;el.innerHTML=opts;if(old)el.value=old;}});
  const key=document.getElementById('djKeyValue'); if(key)key.innerHTML='<option value="">Selecciona tonalidad…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
  const compatible=document.getElementById('djCompatibleKey'); if(compatible&&!compatible.options.length)compatible.innerHTML='<option value="">Elige una tonalidad de referencia…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k} · ${DJ_CAMELOT[k]}</option>`).join('');
@@ -2482,7 +2501,10 @@ function djAnalyzeRefreshUI(){
  card.classList.toggle('hidden',!isAdmin);if(!isAdmin)return;
  const total=allRemixes.length,withKey=allRemixes.filter(t=>t.musicalKey).length,pct=total?Math.round(withKey/total*100):0;
  const sum=document.getElementById('djAnalyzeSummary'),pc=document.getElementById('djAnalyzePct'),bar=document.getElementById('djAnalyzeBar');
- if(sum)sum.textContent=`${withKey} de ${total} remixes con tonalidad · ${total-withKey} pendientes`;
+ const pend=allRemixes.filter(t=>!t.musicalKey).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||a.title.localeCompare(b.title));
+ if(sum)sum.textContent=pend.length?`${pend.length} pendientes por analizar`:'Sin pendientes: todo tiene tonalidad';
+ const pl=document.getElementById('djPendingList');
+ if(pl){const MAX=200;pl.innerHTML=pend.slice(0,MAX).map(t=>`<div class="flex items-center justify-between gap-2 border border-brand-border rounded-lg px-3 py-1.5"><span class="min-w-0 truncate" title="${escapeHtml(t.title)}">${escapeHtml(t.title)}</span><span class="shrink-0 text-slate-400">${escapeHtml(t.genre||'Sin género')}</span></div>`).join('')+(pend.length>MAX?`<p class="text-slate-400 px-1">Mostrando ${MAX} de ${pend.length}. Al analizar, se procesan todas.</p>`:'');}
  if(pc)pc.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
  const b=document.getElementById('djAnalyzeAllBtn');if(b&&!b.dataset.busy)b.textContent=total-withKey?`Analizar ${total-withKey} pendientes`:'Todo analizado';
  const rs=document.getElementById('djRatingSummary');
