@@ -1,6 +1,6 @@
 // Netlify Function: entrega y gestiona audios alojados en Backblaze B2 (solo los que empiezan por "b2/").
 // Las canciones antiguas siguen en Supabase y no pasan por aquí.
-// Variables de entorno: B2_KEY_ID, B2_APP_KEY, B2_BUCKET, B2_ENDPOINT
+// Variables de entorno: B2_KEY_ID, B2_APP_KEY, B2_BUCKET, B2_ENDPOINT, SUPABASE_SERVICE_ROLE_KEY
 const crypto = require('crypto');
 
 // Datos públicos del proyecto NUEVO de Supabase (la publishable key es pública y ya está en index.html).
@@ -8,6 +8,9 @@ const crypto = require('crypto');
 // para evitar que quede un valor viejo del proyecto anterior.
 const SUPABASE_URL = 'https://' + 'hcyuwwwwwdqzxjrfqcyf' + '.supabase' + '.co';
 const SUPABASE_KEY = 'sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU';
+
+// Límite de descarga por usuario al mes (los administradores no tienen límite)
+const LIMITE_BYTES = 10 * 1024 ** 3; // 10 GB
 
 const PATH_RE = /^b2\/[A-Za-z0-9][A-Za-z0-9._-]*\.(mp3|wav|m4a|aac|flac|ogg|mp4)$/i;
 
@@ -40,7 +43,7 @@ function presign({ method, host, path, extraQuery = {}, accessKey, secret, regio
   return `https://${host}${encPath(path)}?${qs}&X-Amz-Signature=${sig}`;
 }
 
-// Petición firmada con cabeceras (para DELETE desde el servidor)
+// Petición firmada con cabeceras (para DELETE y HEAD desde el servidor)
 async function signedRequest({ method, host, path, accessKey, secret, region }) {
   const amz = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
   const date = amz.slice(0, 8);
@@ -98,6 +101,30 @@ async function getUser(event) {
   return { id: u.id, isAdmin, member };
 }
 
+// Tamaño del archivo en bytes (HEAD firmado a Backblaze). Devuelve 0 si no se pudo saber.
+async function tamanoArchivo(base) {
+  try {
+    const r = await signedRequest({ ...base, method: 'HEAD' });
+    if (!r.ok) return 0;
+    return parseInt(r.headers.get('content-length') || '0', 10) || 0;
+  } catch (e) { return 0; }
+}
+
+// Descuenta bytes del cupo mensual del usuario. Devuelve true (permitido), false (cupo agotado) o null (error).
+async function consumirCupo(userId, bytes) {
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  if (!key) { console.error('[audio] Falta SUPABASE_SERVICE_ROLE_KEY'); return null; }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/consume_download`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_user: userId, p_bytes: bytes, p_limit: LIMITE_BYTES })
+    });
+    if (!r.ok) { console.error('[audio] consume_download respondió ' + r.status); return null; }
+    return (await r.json()) === true;
+  } catch (e) { console.error('[audio] consume_download falló'); return null; }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return reply(405, { error: 'Método no permitido' });
   let body;
@@ -120,6 +147,16 @@ exports.handler = async (event) => {
   }
   if (action === 'download') {
     if (!user.member) return reply(403, { error: 'Necesitas una membresía activa para descargar.' });
+
+    // Límite mensual por usuario (el administrador no tiene límite)
+    if (!user.isAdmin) {
+      const bytes = await tamanoArchivo(base);
+      if (!bytes) return reply(502, { error: 'No se pudo comprobar el tamaño del archivo. Inténtalo de nuevo.' });
+      const permitido = await consumirCupo(user.id, bytes);
+      if (permitido === null) return reply(502, { error: 'No se pudo comprobar tu límite de descargas. Inténtalo de nuevo.' });
+      if (!permitido) return reply(429, { error: 'Llegaste a tu límite de 10 GB de descargas este mes. Se reinicia el día 1.' });
+    }
+
     const safe = String(filename || path.split('/').pop()).replace(/[\r\n"\\\/]/g, '_').slice(0, 180);
     const cd = `attachment; filename="${safe.replace(/[^\x20-\x7E]/g, '_')}"; filename*=UTF-8''${enc(safe)}`;
     return reply(200, { url: presign({ ...base, method: 'GET', expires: 120, extraQuery: { 'response-content-disposition': cd } }) });
