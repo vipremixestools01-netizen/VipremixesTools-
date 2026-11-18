@@ -277,7 +277,7 @@
                                     <th class="py-4 px-3">Song Title</th>
                                     <th class="py-4 px-3 w-[16%] hidden sm:table-cell">Artist</th>
                                     <th class="py-4 px-3 w-[16%] hidden md:table-cell">Version</th>
-                                    <th class="py-4 px-3 w-[10%] hidden xl:table-cell">Remixer</th>
+                                    <th class="py-4 px-3 w-[14%] hidden lg:table-cell">DJ / Remixer</th>
                                     <th class="py-4 px-3 w-[6%] hidden md:table-cell">BPM</th>
                                     <th class="py-4 px-2 w-[76px] text-center"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
                                     <th class="py-4 px-3 w-[10%] hidden lg:table-cell">Genre</th>
@@ -524,22 +524,29 @@
                     <p class="text-xs text-slate-400">Crea tu cuenta para acceder a la plataforma</p>
                 </div>
             </div>
-            <form id="registerForm" onsubmit="handleRegisterSubmit(event)" class="space-y-4">
+            <form id="registerForm" novalidate onsubmit="handleRegisterSubmit(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre de DJ</label>
-                    <input type="text" id="regUsername" required minlength="3" maxlength="24" autocomplete="nickname" placeholder="DJ Carlos Mix" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5" for="regUsername">Nombre de DJ</label>
+                    <input type="text" id="regUsername" required maxlength="24" autocomplete="nickname" autocapitalize="words" spellcheck="false" aria-describedby="regUsernameHelp regUsernameErr" placeholder="DJ Carlos Mix" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                    <p id="regUsernameHelp" class="text-[11px] text-slate-400 mt-1">3 a 24 caracteres: letras, números, espacio, punto, guion o guion bajo.</p>
+                    <p id="regUsernameErr" class="text-[11px] text-rose-500 mt-1 hidden" role="alert"></p>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
-                    <input type="email" id="regEmail" required maxlength="254" autocomplete="email" placeholder="tu@correo.com" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5" for="regEmail">Correo Electrónico</label>
+                    <input type="email" id="regEmail" required maxlength="254" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" aria-describedby="regEmailErr regEmailHint" placeholder="tu@correo.com" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                    <p id="regEmailErr" class="text-[11px] text-rose-500 mt-1 hidden" role="alert"></p>
+                    <div id="regEmailHint" class="text-[11px] text-slate-500 mt-1 hidden"></div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Contraseña</label>
-                    <div class="relative"><input type="password" id="regPassword" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Mínimo 8 caracteres" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson pr-12"><button type="button" tabindex="-1" aria-label="Mostrar u ocultar contraseña" onclick="togglePass('regPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-eye"></i></button></div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5" for="regPassword">Contraseña</label>
+                    <div class="relative"><input type="password" id="regPassword" required maxlength="72" autocomplete="new-password" aria-describedby="regPwHint regPasswordErr" placeholder="Mínimo 8 caracteres, con letras y números" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson pr-12"><button type="button" tabindex="-1" aria-label="Mostrar u ocultar contraseña" onclick="togglePass('regPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-eye"></i></button></div>
+                    <div class="mt-2"><div class="h-1.5 w-full bg-brand-cardBg rounded-full overflow-hidden border border-brand-border"><div id="regPwBar" class="h-full w-0 transition-all duration-300"></div></div><p id="regPwHint" class="text-[11px] text-slate-400 mt-1">Usa 8 o más caracteres con letras y números.</p></div>
+                    <p id="regPasswordErr" class="text-[11px] text-rose-500 mt-1 hidden" role="alert"></p>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Confirmar contraseña</label>
-                    <div class="relative"><input type="password" id="regPassword2" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Repite tu contraseña" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson pr-12"><button type="button" tabindex="-1" aria-label="Mostrar u ocultar contraseña" onclick="togglePass('regPassword2', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-eye"></i></button></div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5" for="regPassword2">Confirmar contraseña</label>
+                    <div class="relative"><input type="password" id="regPassword2" required maxlength="72" autocomplete="new-password" aria-describedby="regPassword2Err" placeholder="Repite tu contraseña" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson pr-12"><button type="button" tabindex="-1" aria-label="Mostrar u ocultar contraseña" onclick="togglePass('regPassword2', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-eye"></i></button></div>
+                    <p id="regPassword2Err" class="text-[11px] text-rose-500 mt-1 hidden" role="alert"></p>
                 </div>
                 <p id="registerMsg" class="text-xs hidden" role="status" aria-live="polite"></p>
                 <button id="registerBtn" type="submit" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2">Crear Cuenta Gratis</button>
@@ -645,7 +652,7 @@
             <div class="flex items-center space-x-3 mb-6">
                 <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-cloud-arrow-up text-lg"></i></div>
                 <div>
-                    <h3 class="text-lg font-bold text-white">Subir Lote Masivo (Hasta 100 Remixes)</h3>
+                    <h3 class="text-lg font-bold text-white">Subir Lote Masivo (Sin límite)</h3>
                     <p class="text-xs text-slate-400">Herramienta exclusiva de Administrador Djanthonymejia</p>
                 </div>
             </div>
@@ -669,12 +676,15 @@
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Audio (.mp3 / .wav)</label>
                     <input type="file" id="bulkAudioFiles" multiple accept="audio/*" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
                 </div>
+                <p class="text-[11px] text-slate-400 -mt-2">Sin límite de archivos. En lotes grandes la tonalidad se detecta durante la subida: deja esta pestaña abierta hasta que termine.</p>
+                <datalist id="djKnownList"></datalist>
                 <div id="bulkReview" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
                 <div id="uploadProgressContainer" class="hidden">
                     <p id="uploadStatusText" class="text-xs font-semibold text-rose-400 mb-1">Subiendo y procesando...</p>
                     <div class="w-full bg-brand-cardBg h-2.5 rounded-full overflow-hidden border border-brand-border">
                         <div id="uploadProgressBar" class="bg-brand-crimson h-full w-0 transition-all duration-300"></div>
                     </div>
+                    <button id="uploadStopBtn" type="button" onclick="stopBulkUpload()" class="hidden mt-2 text-xs font-bold text-rose-600 border border-rose-200 rounded-lg px-3 py-1.5 hover:bg-rose-50">Detener lote</button>
                 </div>
                 <button id="uploadSubmitBtn" onclick="processBulkUpload()" class="w-full bg-gradient-to-r from-brand-crimson to-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-bolt"></i> Procesar y Publicar Lote
@@ -868,30 +878,84 @@
             return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9ñ ]+/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
-// ===== Interpretación del título: artista, versión, remixer y Dirty/Clean =====
+// ===== Interpretación del título: artista, versión, remixer (DJ) y Dirty/Clean =====
 function ratingOf(text) {
     const t = String(text || '').toLowerCase(), d = /\b(dirty|explicit)\b/.test(t), c = /\b(clean|censored)\b/.test(t);
     return d && !c ? 'Dirty' : c && !d ? 'Clean' : '';
 }
-function parseTrackInfo(t) {
-    if (t._info) return t._info;
+const DJ_KIND_STRONG = 'remix|edit|flip|bootleg|rework|refix|re-?edit|mashup|redrum|vip|mix|blend';
+const DJ_KIND_WEAK = 'intro|outro|extended|quick\\s*hit|transition|segue|acapel+a|hype|break|drop';
+const DJ_MOD = '(?:extended|intro|outro|club|quick\\s*hit|short|acapel+a|hype|transition|segue|radio|party|slam|main)';
+const DJ_GENERIC = new Set('extended original club radio short intro outro quick hit instrumental acapella acapela dub main album single official video transition hype segue dirty clean explicit version mix edit remix mashup party break breakdown drop fix tag vip bpm dj mc remixed edited latin'.split(' '));
+let DJ_REGISTRY = [], DJ_CANON = new Map();
+function titleCaseWords(t) { return String(t || '').replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()); }
+function djKey(n) { return normalizeText(n).replace(/^dj /, ''); }
+function isGenericDj(n) {
+    const toks = normalizeText(n).split(' ').filter(Boolean);
+    return !toks.length || toks.every(x => DJ_GENERIC.has(x) || /^\d+$/.test(x));
+}
+function genreOnlyName(n) {
+    return typeof matchGenre === 'function' && !/^(dj|mc)\s/i.test(n) && n.trim().split(/\s+/).length <= 2 && !!matchGenre(n);
+}
+// Limpia y unifica el nombre de un DJ: "dj  nelson" / "DJ NELSON" / "Dj.Nelson" -> "DJ Nelson"
+function cleanDjName(raw) {
+    let n = String(raw || '').replace(/_/g, ' ').replace(/^[\s"'.\-–,:;]+|[\s"'\-–,:;]+$/g, '').replace(/\s+/g, ' ');
+    let prefix = '';
+    const pm = n.match(/^(dj|mc)\b[\s.\-]*/i);
+    if (pm) { prefix = pm[1].toUpperCase() + ' '; n = n.slice(pm[0].length); }
+    const letters = n.replace(/[^A-Za-zÀ-ÿ]/g, '');
+    if (letters && (n === n.toLowerCase() || (n === n.toUpperCase() && letters.length > 4))) n = titleCaseWords(n);
+    return (prefix + n).trim();
+}
+function canonDj(n) { return DJ_CANON.get(djKey(n)) || n; }
+function splitDjs(raw) {
+    return String(raw || '').split(/\s*(?:&|\/|\+|,|;|\bx\b|\by\b|\band\b|\bvs\.?\s|\bfeat\.?\s|\bft\.?\s)\s*/i)
+        .map(cleanDjName).filter(n => n && !isGenericDj(n));
+}
+function extractRemix(rest) {
+    let m = rest.match(/\b(remix(?:ed)?|edit(?:ed)?|flip|rework(?:ed)?|bootleg|refix|mashup|blend)\s+by\s+(.+)$/i);
+    if (m && !isGenericDj(m[2])) return { name: m[2], version: titleCaseWords(m[1].replace(/ed$/i, '')) };
+    m = rest.match(new RegExp('^(.+?)\\s+((?:' + DJ_MOD + '\\s+)*)(' + DJ_KIND_STRONG + ')$', 'i'));
+    if (m) {
+        const name = m[1].trim();
+        if (!isGenericDj(name) && !genreOnlyName(name)) return { name, version: titleCaseWords((m[2] + m[3]).trim()) };
+    }
+    m = rest.match(new RegExp('^(.+?)\\s+((?:' + DJ_MOD + '\\s+)*)(' + DJ_KIND_WEAK + ')$', 'i'));
+    if (m) {
+        const name = m[1].trim();
+        if (!isGenericDj(name) && !genreOnlyName(name) && (/^(dj|mc)\s/i.test(name) || DJ_CANON.has(djKey(name))))
+            return { name, version: titleCaseWords((m[2] + m[3]).trim()) };
+    }
+    return null;
+}
+function computeTrackInfo(t, useRegistry) {
     let s = String(t.title || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
     const groups = [];
     s = s.replace(/[\(\[]([^\)\]]*)[\)\]]/g, (m, g) => { if (/^\s*(feat|ft|featuring|with|w\/)\b/i.test(g)) return m; groups.push(g.trim()); return ' '; });
-    let rating = '', remixer = '', version = [];
-    const GENERIC = /^(extended|original|club|radio|short|intro|outro|quick hit|instrumental|acapella|acapela|dub|main|album|single|official|video|transition|hype)$/i;
+    let rating = '';
+    const version = [], leftovers = [], djs = [];
+    let djSource = '';
+    const addDj = (raw, src) => {
+        for (const n of splitDjs(raw)) {
+            const c = canonDj(n);
+            if (!djs.some(x => djKey(x) === djKey(c))) { djs.push(c); if (!djSource) djSource = src; }
+        }
+    };
+    if (t.remixer) addDj(t.remixer, 'etiqueta');
     for (const g of groups) {
         if (!g) continue;
         let rest = g;
         const r = ratingOf(g);
-        if (r) { if (!rating) rating = r; rest = g.replace(/\b(dirty|explicit|clean|censored)\b/ig, ' ').replace(/[\s,\/&+\-]+/g, ' ').trim(); }
+        if (r) { if (!rating) rating = r; rest = g.replace(/\b(dirty|explicit|clean|censored)\b/ig, ' ').replace(/\s+/g, ' ').replace(/^[\s,\/&+\-]+|[\s,\/&+\-]+$/g, ''); }
         rest = rest.replace(/[\(\)\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
         if (!rest) continue;
-        const m = rest.match(/^(.+?)\s+(remix|edit|flip|bootleg|rework|refix|mashup|redrum|vip|mix)$/i);
-        if (m && !GENERIC.test(m[1].trim())) {
-            if (!remixer) remixer = m[1].trim();
-            version.push(m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase());
-        } else if (/(extended|intro|outro|quick ?hit|acapel+a|instrumental|radio|short|club|original|transition|mix|edit|dub|hype|segue)/i.test(rest)) version.push(rest);
+        const ex = extractRemix(rest);
+        if (ex) { addDj(ex.name, 'título'); version.push(ex.version); }
+        else if (/^(dj|mc)\s+\S+/i.test(rest) && rest.length <= 40 && !isGenericDj(rest)) addDj(rest, 'título');
+        else {
+            if (/(extended|intro|outro|quick ?hit|acapel+a|instrumental|radio|short|club|original|transition|mix|edit|dub|hype|segue)/i.test(rest)) version.push(rest);
+            leftovers.push(rest);
+        }
     }
     s = s.replace(/\b\d{2,3}\s*bpm\b/ig, ' ').replace(/\s+/g, ' ').trim();
     if (!rating) {
@@ -901,11 +965,61 @@ function parseTrackInfo(t) {
     s = s.replace(/^\s*\d{1,3}[\.\)]\s+/, '').replace(/[\s\-–]+$/, '').trim();
     let parts = s.split(/\s+[-–]\s+/).map(x => x.trim()).filter(Boolean);
     while (parts.length > 1 && /^(\d{1,2}[AB]|\d{2,3})$/i.test(parts[0])) parts.shift();
+    // "Artista - Canción - DJ Nombre": el último tramo es el DJ
+    if (!djs.length && parts.length > 2) {
+        const last = parts[parts.length - 1];
+        if (/^(dj|mc)\s+\S+/i.test(last) && !isGenericDj(last)) { addDj(last, 'título'); parts.pop(); }
+    }
+    // DJ ya conocido en el catálogo (aparece como remixer en 2 o más canciones)
+    if (useRegistry && !djs.length && DJ_REGISTRY.length) {
+        let hay = ' ' + normalizeText([...(parts.length > 1 ? parts.slice(1) : []), ...leftovers].join(' ')) + ' ';
+        for (const e of DJ_REGISTRY) {
+            const needle = ' ' + e.key + ' ';
+            if (hay.includes(needle)) { addDj(e.name, 'DJ conocido'); hay = hay.replace(needle, ' '); if (djs.length >= 2) break; }
+        }
+    }
     let artist = String(t.artist || '').trim(), song;
     if (artist) song = (parts.length > 1 && parts[0].toLowerCase() === artist.toLowerCase()) ? parts.slice(1).join(' - ') : parts.join(' - ');
     else if (parts.length > 1) { artist = parts[0]; song = parts.slice(1).join(' - '); }
     else song = parts[0] || '';
-    return (t._info = { artist, song: song || String(t.title || ''), version: [...new Set(version)].join(' · '), remixer, rating: rating || t.rating || '' });
+    return { artist, song: song || String(t.title || ''), version: [...new Set(version)].join(' · '), remixer: djs.join(' & '), remixers: djs, remixerSource: djSource, rating: rating || t.rating || '' };
+}
+function parseTrackInfo(t) {
+    if (t._info) return t._info;
+    return (t._info = computeTrackInfo(t, true));
+}
+// Registro de DJs: aprende los nombres que ya aparecen como remixer en el catálogo
+// para unificar variantes ("Dj Nelson", "DJ NELSON") y detectarlos en otros títulos.
+function buildDjRegistry(list) {
+    const stats = new Map();
+    DJ_REGISTRY = []; DJ_CANON = new Map();
+    for (const t of list) {
+        const info = computeTrackInfo({ title: t.title, remixer: t.remixer }, false);
+        for (const n of info.remixers) {
+            const k = djKey(n); if (!k) continue;
+            let e = stats.get(k); if (!e) stats.set(k, e = { count: 0, forms: new Map() });
+            e.count++; e.forms.set(n, (e.forms.get(n) || 0) + 1);
+        }
+    }
+    for (const [k, e] of stats) {
+        const name = [...e.forms.entries()].sort((a, b) => b[1] - a[1])[0][0];
+        DJ_CANON.set(k, name);
+        if (e.count >= 2 && k.length >= 4) DJ_REGISTRY.push({ key: k, name, count: e.count });
+    }
+    DJ_REGISTRY.sort((a, b) => b.key.length - a.key.length);
+    refreshDjDatalist();
+}
+function refreshDjDatalist() {
+    const dl = document.getElementById('djKnownList'); if (!dl) return;
+    dl.innerHTML = [...new Set(DJ_CANON.values())].sort((a, b) => a.localeCompare(b)).slice(0, 2000).map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+}
+function djPillsHtml(info) {
+    if (!info.remixers || !info.remixers.length) return '<span class="text-slate-300">—</span>';
+    return info.remixers.map(n => `<button type="button" data-dj="${escapeHtml(n)}" onclick="filterByDj(this.dataset.dj)" title="Ver todos los remixes de ${escapeHtml(n)}${info.remixerSource ? ' · detectado por ' + escapeHtml(info.remixerSource) : ''}" class="inline-flex items-center gap-1 bg-blue-50 text-brand-crimson border border-blue-100 hover:bg-blue-100 font-semibold px-2 py-0.5 rounded-full text-xs mr-1 mb-1 max-w-full"><i class="fa-solid fa-headphones text-[9px]"></i><span class="truncate">${escapeHtml(n)}</span></button>`).join('');
+}
+function filterByDj(name) {
+    const i = document.getElementById('searchInput'); if (i) i.value = name;
+    handleSearch();
 }
 
         // ---- KEY: etiquetas de color según la rueda Camelot ----
@@ -999,13 +1113,14 @@ function parseTrackInfo(t) {
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${escapeHtml(info.song)}</div>
                                     ${info.artist ? `<div class="sm:hidden text-xs text-slate-500 truncate">${escapeHtml(info.artist)}</div>` : ''}
+                                    ${info.remixer ? `<div class="lg:hidden text-[11px] text-brand-crimson truncate"><i class="fa-solid fa-headphones text-[9px]"></i> ${escapeHtml(info.remixer)}</div>` : ''}
                                     <div class="text-[11px] text-slate-400 truncate">${escapeHtml(track.date || '')}${track.portal ? ' · ' + escapeHtml(track.portal) : ''}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="py-3 px-3 text-slate-600 hidden sm:table-cell break-words">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3 px-3 hidden md:table-cell break-words">${ratingHtml || versionHtml ? ratingHtml + versionHtml : '<span class="text-slate-300">—</span>'}</td>
-                        <td class="py-3 px-3 text-sm text-slate-600 hidden xl:table-cell break-words">${escapeHtml(info.remixer) || '<span class="text-slate-300">—</span>'}</td>
+                        <td class="py-3 px-3 text-sm text-slate-600 hidden lg:table-cell break-words">${djPillsHtml(info)}</td>
                         <td class="py-3 px-3 text-sm text-slate-500 hidden md:table-cell">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
                         <td class="py-3 px-2 text-center">${keyPillHtml(track)}</td>
                         <td class="py-3 px-3 hidden lg:table-cell"><span class="bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-xs inline-block">${escapeHtml(track.genre)}</span></td>
@@ -1202,24 +1317,6 @@ function parseTrackInfo(t) {
         }
         function closeBulkModal() { document.getElementById('bulkModal').classList.add('hidden'); }
 
-        function handleRegisterSubmit(event) {
-            event.preventDefault();
-            const username = document.getElementById('regUsername').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const password = document.getElementById('regPassword').value.trim();
-
-            if(registeredUsers.some(u => u.username === username)) {
-                alert("Este nombre de usuario ya está registrado.");
-                return;
-            }
-
-            registeredUsers.push({ username, email, password });
-            saveToLocalStorage();
-            alert(`¡Registro exitoso DJ ${username}! Ya puedes iniciar sesión.`);
-            closeRegisterModal();
-            openLoginModal();
-        }
-
         function updateAuthHeader() {
             const container = document.getElementById('authHeaderContainer');
             if(isAdmin) {
@@ -1316,8 +1413,9 @@ async function loadTracks() {
         if (page.length < 1000) break;
     }
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
-    allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
+    allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', remixer: t.remixer || '', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
         date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
+    buildDjRegistry(allRemixes);
     renderPortalsSidebar(); renderTracksTable(); updateSummaryCounts();
 }
 
@@ -1419,60 +1517,146 @@ async function resendFromLogin() {
     await resendConfirmation();
 }
 
-// ----- Registro -----
+// ----- Registro (validación precisa) -----
+const REG_COMMON_PASSWORDS = new Set(['12345678','123456789','1234567890','11111111','00000000','12341234','87654321','password','password1','password123','qwerty123','qwertyui','qwertyuiop','contraseña','contrasena','contraseña1','contrasena1','abc12345','abcd1234','iloveyou','admin123','letmein1','dj123456','djdjdjdj','reggaeton','bachata123']);
+const REG_RESERVED_NAMES = new Set(['admin','administrador','administrator','soporte','support','staff','moderador','moderator','root','sistema','system']);
+const REG_EMAIL_TYPOS = { 'gmial.com':'gmail.com','gmai.com':'gmail.com','gamil.com':'gmail.com','gnail.com':'gmail.com','gmaill.com':'gmail.com','gmail.con':'gmail.com','gmail.cm':'gmail.com','gmail.co':'gmail.com','hotmial.com':'hotmail.com','hotmal.com':'hotmail.com','hotnail.com':'hotmail.com','hotmail.con':'hotmail.com','hotmail.cm':'hotmail.com','outlok.com':'outlook.com','outlook.con':'outlook.com','yaho.com':'yahoo.com','yahooo.com':'yahoo.com','yahoo.con':'yahoo.com','iclod.com':'icloud.com','icloud.con':'icloud.com' };
+let regTypoAccepted = '';
+
+function regSetErr(id, msg) {
+    const el = document.getElementById(id + 'Err'), inp = document.getElementById(id);
+    if (el) { el.textContent = msg || ''; el.classList.toggle('hidden', !msg); }
+    if (inp) { inp.setAttribute('aria-invalid', msg ? 'true' : 'false'); inp.classList.toggle('border-rose-400', !!msg); }
+}
+function validateDjName(raw) {
+    const value = String(raw || '').normalize('NFC').replace(/\s+/g, ' ').trim();
+    let error = '';
+    if (!value) error = 'Escribe tu nombre de DJ.';
+    else if (value.length < 3 || value.length > 24) error = 'El nombre de DJ debe tener entre 3 y 24 caracteres.';
+    else if (!/^[\p{L}\p{N} _.\-]+$/u.test(value)) error = 'Solo se permiten letras, números, espacios, punto, guion y guion bajo (sin emojis ni símbolos).';
+    else if (/^[ _.\-]|[ _.\-]$/.test(value)) error = 'El nombre no puede empezar ni terminar con espacio, punto o guion.';
+    else if (/[_.\-]{2,}/.test(value)) error = 'No repitas puntos, guiones o guiones bajos seguidos.';
+    else if ((value.match(/[\p{L}\p{N}]/gu) || []).length < 3) error = 'Debe incluir al menos 3 letras o números.';
+    else if (/^\p{N}+$/u.test(value.replace(/[ _.\-]/g, ''))) error = 'El nombre no puede ser solo números.';
+    else if (REG_RESERVED_NAMES.has(value.toLowerCase().replace(/[ _.\-]/g, ''))) error = 'Ese nombre está reservado. Elige otro.';
+    return { value, error };
+}
+function validateRegEmail(raw) {
+    const value = String(raw || '').replace(/[\u200B-\u200D\uFEFF\s]/g, '').toLowerCase();
+    let error = '', suggestion = '';
+    const at = value.lastIndexOf('@'), local = value.slice(0, at), domain = value.slice(at + 1);
+    if (!value) error = 'Escribe tu correo electrónico.';
+    else if (value.length > 254 || at < 1 || value.indexOf('@') !== at) error = 'Escribe un correo válido, por ejemplo tu@correo.com.';
+    else if (local.length > 64 || !/^[a-z0-9!#$%&'*+\/=?^_`{|}~.\-]+$/.test(local) || /^\.|\.$|\.\./.test(local)) error = 'La parte antes de la @ del correo no es válida.';
+    else if (!/^(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)) error = 'El dominio del correo no es válido (revisa lo que va después de la @).';
+    else if (REG_EMAIL_TYPOS[domain]) suggestion = local + '@' + REG_EMAIL_TYPOS[domain];
+    return { value, error, suggestion };
+}
+function regPasswordScore(pw) {
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+    if (/\d/.test(pw) && /[^\p{L}\p{N}]/u.test(pw)) score++;
+    return Math.min(score, 4);
+}
+function validateRegPassword(pw, username, email) {
+    if (!pw) return 'Escribe una contraseña.';
+    if (new TextEncoder().encode(pw).length > 72) return 'La contraseña es demasiado larga (máximo 72 caracteres).';
+    if (pw.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+    if (!/\p{L}/u.test(pw) || !/\p{N}/u.test(pw)) return 'Incluye al menos una letra y un número.';
+    if (/^\s|\s$/.test(pw)) return 'La contraseña no debe empezar ni terminar con espacios.';
+    const low = pw.toLowerCase();
+    if (REG_COMMON_PASSWORDS.has(low) || /^(.)\1+$/.test(pw)) return 'Esa contraseña es demasiado común. Elige una más difícil de adivinar.';
+    const u = normalizeText(username).replace(/ /g, ''), l = (email || '').split('@')[0].replace(/[^a-z0-9]/g, '');
+    if (u.length >= 4 && low.replace(/[^a-z0-9]/g, '').includes(u)) return 'La contraseña no debe contener tu nombre de DJ.';
+    if (l.length >= 4 && low.replace(/[^a-z0-9]/g, '').includes(l)) return 'La contraseña no debe contener tu correo.';
+    return '';
+}
+function updatePasswordMeter() {
+    const pw = document.getElementById('regPassword').value, bar = document.getElementById('regPwBar'), hint = document.getElementById('regPwHint');
+    const sc = pw ? regPasswordScore(pw) : 0, labels = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Fuerte'], colors = ['#ef4444', '#ef4444', '#f59e0b', '#22c55e', '#16a34a'];
+    bar.style.width = pw ? (Math.max(sc, 1) * 25) + '%' : '0%'; bar.style.background = colors[sc];
+    hint.textContent = pw ? 'Seguridad: ' + labels[sc] + (sc < 2 ? ' · usa 12 o más caracteres y mezcla mayúsculas y símbolos.' : '') : 'Usa 8 o más caracteres con letras y números.';
+}
+function showEmailSuggestion(suggestion) {
+    const box = document.getElementById('regEmailHint');
+    if (!suggestion) { box.classList.add('hidden'); box.textContent = ''; return; }
+    box.innerHTML = '¿Quisiste decir <b></b>? <button type="button" class="font-bold text-brand-crimson underline" onclick="applyEmailSuggestion()">Corregir</button> · <button type="button" class="underline" onclick="acceptEmailAsIs()">Es correcto</button>';
+    box.querySelector('b').textContent = suggestion; box.dataset.s = suggestion; box.classList.remove('hidden');
+}
+function applyEmailSuggestion() {
+    const box = document.getElementById('regEmailHint'); document.getElementById('regEmail').value = box.dataset.s || '';
+    showEmailSuggestion(''); regSetErr('regEmail', ''); regTypoAccepted = '';
+}
+function acceptEmailAsIs() { regTypoAccepted = validateRegEmail(document.getElementById('regEmail').value).value; showEmailSuggestion(''); }
+function resetRegisterErrors() {
+    ['regUsername', 'regEmail', 'regPassword', 'regPassword2'].forEach(id => regSetErr(id, ''));
+    showEmailSuggestion(''); regTypoAccepted = '';
+    const m = document.getElementById('registerMsg'); if (m) m.classList.add('hidden');
+    setTimeout(updatePasswordMeter, 0);
+}
+window.addEventListener('DOMContentLoaded', () => {
+    const $ = id => document.getElementById(id);
+    $('registerForm').addEventListener('reset', resetRegisterErrors);
+    $('regUsername').addEventListener('blur', () => regSetErr('regUsername', $('regUsername').value ? validateDjName($('regUsername').value).error : ''));
+    $('regUsername').addEventListener('input', () => regSetErr('regUsername', ''));
+    $('regEmail').addEventListener('blur', () => { if (!$('regEmail').value) return; const r = validateRegEmail($('regEmail').value); regSetErr('regEmail', r.error); showEmailSuggestion(!r.error && r.value !== regTypoAccepted ? r.suggestion : ''); });
+    $('regEmail').addEventListener('input', () => { regSetErr('regEmail', ''); showEmailSuggestion(''); });
+    $('regPassword').addEventListener('input', () => { regSetErr('regPassword', ''); updatePasswordMeter(); if ($('regPassword2').value) regSetErr('regPassword2', $('regPassword').value === $('regPassword2').value ? '' : 'Las contraseñas no coinciden.'); });
+    $('regPassword2').addEventListener('input', () => regSetErr('regPassword2', $('regPassword2').value && $('regPassword').value !== $('regPassword2').value ? 'Las contraseñas no coinciden.' : ''));
+});
 async function handleRegisterSubmit(e) {
     e.preventDefault();
-    const form = e.currentTarget;
-    const btn = document.getElementById('registerBtn');
-    const msg = document.getElementById('registerMsg');
-    const username = document.getElementById('regUsername').value.trim().replace(/\s+/g, ' ');
-    const email = document.getElementById('regEmail').value.trim().toLowerCase();
-    const password = document.getElementById('regPassword').value;
-    const password2 = document.getElementById('regPassword2').value;
-
+    const form = e.currentTarget, $ = id => document.getElementById(id);
+    const btn = $('registerBtn'), msg = $('registerMsg');
     const showRegisterMessage = (message, ok = false) => {
-        msg.textContent = message;
-        msg.className = 'text-xs ' + (ok ? 'text-emerald-400' : 'text-rose-400');
+        msg.textContent = message; msg.className = 'text-xs ' + (ok ? 'text-emerald-500' : 'text-rose-500');
     };
-
+    msg.classList.add('hidden');
+    const u = validateDjName($('regUsername').value), em = validateRegEmail($('regEmail').value);
+    const password = $('regPassword').value, password2 = $('regPassword2').value;
+    const errs = [
+        ['regUsername', u.error],
+        ['regEmail', em.error],
+        ['regPassword', validateRegPassword(password, u.value, em.value)],
+        ['regPassword2', password2 ? (password !== password2 ? 'Las contraseñas no coinciden.' : '') : 'Confirma tu contraseña.']
+    ];
+    errs.forEach(([id, m]) => regSetErr(id, m));
+    const firstBad = errs.find(x => x[1]);
+    if (firstBad) { $(firstBad[0]).focus(); return; }
+    if (em.suggestion && em.value !== regTypoAccepted) { showEmailSuggestion(em.suggestion); $('regEmail').focus(); return; }
     if (!sb || !configured) { showRegisterMessage('El servicio de registro no está configurado. Inténtalo más tarde.'); return; }
-    if (username.length < 3 || username.length > 24 || !/^[\p{L}\p{N} _.-]+$/u.test(username)) {
-        showRegisterMessage('El nombre DJ debe tener entre 3 y 24 caracteres y solo puede incluir letras, números, espacios, punto, guion o guion bajo.');
-        return;
-    }
-    if (password.length < 8 || password.length > 72) {
-        showRegisterMessage('La contraseña debe tener entre 8 y 72 caracteres.');
-        return;
-    }
-    if (password !== password2) {
-        showRegisterMessage('Las contraseñas no coinciden.');
-        return;
-    }
-    if (!form.reportValidity()) return;
+    if (navigator.onLine === false) { showRegisterMessage('Sin conexión a internet. Revisa tu red e inténtalo de nuevo.'); return; }
 
     btn.disabled = true;
     btn.textContent = 'Creando cuenta…';
-    msg.classList.add('hidden');
     try {
+        // Evita nombres de DJ repetidos (si la tabla no es legible para visitantes, esta revisión se omite)
+        try {
+            const { data: taken, error: tErr } = await sb.from('profiles').select('id').ilike('username', u.value.replace(/[\\%_]/g, '\\$&')).limit(1);
+            if (!tErr && Array.isArray(taken) && taken.length) { regSetErr('regUsername', 'Ese nombre de DJ ya está en uso. Prueba con otro.'); $('regUsername').focus(); return; }
+        } catch (_) { /* se ignora */ }
+
         const { data, error } = await sb.auth.signUp({
-            email,
+            email: em.value,
             password,
-            options: { data: { username }, emailRedirectTo: AUTH_REDIRECT }
+            options: { data: { username: u.value }, emailRedirectTo: AUTH_REDIRECT }
         });
         if (error) throw error;
 
         // Con la confirmación activada, un correo ya registrado no da error: devuelve un usuario sin identidades.
         if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-            showRegisterMessage('Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.');
+            regSetErr('regEmail', 'Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.');
+            $('regEmail').focus();
             return;
         }
 
         // Sin sesión inmediata = falta confirmar el correo.
         if (!data || !data.session) {
             form.reset();
-            msg.classList.add('hidden');
             closeRegisterModal();
-            openCheckEmailModal(email);
+            openCheckEmailModal(em.value);
             return;
         }
 
@@ -1484,12 +1668,15 @@ async function handleRegisterSubmit(e) {
         showToast('Cuenta creada. ¡Bienvenido al catálogo!');
     } catch (error) {
         console.error('Registro:', error);
-        const message = /already registered|already exists|user already/i.test(error.message || '')
-            ? 'Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.'
-            : /rate|too many|limit/i.test(error.message || '')
-                ? 'Se realizaron demasiados intentos. Espera un momento y vuelve a intentarlo.'
-                : 'No se pudo completar el registro. Verifica los datos e inténtalo de nuevo.';
-        showRegisterMessage(message);
+        const t = (error && error.message) || '';
+        if (/already registered|already exists|user already/i.test(t)) { regSetErr('regEmail', 'Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.'); $('regEmail').focus(); }
+        else if (/weak_password|password should|least \d+ char/i.test(t) || error.code === 'weak_password') { regSetErr('regPassword', 'La contraseña es muy débil. Usa 8 o más caracteres con letras y números.'); $('regPassword').focus(); }
+        else if (/invalid.*email|email.*invalid|unable to validate email/i.test(t)) { regSetErr('regEmail', 'Ese correo no es válido. Revísalo e inténtalo de nuevo.'); $('regEmail').focus(); }
+        else if (/database error saving new user|duplicate key|username/i.test(t)) { regSetErr('regUsername', 'Ese nombre de DJ ya está en uso o no es válido. Prueba con otro.'); $('regUsername').focus(); }
+        else if (/rate|too many|limit|429/i.test(t)) showRegisterMessage('Se realizaron demasiados intentos. Espera un momento y vuelve a intentarlo.');
+        else if (/signups? (?:not allowed|disabled)/i.test(t)) showRegisterMessage('El registro está desactivado por ahora. Inténtalo más tarde.');
+        else if (/failed to fetch|network|load failed/i.test(t)) showRegisterMessage('No se pudo conectar con el servidor. Revisa tu internet e inténtalo de nuevo.');
+        else showRegisterMessage('No se pudo completar el registro. Verifica los datos e inténtalo de nuevo.');
     } finally {
         btn.disabled = false;
         btn.textContent = 'Crear Cuenta Gratis';
@@ -1763,8 +1950,8 @@ async function readId3(file) {
     const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
     const buf = new Uint8Array(await file.slice(10, 10 + Math.min(size, 6 * 1024 * 1024)).arrayBuffer());
     const out = {}, idLen = ver === 2 ? 3 : 4, hdrLen = ver === 2 ? 6 : 10;
-    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist', TKE: 'key' }
-                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist', TKEY: 'key' };
+    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist', TP4: 'remixer', TP2: 'albumArtist', TKE: 'key' }
+                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist', TPE4: 'remixer', TPE2: 'albumArtist', TKEY: 'key' };
     let pos = 0;
     while (pos + hdrLen <= buf.length) {
         const id = String.fromCharCode(...buf.slice(pos, pos + idLen));
@@ -1807,23 +1994,47 @@ function badgeHtml(i) {
     const it = bulkItems[i], k = it.genre ? it.source : 'revisar';
     return `<span id="bb${i}" class="${SRC_BADGE[k][0]} shrink-0 w-28 text-right">${SRC_BADGE[k][1]}</span>`;
 }
+const BULK_RENDER_MAX = 150, BULK_PREANALYZE_MAX = 100;
+const yieldUi = () => new Promise(r => setTimeout(r, 0));
 function renderBulkReview() {
     const box = document.getElementById('bulkReview');
     const opts = g => Array.from(bulkGenreTarget.options).map(o => `<option value="${escapeHtml(o.value)}"${o.value === g ? ' selected' : ''}>${escapeHtml(o.value)}</option>`).join('');
     const sinDetectar = bulkItems.filter(x => !x.genre).length;
     const keysPending = bulkItems.filter(x => x.keyStatus === 'analyzing').length;
     const keysFound = bulkItems.filter(x => x.musicalKey).length;
+    const djsFound = bulkItems.filter(x => x.remixer).length;
     const nDirty = bulkItems.filter(x => x.rating === 'Dirty').length, nClean = bulkItems.filter(x => x.rating === 'Clean').length, nUndef = bulkItems.length - nDirty - nClean;
     const ratingBadge = it => it.ratingConflict ? `<span class="text-amber-400 shrink-0 text-right">Revisar: ${escapeHtml(it.ratingSource)} dice ${escapeHtml(it.rating)}, etiqueta dice ${escapeHtml(it.ratingConflict)}</span>` : it.rating ? `<span class="${it.rating === 'Dirty' ? 'text-red-400' : 'text-emerald-400'} shrink-0 text-right">${it.rating} · ${it.ratingSource === 'manual' ? 'elegido por ti' : 'por ' + escapeHtml(it.ratingSource)}</span>` : '<span class="text-slate-500 shrink-0 text-right">Dirty/Clean sin definir</span>';
-    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}. Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
-        bulkItems.map((it, i) => `<div class="flex flex-wrap items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
+    const djBadge = it => it.remixer ? `<span class="text-emerald-400 shrink-0 text-right">DJ · ${it.remixerSource === 'manual' ? 'elegido por ti' : escapeHtml(it.remixerSource)}</span>` : '<span class="text-slate-500 shrink-0 text-right">DJ sin detectar</span>';
+    const big = bulkItems.length > BULK_PREANALYZE_MAX;
+    const shown = bulkItems.slice(0, BULK_RENDER_MAX);
+    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} ${big ? 'Tonalidad: se detecta durante la subida.' : `Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}.`} DJs detectados: ${djsFound}/${bulkItems.length}. Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
+        shown.map((it, i) => `<div class="flex flex-wrap items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
             <span class="truncate flex-1 min-w-32 text-slate-200" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
             ${badgeHtml(i)}
             ${ratingBadge(it)}
             <select aria-label="Versión Dirty o Clean" onchange="setBulkRating(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white"><option value=""${it.rating ? '' : ' selected'}>Sin definir</option><option value="Dirty"${it.rating === 'Dirty' ? ' selected' : ''}>Dirty</option><option value="Clean"${it.rating === 'Clean' ? ' selected' : ''}>Clean</option></select>
+            ${djBadge(it)}
+            <input list="djKnownList" value="${escapeHtml(it.remixer || '')}" onchange="setBulkRemixer(${i}, this.value)" placeholder="DJ / Remixer" aria-label="DJ o artista que hizo el remix" class="w-36 bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">
             <span class="w-24 text-center ${it.musicalKey ? 'text-emerald-400' : it.keyStatus === 'analyzing' ? 'text-amber-400' : 'text-slate-500'}">${it.musicalKey ? `${escapeHtml(it.musicalKey)} · ${escapeHtml(it.camelotKey)}` : it.keyStatus === 'analyzing' ? 'Analizando key…' : it.keyStatus === 'failed' ? 'No detectada' : 'Pendiente'}</span>
             <select aria-label="Género" onchange="setBulkGenre(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">${opts(it.genre || bulkGenreTarget.value)}</select>
-        </div>`).join('');
+        </div>`).join('') +
+        (bulkItems.length > shown.length ? `<p class="text-xs text-slate-400 px-1">Mostrando los primeros ${shown.length} de ${bulkItems.length}. El resto se procesa igual con lo detectado automáticamente.</p>` : '');
+}
+function setBulkRemixer(i, v) {
+    const n = splitDjs(v).map(canonDj).join(' & ');
+    Object.assign(bulkItems[i], { remixer: n, remixerSource: n ? 'manual' : '' });
+    renderBulkReview();
+}
+// Detecta el DJ/remixer de un archivo: nombre del archivo, etiqueta ID3 (TPE4), título de la etiqueta o DJ ya conocido
+function detectBulkDj(f, tag) {
+    const base = f.name.replace(/\.[^/.]+$/, '');
+    let info = parseTrackInfo({ title: base });
+    if (info.remixer) return { remixer: info.remixer, source: info.remixerSource === 'DJ conocido' ? 'DJ conocido' : 'nombre del archivo' };
+    if (tag.remixer) { const n = splitDjs(tag.remixer).map(canonDj); if (n.length) return { remixer: n.join(' & '), source: 'etiqueta del archivo' }; }
+    if (tag.title) { info = parseTrackInfo({ title: tag.title }); if (info.remixer) return { remixer: info.remixer, source: 'título de la etiqueta' }; }
+    if (tag.albumArtist && DJ_CANON.has(djKey(tag.albumArtist))) return { remixer: DJ_CANON.get(djKey(tag.albumArtist)), source: 'etiqueta (DJ conocido)' };
+    return { remixer: '', source: '' };
 }
 function setBulkGenre(i, g) {
     bulkItems[i].genre = g; bulkItems[i].source = 'manual';
@@ -1962,30 +2173,36 @@ async function detectMusicalKey(file) {
 }
 async function buildBulkReview() {
     const runId = ++bulkReviewRun;
-    const files = Array.from(bulkAudioFiles.files || []).slice(0, 100), box = document.getElementById('bulkReview');
+    const files = Array.from(bulkAudioFiles.files || []), box = document.getElementById('bulkReview');
     bulkItems = [];
     if (!files.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     box.classList.remove('hidden');
-    box.innerHTML = '<p class="text-xs text-slate-400">Leyendo etiquetas y detectando tonalidad automáticamente. Puede tardar según el tamaño de los archivos…</p>';
-    for (const f of files) {
+    const big = files.length > BULK_PREANALYZE_MAX;
+    box.innerHTML = `<p class="text-xs text-slate-400">Leyendo etiquetas${big ? '' : ' y detectando tonalidad automáticamente'} de ${files.length} archivo(s)… Puede tardar según el tamaño.</p>`;
+    for (let n = 0; n < files.length; n++) {
+        const f = files[n];
         let tag = {};
         try { tag = await readId3(f); } catch (e) { console.error(e); }
         if (runId !== bulkReviewRun) return;
         let genre = matchGenre(tag.genre), source = genre ? 'etiqueta' : '';
         if (!genre) { genre = matchGenre([f.name, tag.title, tag.artist].join(' ')); source = genre ? 'nombre' : ''; }
         const rt = detectRating(f, tag);
-        const item={file:f,genre,source,rating:rt.rating,ratingSource:rt.source,ratingConflict:rt.conflict,bpm:tag.bpm||null,musicalKey:'',camelotKey:'',duration:null,keyStatus:'analyzing'};
-        bulkItems.push(item); renderBulkReview();
+        const dj = detectBulkDj(f, tag);
+        const item = { file: f, genre, source, rating: rt.rating, ratingSource: rt.source, ratingConflict: rt.conflict, remixer: dj.remixer, remixerSource: dj.source, bpm: tag.bpm || null, musicalKey: '', camelotKey: '', duration: null, keyStatus: big ? 'pending' : 'analyzing' };
+        bulkItems.push(item);
+        if (!big || n % 25 === 0) renderBulkReview();
         const preKey = djKeyFromName(f.name) || djKeyFromTag(tag);
-        if (preKey) { Object.assign(item, preKey, { keyStatus: 'analyzed' }); if (runId !== bulkReviewRun) return; renderBulkReview(); continue; }
+        if (preKey) { Object.assign(item, preKey, { keyStatus: 'analyzed' }); if (!big) renderBulkReview(); if (big && n % 10 === 0) await yieldUi(); continue; }
+        if (big) { if (n % 10 === 0) await yieldUi(); continue; }
         try {
-            const detected=await detectMusicalKey(f);
-            if(runId!==bulkReviewRun)return;
-            Object.assign(item,detected,{keyStatus:'analyzed'});
-        } catch(e) { console.warn('No se pudo detectar la tonalidad de '+f.name,e); item.keyStatus='failed'; item.keyError=e.message; }
-        if(runId!==bulkReviewRun)return;
+            const detected = await detectMusicalKey(f);
+            if (runId !== bulkReviewRun) return;
+            Object.assign(item, detected, { keyStatus: 'analyzed' });
+        } catch (e) { console.warn('No se pudo detectar la tonalidad de ' + f.name, e); item.keyStatus = 'failed'; item.keyError = e.message; }
+        if (runId !== bulkReviewRun) return;
         renderBulkReview();
     }
+    if (big && runId === bulkReviewRun) renderBulkReview();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -1993,42 +2210,73 @@ window.addEventListener('DOMContentLoaded', () => {
     bulkGenreTarget.addEventListener('change', () => { if (bulkItems.some(x => !x.genre)) renderBulkReview(); });
 });
 
+let bulkCancel = false;
+function stopBulkUpload() {
+    bulkCancel = true;
+    const b = document.getElementById('uploadStopBtn');
+    if (b) { b.disabled = true; b.textContent = 'Deteniendo…'; }
+}
+const bulkBeforeUnload = e => { e.preventDefault(); e.returnValue = ''; };
 async function processBulkUpload() {
     if (!isAdmin) { alert('Acceso denegado.'); return; }
     const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
-    const files = Array.from(bulkAudioFiles.files || []);
+    const allFiles = Array.from(bulkAudioFiles.files || []);
     const allowedExt = new Set(Object.keys(AUDIO_MIME));
-    if (!files.length) { alert('Selecciona al menos un archivo de audio.'); return; }
-    if (files.length > 100) { alert('Puedes subir un máximo de 100 archivos por lote.'); return; }
-    const invalid = files.find(f => {
+    if (!allFiles.length) { alert('Selecciona al menos un archivo de audio.'); return; }
+    const isValid = f => {
         const ext = (f.name.match(/\.([^.]+)$/) || [])[1];
-        return !ext || !allowedExt.has(ext.toLowerCase()) || (f.type && !f.type.startsWith('audio/') && f.type !== 'video/mp4');
-    });
-    if (invalid) { alert('Formato no admitido: ' + invalid.name + '. Usa MP3, WAV, M4A, AAC, FLAC, OGG o MP4.'); return; }
+        return !!ext && allowedExt.has(ext.toLowerCase()) && !(f.type && !f.type.startsWith('audio/') && f.type !== 'video/mp4');
+    };
+    const files = allFiles.filter(isValid), skipped = allFiles.length - files.length;
+    if (!files.length) { alert('Ningún archivo tiene un formato admitido. Usa MP3, WAV, M4A, AAC, FLAC, OGG o MP4.'); return; }
+    if (skipped && !confirm(`${skipped} archivo(s) con formato no admitido se omitirán. ¿Continuar con los ${files.length} restantes?`)) return;
+    if (files.length > 50 && !confirm(`Se subirán ${files.length} archivos uno por uno. Mantén esta pestaña abierta; puedes detener el lote cuando quieras. ¿Continuar?`)) return;
     if (!sb) { alert('La conexión con la base de datos no está configurada.'); return; }
+    const total = files.length, itemMap = new Map(bulkItems.map(x => [x.file, x])), sleep = ms => new Promise(r => setTimeout(r, ms));
+    const stopBtn = document.getElementById('uploadStopBtn');
+    bulkCancel = false;
+    if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = 'Detener lote'; stopBtn.classList.remove('hidden'); }
+    uploadProgressBar.style.width = '0%';
     uploadProgressContainer.classList.remove('hidden'); uploadSubmitBtn.classList.add('hidden');
     uploadCloseBtn.classList.add('hidden');
+    window.addEventListener('beforeunload', bulkBeforeUnload);
     let failed = 0, lastError = '', completed = 0;
+    const failedNames = [];
     try {
         await requireSession();
-        for (let i = 0; i < files.length; i++) {
+        for (let i = 0; i < total && !bulkCancel; i++) {
             const f = files[i], title = f.name.replace(/\.[^/.]+$/, ''), ext = (f.name.match(/\.([^.]+)$/) || [])[1].toLowerCase();
-            const analysisItem = bulkItems.find(x => x.file === f) || {};
-            if (!analysisItem.musicalKey) {
-                uploadStatusText.textContent = `Analizando tonalidad ${i + 1} de ${files.length}: ${title}…`;
-                try { const detected = await detectMusicalKey(f); Object.assign(analysisItem, detected, { keyStatus: 'analyzed' }); }
-                catch (analysisError) { console.warn('Análisis automático falló para', f.name, analysisError); analysisItem.keyStatus = 'failed'; analysisItem.keyError = analysisError.message; }
+            const it = itemMap.get(f) || {};
+            const counts = `✔ ${completed} · ✖ ${failed}`;
+            if (!it.musicalKey) {
+                uploadStatusText.textContent = `Analizando tonalidad ${i + 1} de ${total}: ${title}… (${counts})`;
+                try { const detected = await detectMusicalKey(f); Object.assign(it, detected, { keyStatus: 'analyzed' }); }
+                catch (analysisError) { console.warn('Análisis automático falló para', f.name, analysisError); it.keyStatus = 'failed'; it.keyError = analysisError.message; }
             }
-            uploadStatusText.textContent = `Subiendo ${i + 1} de ${files.length}: ${title}${analysisItem.musicalKey ? ` · ${analysisItem.musicalKey} (${analysisItem.camelotKey})` : ' · key no detectada; se podrá reintentar'}`;
+            uploadStatusText.textContent = `Subiendo ${i + 1} de ${total}: ${title}${it.musicalKey ? ` · ${it.musicalKey} (${it.camelotKey})` : ' · key no detectada; se podrá reintentar'} (${counts})`;
             let path = null;
             try {
-                path = 'b2/' + (window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)) + '.' + ext;
-                const signed = await audioApi({ action: 'upload', path });
-                if (!signed || !signed.url) throw new Error('No se recibió el enlace de subida.');
-                const up = await fetch(signed.url, { method: 'PUT', headers: { 'Content-Type': mimeFromExt(ext, f.type) }, body: f });
-                if (!up.ok) throw new Error('Backblaze respondió ' + up.status);
-                const it = bulkItems.find(x => x.file === f) || {};
-                const finalTitle = (it.rating && !parseTrackInfo({ title }).rating) ? `${title} (${it.rating})` : title;
+                for (let attempt = 1; attempt <= 2; attempt++) {
+                    try {
+                        path = 'b2/' + (window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)) + '.' + ext;
+                        const signed = await audioApi({ action: 'upload', path });
+                        if (!signed || !signed.url) throw new Error('No se recibió el enlace de subida.');
+                        const up = await fetch(signed.url, { method: 'PUT', headers: { 'Content-Type': mimeFromExt(ext, f.type) }, body: f });
+                        if (!up.ok) throw new Error('Backblaze respondió ' + up.status);
+                        break;
+                    } catch (uploadError) {
+                        if (path) { try { await audioApi({ action: 'delete', path }); } catch (_) {} path = null; }
+                        if (attempt === 2) throw uploadError;
+                        await sleep(1500);
+                    }
+                }
+                let finalTitle = (it.rating && !parseTrackInfo({ title }).rating) ? `${title} (${it.rating})` : title;
+                // DJ / remixer detectado por etiqueta o elegido a mano: se guarda en el título para que la columna lo muestre
+                const wanted = splitDjs(it.remixer || '').map(canonDj);
+                if (wanted.length) {
+                    const have = parseTrackInfo({ title: finalTitle }).remixers.map(djKey);
+                    if (!wanted.every(n => have.includes(djKey(n)))) finalTitle += ` (${wanted.join(' & ')} Remix)`;
+                }
                 const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
                 const ins = await sb.from('tracks').insert({ title: finalTitle, artist: '', portal, genre: it.genre || genre, bpm, storage_path: path, ext,
                     musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
@@ -2037,17 +2285,21 @@ async function processBulkUpload() {
                 completed++;
             } catch (e) {
                 console.error('Error subiendo ' + f.name, e);
-                failed++; lastError = e && e.message ? e.message : String(e);
+                failed++; failedNames.push(f.name); lastError = e && e.message ? e.message : String(e);
                 if (path) { try { await audioApi({ action: 'delete', path }); } catch (cleanupError) { console.error('No se pudo limpiar el archivo incompleto:', cleanupError); } }
             }
-            uploadProgressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
+            uploadProgressBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
         }
         await loadTracks();
-        uploadStatusText.textContent = failed ? `Subida terminada: ${completed} correcto(s), ${failed} fallido(s). Último error: ${lastError}` : '¡Completado y publicado con éxito!';
+        const cancelled = bulkCancel ? ` Lote detenido: quedaron ${total - completed - failed} sin subir.` : '';
+        uploadStatusText.textContent = (failed ? `Subida terminada: ${completed} correcto(s), ${failed} fallido(s). Último error: ${lastError}. Fallidos: ${failedNames.slice(0, 5).join(', ')}${failedNames.length > 5 ? ` y ${failedNames.length - 5} más (ver consola)` : ''}.` : (bulkCancel ? `${completed} archivo(s) publicados.` : '¡Completado y publicado con éxito!')) + cancelled;
+        if (failedNames.length) console.warn('Archivos fallidos:', failedNames);
     } catch (e) {
         console.error('Error general en la subida:', e);
         uploadStatusText.textContent = 'No se pudo completar la subida: ' + (e && e.message ? e.message : e);
     } finally {
+        window.removeEventListener('beforeunload', bulkBeforeUnload);
+        if (stopBtn) stopBtn.classList.add('hidden');
         uploadSubmitBtn.classList.remove('hidden');
         uploadCloseBtn.classList.remove('hidden');
     }
