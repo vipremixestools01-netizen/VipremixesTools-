@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIPREMIXESTOOLS - Portal & Record Pool</title>
+    <link rel="preconnect" href="https://hcyuwwwwwdqzxjrfqcyf.supabase.co" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -27,7 +31,8 @@
         }
     </script>
     <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -247,7 +252,7 @@
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
-                        <input type="text" id="searchInput" oninput="handleSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSearch();}" placeholder="Buscar artista o nombre…" class="w-full bg-white border border-brand-border rounded-xl pl-10 pr-3 py-2 text-[13px] text-slate-800 placeholder-slate-500 focus:outline-none focus:border-brand-crimson transition-all">
+                        <input type="text" id="searchInput" oninput="handleSearchInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();handleSearch();}" placeholder="Buscar artista o nombre…" class="w-full bg-white border border-brand-border rounded-xl pl-10 pr-3 py-2 text-[13px] text-slate-800 placeholder-slate-500 focus:outline-none focus:border-brand-crimson transition-all">
                     </div>
                     <div class="w-full md:w-52">
                         <select id="monthSelectFilter" onchange="filterByMonth(this.value)" class="w-full bg-white border border-brand-border rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-crimson transition-all">
@@ -275,9 +280,10 @@
                             <thead>
                                 <tr class="border-b border-brand-border text-slate-500 text-xs uppercase tracking-wider bg-slate-50">
                                     <th class="py-4 px-3">Song Title</th>
+                                    <th class="py-4 px-3 w-[86px]">Date</th>
                                     <th class="py-4 px-3 w-[16%] hidden sm:table-cell">Artist</th>
                                     <th class="py-4 px-3 w-[16%] hidden md:table-cell">Version</th>
-                                    <th class="py-4 px-3 w-[10%] hidden xl:table-cell">Remixer</th>
+                                    <th class="py-4 px-3 w-[12%] hidden md:table-cell">Remixer</th>
                                     <th class="py-4 px-3 w-[6%] hidden md:table-cell">BPM</th>
                                     <th class="py-4 px-2 w-[76px] text-center"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
                                     <th class="py-4 px-3 w-[10%] hidden lg:table-cell">Genre</th>
@@ -383,10 +389,15 @@
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                             <div class="col-span-2 lg:col-span-1"><label class="block text-xs font-semibold mb-1" for="djBatchGenre">Género</label><select id="djBatchGenre" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
                             <div class="col-span-2 lg:col-span-1"><label class="block text-xs font-semibold mb-1" for="djBatchKey">Tonalidad</label><select id="djBatchKey" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
-                            <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMin">BPM mínimo</label><input id="djBatchBpmMin" type="number" min="0" placeholder="ej. 85" oninput="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
-                            <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMax">BPM máximo</label><input id="djBatchBpmMax" type="number" min="0" placeholder="ej. 100" oninput="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
+                            <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMin">BPM mínimo</label><input id="djBatchBpmMin" type="number" min="0" placeholder="ej. 85" oninput="djBatchSearchDebounced()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
+                            <div><label class="block text-xs font-semibold mb-1" for="djBatchBpmMax">BPM máximo</label><input id="djBatchBpmMax" type="number" min="0" placeholder="ej. 100" oninput="djBatchSearchDebounced()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
                             <div class="col-span-2 lg:col-span-3"><label class="block text-xs font-semibold mb-1" for="djBatchText">Buscar por artista, canción o remixer</label><div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input id="djBatchText" type="search" autocomplete="off" placeholder="ej. Wisin, Myke Towers, DJ Viper…" oninput="djBatchSearchDebounced()" class="w-full border border-brand-border rounded-lg p-2.5 pl-9 text-sm"></div></div>
                             <div class="col-span-2 lg:col-span-1"><label class="block text-xs font-semibold mb-1" for="djBatchVersion">Versión</label><select id="djBatchVersion" onchange="djBatchSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"><option value="">Todas (Dirty y Clean)</option><option value="Dirty">Solo Dirty</option><option value="Clean">Solo Clean</option><option value="none">Sin definir</option></select></div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 pt-3 border-t border-brand-border">
+                            <label class="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" id="djBatchCompat" onchange="djBatchSearch()" class="accent-blue-600"> Incluir tonalidades compatibles (±1 y relativa)</label>
+                            <label class="flex items-center gap-2 text-xs font-semibold" for="djBatchSort">Ordenar por <select id="djBatchSort" onchange="djBatchSearch()" class="border border-brand-border rounded-lg p-1.5 text-xs"><option value="key">Tonalidad</option><option value="bpm">BPM</option><option value="name">Nombre</option><option value="new">Más recientes</option></select></label>
+                            <button type="button" onclick="djBatchReset()" class="ml-auto bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 text-xs font-bold"><i class="fa-solid fa-rotate-left mr-1"></i>Limpiar filtros</button>
                         </div>
                     </div>
                     <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
@@ -524,24 +535,29 @@
                     <p class="text-xs text-slate-400">Crea tu cuenta para acceder a la plataforma</p>
                 </div>
             </div>
-            <form id="registerForm" onsubmit="handleRegisterSubmit(event)" class="space-y-4">
+            <form id="registerForm" onsubmit="handleRegisterSubmit(event)" class="space-y-4" novalidate>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre de DJ</label>
                     <input type="text" id="regUsername" required minlength="3" maxlength="24" autocomplete="nickname" placeholder="DJ Carlos Mix" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                    <p id="regUsernameHint" class="hidden text-[11px] mt-1" role="status"></p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
                     <input type="email" id="regEmail" required maxlength="254" autocomplete="email" placeholder="tu@correo.com" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                    <p id="regEmailHint" class="hidden text-[11px] mt-1" role="status"></p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Contraseña</label>
                     <div class="relative"><input type="password" id="regPassword" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Mínimo 8 caracteres" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson pr-12"><button type="button" tabindex="-1" aria-label="Mostrar u ocultar contraseña" onclick="togglePass('regPassword', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-eye"></i></button></div>
+                    <div id="regStrengthWrap" class="mt-2 hidden"><div class="h-1.5 rounded-full bg-slate-200 overflow-hidden"><div id="regStrengthBar" class="h-full w-0 transition-all"></div></div><p id="regPasswordHint" class="text-[11px] mt-1" role="status"></p></div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Confirmar contraseña</label>
                     <div class="relative"><input type="password" id="regPassword2" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Repite tu contraseña" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson pr-12"><button type="button" tabindex="-1" aria-label="Mostrar u ocultar contraseña" onclick="togglePass('regPassword2', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-eye"></i></button></div>
+                    <p id="regPassword2Hint" class="hidden text-[11px] mt-1" role="status"></p>
                 </div>
-                <p id="registerMsg" class="text-xs hidden" role="status" aria-live="polite"></p>
+                <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><label>Sitio web<input type="text" id="regWebsite" tabindex="-1" autocomplete="off"></label></div>
+                <p id="registerMsg" class="text-xs hidden" role="alert" aria-live="polite"></p>
                 <button id="registerBtn" type="submit" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2">Crear Cuenta Gratis</button>
             </form>
         </div>
@@ -640,12 +656,12 @@
 
     <!-- MODAL: BULK UPLOAD -->
     <div id="bulkModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-xl w-full p-6 relative shadow-2xl">
+        <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-xl w-full p-6 relative shadow-2xl max-h-[92vh] overflow-y-auto">
             <button onclick="closeBulkModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-black/30 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
             <div class="flex items-center space-x-3 mb-6">
                 <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-cloud-arrow-up text-lg"></i></div>
                 <div>
-                    <h3 class="text-lg font-bold text-white">Subir Lote Masivo (Hasta 100 Remixes)</h3>
+                    <h3 class="text-lg font-bold text-white">Subir Lotes de Remixes (sin límite)</h3>
                     <p class="text-xs text-slate-400">Herramienta exclusiva de Administrador Djanthonymejia</p>
                 </div>
             </div>
@@ -660,14 +676,20 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Género por defecto (si no se detecta)</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Género por defecto (solo si no se detecta ninguno)</label>
                     <select id="bulkGenreTarget" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
                         <option value="Reggaeton">Reggaeton</option><option value="Bachata">Bachata</option><option value="Guaracha">Guaracha</option><option value="Dembow">Dembow</option><option value="Salsa">Salsa</option><option value="Merengue">Merengue</option><option value="Cumbia">Cumbia</option><option value="Electro">Electro</option><option value="Trap">Trap</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Audio (.mp3 / .wav)</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de audio (MP3, WAV, M4A, FLAC…) — puedes elegir todos los que quieras</label>
                     <input type="file" id="bulkAudioFiles" multiple accept="audio/*" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
+                    <label class="block text-xs font-semibold text-slate-300 mt-3 mb-1.5">…o una carpeta completa (incluye subcarpetas; el nombre de la carpeta ayuda a detectar el género)</label>
+                    <input type="file" id="bulkAudioFolder" webkitdirectory multiple class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <label class="flex items-center gap-2 text-slate-300 cursor-pointer"><input type="checkbox" id="bulkSkipDup" checked class="accent-blue-600"> Omitir duplicados (mismo nombre en este portal)</label>
+                    <button type="button" onclick="clearBulkFiles()" class="text-slate-400 hover:text-rose-600 font-semibold">Vaciar lista</button>
                 </div>
                 <div id="bulkReview" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
                 <div id="uploadProgressContainer" class="hidden">
@@ -675,6 +697,7 @@
                     <div class="w-full bg-brand-cardBg h-2.5 rounded-full overflow-hidden border border-brand-border">
                         <div id="uploadProgressBar" class="bg-brand-crimson h-full w-0 transition-all duration-300"></div>
                     </div>
+                    <button id="uploadStopBtn" type="button" onclick="cancelBulkUpload()" class="hidden mt-2 text-xs font-bold bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2">Detener (termina las que están en curso)</button>
                 </div>
                 <button id="uploadSubmitBtn" onclick="processBulkUpload()" class="w-full bg-gradient-to-r from-brand-crimson to-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-bolt"></i> Procesar y Publicar Lote
@@ -842,6 +865,13 @@
             select.innerHTML = html;
         }
         function filterByMonth(ym) { currentMonthFilter = ym; renderTracksTable(); }
+        function catalogDateLabel(value) {
+            if (!value) return '';
+            const m = String(value).match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
+            if (!m) return '';
+            const d = new Date(Date.UTC(Number(m[1]), Number(m[2])-1, Number(m[3])));
+            return new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', timeZone: 'UTC' }).format(d);
+        }
         function renderRatingFilter() {
             const select = document.getElementById('ratingSelectFilter');
             if (!select) return;
@@ -870,7 +900,10 @@
 
 // ===== Interpretación del título: artista, versión, remixer y Dirty/Clean =====
 function ratingOf(text) {
-    const t = String(text || '').toLowerCase(), d = /\b(dirty|explicit)\b/.test(t), c = /\b(clean|censored)\b/.test(t);
+    const t = String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Solo etiquetas explícitas completas; no confundir palabras como "unclean" o "dirty south".
+    const d = /(?:^|[^a-z])(dirty|explicit|explicit content|parental advisory)(?=$|[^a-z])/.test(t);
+    const c = /(?:^|[^a-z])(clean|censored|radio clean|edited clean)(?=$|[^a-z])/.test(t);
     return d && !c ? 'Dirty' : c && !d ? 'Clean' : '';
 }
 function parseTrackInfo(t) {
@@ -878,7 +911,7 @@ function parseTrackInfo(t) {
     let s = String(t.title || '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
     const groups = [];
     s = s.replace(/[\(\[]([^\)\]]*)[\)\]]/g, (m, g) => { if (/^\s*(feat|ft|featuring|with|w\/)\b/i.test(g)) return m; groups.push(g.trim()); return ' '; });
-    let rating = '', remixer = '', version = [];
+    let rating = '', remixer = String(t.remixer || t.remixed_by || t.composer || '').trim(), version = [];
     const GENERIC = /^(extended|original|club|radio|short|intro|outro|quick hit|instrumental|acapella|acapela|dub|main|album|single|official|video|transition|hype)$/i;
     for (const g of groups) {
         if (!g) continue;
@@ -891,6 +924,8 @@ function parseTrackInfo(t) {
         if (m && !GENERIC.test(m[1].trim())) {
             if (!remixer) remixer = m[1].trim();
             version.push(m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase());
+        } else if (/^(remix|edit|flip|bootleg|rework|refix|mashup|redrum|vip|mix)$/i.test(rest)) {
+            version.push(rest.charAt(0).toUpperCase() + rest.slice(1).toLowerCase());
         } else if (/(extended|intro|outro|quick ?hit|acapel+a|instrumental|radio|short|club|original|transition|mix|edit|dub|hype|segue)/i.test(rest)) version.push(rest);
     }
     s = s.replace(/\b\d{2,3}\s*bpm\b/ig, ' ').replace(/\s+/g, ' ').trim();
@@ -932,22 +967,32 @@ function parseTrackInfo(t) {
             renderTracksTable();
         }
 
+        const TABLE_PAGE = 200;
+        let tableLimit = TABLE_PAGE, lastTableSig = '';
+        function showMoreTracks() { tableLimit += TABLE_PAGE; renderTracksTable(); }
+        // Texto de búsqueda normalizado, calculado una sola vez por canción (se recalcula si cambia su key/género)
+        function trackHaystack(track) {
+            const sig = track.musicalKey + '|' + track.camelotKey + '|' + track.genre + '|' + track.title;
+            if (track._hay && track._haySig === sig) return track._hay;
+            const info = parseTrackInfo(track);
+            const monthText = track.date ? monthLabel(track.date.slice(0, 7)) : '';
+            track._haySig = sig;
+            return (track._hay = normalizeText([track.title, track.artist, track.genre, track.portal, monthText, track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey, info.rating, info.remixer, info.version].join(' ')));
+        }
         function renderTracksTable() {
             renderRatingFilter();
             const tbody = document.getElementById('tracksTableBody');
             const idx = allRemixes.findIndex(r => r.id === currentPlayingId);
             currentPlayingIndex = (currentPlayingId !== null && idx >= 0) ? idx : null;
 
+            const words = normalizeText(searchQuery).split(' ').filter(Boolean);
             let filtered = allRemixes.filter(track => {
-                const matchesPortal = currentPortalFilter === "ALL" || track.portal === currentPortalFilter;
-                const matchesGenre = currentGenreFilter === "ALL" || track.genre === currentGenreFilter;
-                const matchesMonth = currentMonthFilter === "ALL" || (track.date || '').startsWith(currentMonthFilter);
-                const matchesRating = currentRatingFilter === "ALL" || parseTrackInfo(track).rating === currentRatingFilter;
-                const monthText = track.date ? monthLabel(track.date.slice(0, 7)) : '';
-                const haystack = normalizeText([track.title, track.artist, track.genre, track.portal, monthText, track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey, parseTrackInfo(track).rating, parseTrackInfo(track).remixer, parseTrackInfo(track).version].join(' '));
-                const words = normalizeText(searchQuery).split(' ').filter(Boolean);
-                const matchesSearch = words.every(w => haystack.includes(w));
-                return matchesPortal && matchesGenre && matchesMonth && matchesRating && matchesSearch;
+                if (currentPortalFilter !== "ALL" && track.portal !== currentPortalFilter) return false;
+                if (currentGenreFilter !== "ALL" && track.genre !== currentGenreFilter) return false;
+                if (currentMonthFilter !== "ALL" && !(track.date || '').startsWith(currentMonthFilter)) return false;
+                if (currentRatingFilter !== "ALL" && parseTrackInfo(track).rating !== currentRatingFilter) return false;
+                if (words.length) { const h = trackHaystack(track); for (const w of words) if (!h.includes(w)) return false; }
+                return true;
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
@@ -963,10 +1008,16 @@ function parseTrackInfo(t) {
                 });
             }
 
+            const tableSig = [currentPortalFilter, currentGenreFilter, currentMonthFilter, currentRatingFilter, searchQuery, newOnly, keySortDir].join('|');
+            if (tableSig !== lastTableSig) { tableLimit = TABLE_PAGE; lastTableSig = tableSig; }
+            const totalFiltered = filtered.length;
+            const shown = filtered.slice(0, tableLimit);
+            const idxMap = new Map(allRemixes.map((r, i) => [r.id, i]));
+
             if(filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="py-12 text-center text-slate-400">
+                        <td colspan="9" class="py-12 text-center text-slate-400">
                             <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
                             <p class="text-sm font-semibold">No hay remixes subidos con este filtro.</p>
                             <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
@@ -977,8 +1028,8 @@ function parseTrackInfo(t) {
             }
 
             let html = "";
-            filtered.forEach((track) => {
-                const realIndex = allRemixes.findIndex(r => r.id === track.id);
+            shown.forEach((track) => {
+                const realIndex = idxMap.get(track.id);
                 const isCurrent = currentPlayingIndex === realIndex;
                 const favClass = track.isFavorite ? "fa-solid text-brand-crimson" : "fa-regular text-slate-400";
                 const info = parseTrackInfo(track);
@@ -993,17 +1044,18 @@ function parseTrackInfo(t) {
                                     <i class="fa-solid ${isCurrent && isPlaying ? 'fa-pause' : 'fa-play'} text-xs"></i>
                                 </button>
                                 <div class="relative w-10 h-10 hidden sm:flex rounded-lg bg-brand-cardBg border border-brand-border overflow-hidden flex items-center justify-center shrink-0">
-                                    <img src="${escapeHtml(safeMediaUrl(track.coverUrl, DEFAULT_COVER))}" alt="Cover" onerror="this.style.display='none'" class="w-full h-full object-cover">
+                                    <img src="${escapeHtml(safeMediaUrl(track.coverUrl, DEFAULT_COVER))}" alt="Cover" loading="lazy" decoding="async" onerror="this.style.display='none'" class="w-full h-full object-cover">
                                     ${track.isVip ? '<span class="absolute top-0 right-0 bg-brand-crimson text-white text-[8px] font-bold px-1 rounded-bl">VIP</span>' : ''}
                                 </div>
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${escapeHtml(info.song)}</div>
                                     ${info.artist ? `<div class="sm:hidden text-xs text-slate-500 truncate">${escapeHtml(info.artist)}</div>` : ''}
-                                    <div class="text-[11px] text-slate-400 truncate">${escapeHtml(track.date || '')}${track.portal ? ' · ' + escapeHtml(track.portal) : ''}</div>
+                                    <div class="text-[11px] text-slate-400 truncate">${track.portal ? escapeHtml(track.portal) : ''}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-3 px-3 text-slate-600 hidden sm:table-cell break-words">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</td>
+                        <td class="py-3 px-3 text-sm text-slate-500 whitespace-nowrap">${escapeHtml(catalogDateLabel(track.date)) || '<span class="text-slate-300">—</span>'}</td>
+                    <td class="py-3 px-3 text-slate-600 hidden sm:table-cell break-words">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3 px-3 hidden md:table-cell break-words">${ratingHtml || versionHtml ? ratingHtml + versionHtml : '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3 px-3 text-sm text-slate-600 hidden xl:table-cell break-words">${escapeHtml(info.remixer) || '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3 px-3 text-sm text-slate-500 hidden md:table-cell">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
@@ -1023,6 +1075,9 @@ function parseTrackInfo(t) {
                     </tr>
                 `;
             });
+            if (totalFiltered > shown.length) {
+                html += `<tr><td colspan="9" class="py-4 text-center"><button onclick="showMoreTracks()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-5 py-2.5 rounded-full">Mostrando ${shown.length} de ${totalFiltered} · Mostrar ${Math.min(TABLE_PAGE, totalFiltered - shown.length)} más</button></td></tr>`;
+            }
             tbody.innerHTML = html;
         }
 
@@ -1119,7 +1174,10 @@ function parseTrackInfo(t) {
             filterByPortal("ALL");
         }
 
+        let _searchTimer = null;
+        function handleSearchInput() { clearTimeout(_searchTimer); _searchTimer = setTimeout(handleSearch, 180); }
         function handleSearch() {
+            clearTimeout(_searchTimer);
             searchQuery = document.getElementById('searchInput').value;
             renderTracksTable();
             // El banner es alto: lleva la vista a los resultados para que se note que buscó
@@ -1195,30 +1253,13 @@ function parseTrackInfo(t) {
         function openPaywallModal() { document.getElementById('paywallModal').classList.remove('hidden'); }
         function closePaywallModal() { document.getElementById('paywallModal').classList.add('hidden'); }
         function openBulkModal() { 
-            document.getElementById('uploadProgressContainer').classList.add('hidden');
-            document.getElementById('uploadSubmitBtn').classList.remove('hidden');
+            const busy = typeof bulkUploading !== 'undefined' && bulkUploading;
+            document.getElementById('uploadProgressContainer').classList.toggle('hidden', !busy);
+            document.getElementById('uploadSubmitBtn').classList.toggle('hidden', busy);
             document.getElementById('uploadCloseBtn').classList.add('hidden');
             document.getElementById('bulkModal').classList.remove('hidden'); 
         }
         function closeBulkModal() { document.getElementById('bulkModal').classList.add('hidden'); }
-
-        function handleRegisterSubmit(event) {
-            event.preventDefault();
-            const username = document.getElementById('regUsername').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const password = document.getElementById('regPassword').value.trim();
-
-            if(registeredUsers.some(u => u.username === username)) {
-                alert("Este nombre de usuario ya está registrado.");
-                return;
-            }
-
-            registeredUsers.push({ username, email, password });
-            saveToLocalStorage();
-            alert(`¡Registro exitoso DJ ${username}! Ya puedes iniciar sesión.`);
-            closeRegisterModal();
-            openLoginModal();
-        }
 
         function updateAuthHeader() {
             const container = document.getElementById('authHeaderContainer');
@@ -1306,18 +1347,33 @@ function toggleFavorite(i) {
 
 async function loadTracks() {
     if (!sb) return;
-    // Supabase devuelve máximo 1000 filas por consulta: se pide por páginas para traer TODO el catálogo.
+    // Supabase devuelve máximo 1000 filas por consulta: la primera trae también el total y el resto se pide en paralelo.
+    const PAGE = 1000;
+    const page = from => sb.from('tracks').select('*', from === 0 ? { count: 'exact' } : undefined).order('created_at', { ascending: false }).order('id', { ascending: true }).range(from, from + PAGE - 1);
     let data = [], error = null;
-    for (let from = 0; ; from += 1000) {
-        const r = await sb.from('tracks').select('*').order('created_at', { ascending: false }).order('id', { ascending: true }).range(from, from + 999);
-        if (r.error) { error = r.error; break; }
-        const page = Array.isArray(r.data) ? r.data : [];
-        data = data.concat(page);
-        if (page.length < 1000) break;
+    const first = await page(0);
+    if (first.error) error = first.error;
+    else {
+        data = Array.isArray(first.data) ? first.data : [];
+        if (data.length === PAGE) {
+            if (typeof first.count === 'number') {
+                const jobs = [];
+                for (let from = PAGE; from < first.count; from += PAGE) jobs.push(page(from));
+                for (const r of await Promise.all(jobs)) { if (r.error) { error = r.error; break; } data = data.concat(Array.isArray(r.data) ? r.data : []); }
+            } else {
+                for (let from = PAGE; !error; from += PAGE) {
+                    const r = await page(from);
+                    if (r.error) { error = r.error; break; }
+                    const rows = Array.isArray(r.data) ? r.data : [];
+                    data = data.concat(rows);
+                    if (rows.length < PAGE) break;
+                }
+            }
+        }
     }
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
     allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
-        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
+        date: t.created_at ? String(t.created_at).slice(0, 10) : '', remixer: t.remixer || '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
     renderPortalsSidebar(); renderTracksTable(); updateSummaryCounts();
 }
 
@@ -1420,35 +1476,120 @@ async function resendFromLogin() {
 }
 
 // ----- Registro -----
+// ----- Registro: reglas de validación (las mismas se usan en vivo y al enviar) -----
+const REG_RESERVED = ['admin', 'administrador', 'administrator', 'root', 'soporte', 'support', 'staff', 'moderador', 'vipremixes', 'vipremixestools', 'djanthonymejia', 'anthonymejia'];
+const REG_COMMON_PASSWORDS = ['12345678', '123456789', '1234567890', '11111111', '00000000', '12341234', 'password', 'password1', 'password123', 'contrasena', 'contrasena1', 'contrasena123', 'qwertyui', 'qwerty123', 'abc12345', 'iloveyou', 'admin123', 'welcome1', 'dj123456'];
+const REG_EMAIL_TYPOS = { 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmal.com': 'gmail.com', 'gnail.com': 'gmail.com', 'gmail.con': 'gmail.com', 'gmail.co': 'gmail.com', 'gmail.cm': 'gmail.com', 'gamil.com': 'gmail.com',
+    'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com', 'hotmail.con': 'hotmail.com', 'hotmal.com': 'hotmail.com', 'outlok.com': 'outlook.com', 'outlook.con': 'outlook.com',
+    'yaho.com': 'yahoo.com', 'yahoo.con': 'yahoo.com', 'yahooo.com': 'yahoo.com', 'icloud.con': 'icloud.com', 'iclod.com': 'icloud.com' };
+const regClean = v => String(v || '').replace(/[\u200B-\u200D\uFEFF]/g, '');
+function regValidateUsername(v) {
+    if (!v) return 'Escribe tu nombre de DJ.';
+    if (v.length < 3) return 'Mínimo 3 caracteres.';
+    if (v.length > 24) return 'Máximo 24 caracteres.';
+    if (!/^[\p{L}\p{N} _.-]+$/u.test(v)) return 'Solo letras, números, espacios, punto, guion o guion bajo.';
+    if (!/[\p{L}\p{N}].*[\p{L}\p{N}]/u.test(v)) return 'Debe incluir al menos 2 letras o números.';
+    if (REG_RESERVED.includes(v.toLowerCase().replace(/[\s_.-]+/g, ''))) return 'Ese nombre está reservado. Elige otro.';
+    return '';
+}
+function regValidateEmail(v) {
+    if (!v) return { err: 'Escribe tu correo.' };
+    const bad = /[\s,;:<>()\[\]\\]/;
+    if (v.length > 254 || bad.test(v) || !/^[^@]+@[^@]+\.[^@.]{2,}$/.test(v) || /\.\./.test(v) || /^\.|\.@|@\.|@-|-\.|\.$/.test(v)) return { err: 'Revisa tu correo: parece incompleto o tiene caracteres no válidos.' };
+    const domain = v.split('@')[1];
+    if (REG_EMAIL_TYPOS[domain]) return { err: '', suggest: v.split('@')[0] + '@' + REG_EMAIL_TYPOS[domain] };
+    return { err: '' };
+}
+function regCheckPassword(pw, username, email) {
+    const problems = [];
+    if (pw.length < 8) problems.push('mínimo 8 caracteres');
+    if (pw.length > 72) problems.push('máximo 72 caracteres');
+    if (!/[A-Za-z\u00C0-\u024F]/.test(pw)) problems.push('al menos una letra');
+    if (!/\d/.test(pw)) problems.push('al menos un número');
+    if (REG_COMMON_PASSWORDS.includes(pw.toLowerCase())) problems.push('no uses una contraseña tan común');
+    const low = pw.toLowerCase(), local = String(email || '').split('@')[0].toLowerCase(), uname = String(username || '').toLowerCase().replace(/\s+/g, '');
+    if (local.length >= 4 && low.includes(local)) problems.push('no incluyas tu correo');
+    if (uname.length >= 4 && low.includes(uname)) problems.push('no incluyas tu nombre de DJ');
+    if (pw.length > 1 && /^(.)\1+$/.test(pw)) problems.push('no repitas el mismo caracter');
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+    if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+    if (problems.length) score = Math.min(score, 1);
+    return { problems, score };
+}
+const regTouched = new Set();
+function regSetHint(id, text, ok) {
+    const el = document.getElementById(id); if (!el) return;
+    el.textContent = text || '';
+    el.className = 'text-[11px] mt-1 ' + (text ? (ok ? 'text-emerald-600' : 'text-rose-600') : 'hidden');
+}
+function regValues() {
+    const g = id => document.getElementById(id).value;
+    return { u: regClean(g('regUsername')).trim().replace(/\s+/g, ' ').normalize('NFC'), e: regClean(g('regEmail')).trim().toLowerCase(), p: g('regPassword'), p2: g('regPassword2') };
+}
+function regLive(field, force) {
+    const { u, e, p, p2 } = regValues();
+    const show = force || regTouched.has(field);
+    if (field === 'username') { const err = regValidateUsername(u); regSetHint('regUsernameHint', show && u ? (err || 'Nombre válido') : (show ? err : ''), !err); }
+    if (field === 'email') {
+        const r = regValidateEmail(e), hint = document.getElementById('regEmailHint');
+        regSetHint('regEmailHint', !show ? '' : r.err || (r.suggest ? `¿Quisiste decir ${r.suggest}? Toca para corregir.` : 'Correo válido'), !r.err && !r.suggest);
+        hint.style.cursor = r.suggest ? 'pointer' : '';
+        hint.onclick = r.suggest ? () => { document.getElementById('regEmail').value = r.suggest; regLive('email', true); } : null;
+    }
+    if (field === 'password') {
+        const wrap = document.getElementById('regStrengthWrap'), bar = document.getElementById('regStrengthBar');
+        wrap.classList.toggle('hidden', !p);
+        if (p) {
+            const r = regCheckPassword(p, u, e), labels = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Excelente'], colors = ['#e11d48', '#f97316', '#eab308', '#22c55e', '#16a34a'];
+            bar.style.width = (20 + r.score * 20) + '%'; bar.style.background = colors[r.score];
+            regSetHint('regPasswordHint', r.problems.length ? 'Falta: ' + r.problems.join(', ') + '.' : 'Seguridad: ' + labels[r.score], !r.problems.length);
+        }
+        if (p2) regLive('password2', true);
+    }
+    if (field === 'password2') regSetHint('regPassword2Hint', p2 ? (p === p2 ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden') : '', p === p2);
+}
+window.addEventListener('DOMContentLoaded', () => {
+    [['regUsername', 'username'], ['regEmail', 'email'], ['regPassword', 'password'], ['regPassword2', 'password2']].forEach(([id, field]) => {
+        const el = document.getElementById(id); if (!el) return;
+        el.addEventListener('input', () => regLive(field));
+        el.addEventListener('blur', () => { regTouched.add(field); regLive(field, true); });
+    });
+    const u = document.getElementById('regUsername'), em = document.getElementById('regEmail');
+    if (u) u.addEventListener('input', () => regLive('password'));
+    if (em) em.addEventListener('input', () => regLive('password'));
+});
+
 async function handleRegisterSubmit(e) {
     e.preventDefault();
     const form = e.currentTarget;
     const btn = document.getElementById('registerBtn');
     const msg = document.getElementById('registerMsg');
-    const username = document.getElementById('regUsername').value.trim().replace(/\s+/g, ' ');
-    const email = document.getElementById('regEmail').value.trim().toLowerCase();
-    const password = document.getElementById('regPassword').value;
-    const password2 = document.getElementById('regPassword2').value;
+    const { u: username, e: email, p: password, p2: password2 } = regValues();
 
     const showRegisterMessage = (message, ok = false) => {
         msg.textContent = message;
         msg.className = 'text-xs ' + (ok ? 'text-emerald-400' : 'text-rose-400');
     };
 
+    // Campo trampa para bots: una persona nunca lo ve ni lo llena.
+    if (document.getElementById('regWebsite').value) { form.reset(); closeRegisterModal(); return; }
     if (!sb || !configured) { showRegisterMessage('El servicio de registro no está configurado. Inténtalo más tarde.'); return; }
-    if (username.length < 3 || username.length > 24 || !/^[\p{L}\p{N} _.-]+$/u.test(username)) {
-        showRegisterMessage('El nombre DJ debe tener entre 3 y 24 caracteres y solo puede incluir letras, números, espacios, punto, guion o guion bajo.');
-        return;
-    }
-    if (password.length < 8 || password.length > 72) {
-        showRegisterMessage('La contraseña debe tener entre 8 y 72 caracteres.');
-        return;
-    }
-    if (password !== password2) {
-        showRegisterMessage('Las contraseñas no coinciden.');
-        return;
-    }
-    if (!form.reportValidity()) return;
+
+    const pw = regCheckPassword(password, username, email);
+    const checks = [
+        ['regUsername', regValidateUsername(username)],
+        ['regEmail', regValidateEmail(email).err],
+        ['regPassword', pw.problems.length ? 'Tu contraseña necesita: ' + pw.problems.join(', ') + '.' : ''],
+        ['regPassword2', password !== password2 ? 'Las contraseñas no coinciden.' : '']
+    ];
+    checks.forEach(([id, m]) => document.getElementById(id).setAttribute('aria-invalid', m ? 'true' : 'false'));
+    ['username', 'email', 'password', 'password2'].forEach(f => { regTouched.add(f); regLive(f, true); });
+    const bad = checks.find(([, m]) => m);
+    if (bad) { showRegisterMessage(bad[1]); document.getElementById(bad[0]).focus(); return; }
+    if (navigator.onLine === false) { showRegisterMessage('No hay conexión a internet. Revísala e inténtalo de nuevo.'); return; }
 
     btn.disabled = true;
     btn.textContent = 'Creando cuenta…';
@@ -1469,7 +1610,7 @@ async function handleRegisterSubmit(e) {
 
         // Sin sesión inmediata = falta confirmar el correo.
         if (!data || !data.session) {
-            form.reset();
+            form.reset(); regResetUI();
             msg.classList.add('hidden');
             closeRegisterModal();
             openCheckEmailModal(email);
@@ -1479,21 +1620,36 @@ async function handleRegisterSubmit(e) {
         await loadSession();
         await loadTracks();
         goToCatalog();
-        form.reset();
+        form.reset(); regResetUI();
         closeRegisterModal();
         showToast('Cuenta creada. ¡Bienvenido al catálogo!');
     } catch (error) {
         console.error('Registro:', error);
-        const message = /already registered|already exists|user already/i.test(error.message || '')
+        const code = error.code || '', text = error.message || '';
+        const message = (code === 'user_already_exists' || /already registered|already exists|user already/i.test(text))
             ? 'Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.'
-            : /rate|too many|limit/i.test(error.message || '')
-                ? 'Se realizaron demasiados intentos. Espera un momento y vuelve a intentarlo.'
-                : 'No se pudo completar el registro. Verifica los datos e inténtalo de nuevo.';
+            : (code === 'weak_password' || (/password/i.test(text) && /weak|short|least|characters|easy/i.test(text)))
+                ? 'La contraseña no cumple los requisitos de seguridad. Usa una más larga, con letras y números.'
+                : (code === 'email_address_invalid' || /invalid.*email|email.*invalid/i.test(text))
+                    ? 'Ese correo no es válido. Revísalo e inténtalo de nuevo.'
+                    : (code === 'signup_disabled' || /signups? (are )?(not allowed|disabled)/i.test(text))
+                        ? 'Los registros están desactivados por el momento.'
+                        : (code === 'over_email_send_rate_limit' || error.status === 429 || /rate|too many|limit|after \d+ seconds/i.test(text))
+                            ? 'Se realizaron demasiados intentos. Espera un momento y vuelve a intentarlo.'
+                            : /failed to fetch|network|load failed/i.test(text)
+                                ? 'No hay conexión con el servidor. Revisa tu internet e inténtalo de nuevo.'
+                                : 'No se pudo completar el registro. Verifica los datos e inténtalo de nuevo.';
         showRegisterMessage(message);
     } finally {
         btn.disabled = false;
         btn.textContent = 'Crear Cuenta Gratis';
     }
+}
+function regResetUI() {
+    regTouched.clear();
+    ['regUsernameHint', 'regEmailHint', 'regPassword2Hint'].forEach(id => regSetHint(id, ''));
+    document.getElementById('regStrengthWrap').classList.add('hidden');
+    ['regUsername', 'regEmail', 'regPassword', 'regPassword2'].forEach(id => document.getElementById(id).removeAttribute('aria-invalid'));
 }
 
 // ----- Login -----
@@ -1694,56 +1850,105 @@ async function deleteTrack(i) {
 }
 
 
-// ====== Detección automática de género por canción ======
-const GENRE_KEYWORDS = [
-    // Los más específicos primero, para que "cumbia sonidera" no caiga en "cumbia" ni "rock en espanol" en "rock"
-    ['Nortenas con Sax', /nortenas? con sax/],
-    ['Rock en Espanol', /rock (en )?espanol/],
-    ['Cumbia Sonidera', /sonidera/],
-    ['Cumbia Wepa', /wepa/],
-    ['Bacharengue', /bacharengue/],
-    ['Banda Bailable', /banda bailable/],
-    ['Regional Mexicano', /regional mexicano/],
-    ['Navidad / Año Nuevo', /navidad|navideno|ano nuevo|christmas|xmas|new year/],
-    ['Transition / Segway', /transition|segway|segue/],
-    ['Acapella Starter', /acapella|starter/],
-    ['Guaracha', /guaracha|aleteo|zapateo/],
-    ['Dembow', /dembow|dembou/],
-    ['Moombah', /moombah/],
-    ['Cubaton', /cubaton/],
-    ['Cumbia', /cumbia/],
-    ['Bachata', /bachata/],
-    ['Merengue', /merengue/],
-    ['Salsa', /\bsalsa\b/],
-    ['Mambo', /\bmambo\b/],
-    ['Punta', /\bpunta\b/],
-    ['Tipico', /\btipico\b/],
-    ['Vallenato', /vallenato/],
-    ['Quebradita', /quebradita/],
-    ['Duranguense', /duranguense/],
-    ['Huapango', /huapango/],
-    ['Norteno', /nortena|norteno/],
-    ['Banda Bailable', /\bbanda\b/],
-    ['Ecuatoriana', /ecuatorian/],
-    ['Tribal', /\btribal\b/],
-    ['Dancehall', /dancehall/],
-    ['Halloween', /halloween/],
-    ['Drops', /\bdrops?\b/],
-    ['Trap', /\btrap\b/],
-    ['Techno', /techno/],
-    ['Electro', /electro|\bedm\b|\bhouse\b/],
-    ['Reggaeton', /reggaeton|reguetón|regueton|perreo/],
-    ['Reggae / HipHop', /reggae|hip[\s-]?hop/],
-    ['Rock', /\brock\b/],
-    ['Pop', /\bpop\b/],
-    ['Latin / Urban', /\blatin\b|urban[oa]?\b/]
+// ====== Detección automática de género: puntaje por evidencias ======
+// Cada fuente (etiqueta del MP3, carpeta, nombre del archivo, artista ya conocido en el catálogo) suma puntos
+// al género que menciona. Gana el de mayor puntaje; si hay otro muy cercano, queda marcado para revisar.
+// [género, expresión, especificidad]. Especificidad 1 = género genérico: solo cuenta en la etiqueta o el nombre del archivo.
+const GENRE_RULES = [
+    ['Nortenas con Sax', /nortenas? con sax/, 3],
+    ['Rock en Espanol', /rock (en )?espanol|rock latino/, 3],
+    ['Cumbia Sonidera', /(cumbia )?sonidera/, 3],
+    ['Cumbia Wepa', /(cumbia )?\bwepa\b/, 3],
+    ['Bacharengue', /bacharengue/, 3],
+    ['Banda Bailable', /banda bailable/, 3],
+    ['Regional Mexicano', /regional mexican[oa]/, 3],
+    ['Navidad / Año Nuevo', /navidad|navideno|ano nuevo|christmas|xmas|new year/, 3],
+    ['Transition / Segway', /transition|segway|\bsegue\b/, 2],
+    ['Acapella Starter', /acapell?a|\bstarter\b/, 2],
+    ['Guaracha', /guaracha|aleteo|zapateo/, 3],
+    ['Dembow', /dembow|dembou/, 3],
+    ['Moombah', /moombah/, 3],
+    ['Cubaton', /cubaton/, 3],
+    ['Cumbia', /cumbia/, 3],
+    ['Bachata', /bachata/, 3],
+    ['Merengue', /merengue/, 3],
+    ['Salsa', /\bsalsa\b/, 3],
+    ['Mambo', /\bmambo\b/, 3],
+    ['Punta', /\bpunta\b/, 3],
+    ['Tipico', /\btipico\b/, 3],
+    ['Vallenato', /vallenato/, 3],
+    ['Quebradita', /quebradita/, 3],
+    ['Duranguense', /duranguense/, 3],
+    ['Huapango', /huapango/, 3],
+    ['Norteno', /nortena|norteno/, 3],
+    ['Banda Bailable', /\bbanda\b/, 2],
+    ['Ecuatoriana', /ecuatorian/, 3],
+    ['Tribal', /\btribal\b/, 2],
+    ['Dancehall', /dancehall/, 3],
+    ['Halloween', /halloween/, 3],
+    ['Reggaeton', /reggaeton|regueton|perreo/, 3],
+    ['Drops', /\bdrops\b/, 1],
+    ['Trap', /\btrap\b/, 1],
+    ['Techno', /\btechno\b/, 1],
+    ['Electro', /\belectro\b|\belectronic[ao]?\b|\bedm\b|\bhouse\b/, 1],
+    ['Reggae / HipHop', /\breggae\b|hip ?hop|\brap\b/, 1],
+    ['Rock', /\brock\b/, 1],
+    ['Pop', /\bpop\b/, 1],
+    ['Latin / Urban', /\blatin[oa]?\b|\burban[oa]?\b/, 1]
 ];
-function matchGenre(text) {
-    if (!text) return null;
-    const t = String(text).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    for (const [g, re] of GENRE_KEYWORDS) if (re.test(t)) return g;
-    return null;
+const ID3V1_GENRES = { 3: 'Dance', 7: 'Hip-Hop', 13: 'Pop', 15: 'Rap', 16: 'Reggae', 17: 'Rock', 18: 'Techno', 52: 'Electronic', 79: 'Hard Rock', 87: 'Latin' };
+function cleanId3Genre(g) {
+    return String(g || '').replace(/\((\d+)\)/g, (m, n) => ' ' + (ID3V1_GENRES[n] || '') + ' ').replace(/^\s*(\d+)\s*$/, (m, n) => ID3V1_GENRES[n] || '').replace(/\s+/g, ' ').trim();
 }
+function genreMatches(text, allowGeneric) {
+    let t = ' ' + String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[_]+/g, ' ').replace(/\s+/g, ' ') + ' ';
+    const found = [];
+    for (const [g, re, spec] of GENRE_RULES) {
+        if (spec < 2 && !allowGeneric) continue;
+        if (re.test(t)) { found.push([g, spec]); t = t.replace(re, ' '); } // se consume lo encontrado: "cumbia sonidera" no suma también "cumbia"
+    }
+    return found;
+}
+// Artistas que ya están en el catálogo con un género dominante (≥3 canciones y ≥70% en el mismo género)
+let _agmCache = null, _agmLen = -1;
+function artistGenreMap() {
+    if (_agmCache && _agmLen === allRemixes.length) return _agmCache;
+    const m = new Map();
+    for (const t of allRemixes) {
+        if (!t.genre) continue;
+        const a = normalizeText(parseTrackInfo(t).artist);
+        if (a.length < 3) continue;
+        let e = m.get(a); if (!e) m.set(a, e = { n: 0, g: {} });
+        e.n++; e.g[t.genre] = (e.g[t.genre] || 0) + 1;
+    }
+    _agmLen = allRemixes.length;
+    return (_agmCache = m);
+}
+function learnedGenreFor(artist, map) {
+    const e = map.get(normalizeText(artist));
+    if (!e || e.n < 3) return null;
+    const [g, c] = Object.entries(e.g).sort((x, y) => y[1] - x[1])[0];
+    return c / e.n >= 0.7 ? { genre: g } : null;
+}
+function detectGenre(ctx) {
+    const sources = [[ctx.tagGenre, 5, 'etiqueta', true]];
+    (ctx.folders || []).forEach(f => sources.push([f, 4, 'carpeta', false]));
+    sources.push([ctx.name, 3, 'nombre', true], [[ctx.title, ctx.artist].join(' '), 2, 'nombre', false]);
+    const score = {}, by = {};
+    const add = (g, pts, label) => { score[g] = (score[g] || 0) + pts; (by[g] = by[g] || {})[label] = ((by[g] || {})[label] || 0) + pts; };
+    for (const [text, w, label, generic] of sources) {
+        if (!text) continue;
+        for (const [g, spec] of genreMatches(text, generic)) add(g, w * spec, label);
+    }
+    if (ctx.learned) add(ctx.learned.genre, 6, 'catalogo');
+    const ranked = Object.entries(score).sort((x, y) => y[1] - x[1]);
+    if (!ranked.length) return null;
+    const [genre, top] = ranked[0], second = ranked[1];
+    const source = Object.entries(by[genre]).sort((x, y) => y[1] - x[1])[0][0];
+    const conflict = second && second[1] >= 6 && second[1] >= top * 0.6 ? second[0] : ''; // solo hay duda real si el segundo tiene evidencia específica
+    return { genre, source, conflict };
+}
+function matchGenre(text) { const r = detectGenre({ name: text }); return r ? r.genre : null; }
 
 function id3Text(bytes) {
     if (!bytes.length) return '';
@@ -1755,16 +1960,26 @@ function id3Text(bytes) {
     return new TextDecoder(label).decode(body).replace(/\0/g, ' ').replace(/^\uFEFF/, '').trim();
 }
 
+// ID3v1 (últimos 128 bytes del archivo): título, artista y género numérico
+async function readId3v1(file) {
+    if (file.size < 128) return {};
+    const b = new Uint8Array(await file.slice(file.size - 128).arrayBuffer());
+    if (String.fromCharCode(b[0], b[1], b[2]) !== 'TAG') return {};
+    const txt = (x, y) => new TextDecoder('iso-8859-1').decode(b.slice(x, y)).replace(/\0/g, ' ').trim();
+    const out = { title: txt(3, 33), artist: txt(33, 63) };
+    if (ID3V1_GENRES[b[127]]) out.genre = ID3V1_GENRES[b[127]];
+    return out;
+}
 // Lee la etiqueta ID3v2 del MP3 (género, BPM, título, artista). Si no hay etiqueta, devuelve {}.
 async function readId3(file) {
     const head = new Uint8Array(await file.slice(0, 10).arrayBuffer());
-    if (head.length < 10 || String.fromCharCode(head[0], head[1], head[2]) !== 'ID3') return {};
+    if (head.length < 10 || String.fromCharCode(head[0], head[1], head[2]) !== 'ID3') return readId3v1(file).catch(() => ({}));
     const ver = head[3];
     const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
     const buf = new Uint8Array(await file.slice(10, 10 + Math.min(size, 6 * 1024 * 1024)).arrayBuffer());
     const out = {}, idLen = ver === 2 ? 3 : 4, hdrLen = ver === 2 ? 6 : 10;
-    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist', TKE: 'key' }
-                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist', TKEY: 'key' };
+    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist', TKE: 'key', TP4: 'remixer', TCM: 'composer' }
+                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist', TKEY: 'key', TPE4: 'remixer', TCOM: 'composer' };
     let pos = 0;
     while (pos + hdrLen <= buf.length) {
         const id = String.fromCharCode(...buf.slice(pos, pos + idLen));
@@ -1777,12 +1992,18 @@ async function readId3(file) {
         if (map[id]) out[map[id]] = id3Text(buf.slice(pos + hdrLen, pos + hdrLen + fsize));
         else if (/^(TIT3|TT3|TXXX|TXX|COMM|COM)$/.test(id)) {
             const fb = buf.slice(pos + hdrLen, pos + hdrLen + fsize);
+            if (/^(TXXX|TXX)$/.test(id) && fb.length > 2) {
+                const desc = id3Text(fb.slice(0, Math.min(80, fb.length))).toLowerCase();
+                const value = id3Text(fb);
+                if (/remix|remixer|remixed by|dj|creator|producer/.test(desc) && !out.remixer) out.remixer = value.split(/[\0]/).pop().trim();
+                if (/itunes.?advisory|content.?rating|explicit|clean|censor/.test(desc)) out.notes = (out.notes || '') + ' | ' + desc + ' ' + value;
+            }
             const data = /^(COMM|COM)$/.test(id) ? Uint8Array.from([fb[0], ...fb.slice(4)]) : fb;
             out.notes = (out.notes || '') + ' | ' + id3Text(data);
         }
         pos += hdrLen + fsize;
     }
-    if (out.genre) out.genre = out.genre.replace(/\(\d+\)/g, ' ').trim();
+    if (out.genre) out.genre = cleanId3Genre(out.genre);
     if (out.bpm) out.bpm = parseInt(out.bpm, 10) || null;
     return out;
 }
@@ -1796,42 +2017,91 @@ function detectRating(f, tag) {
     if (byTag) return { rating: byTag, source: 'etiqueta', conflict: '' };
     return { rating: '', source: '', conflict: '' };
 }
-let bulkItems = [];
+let bulkFiles = [], bulkItems = [], bulkReading = false, bulkReviewRun = 0, bulkRenderTimer = null, bulkIgnored = 0;
+const BULK_RENDER_MAX = 200;
 const SRC_BADGE = {
     'etiqueta': ['text-emerald-400', 'Etiqueta del archivo'],
+    'carpeta': ['text-emerald-400', 'Por la carpeta'],
     'nombre': ['text-sky-400', 'Por el nombre'],
+    'catalogo': ['text-sky-400', 'Por el artista'],
     'manual': ['text-slate-400', 'Elegido por ti'],
     'revisar': ['text-amber-400', 'Revisar']
 };
 function badgeHtml(i) {
     const it = bulkItems[i], k = it.genre ? it.source : 'revisar';
-    return `<span id="bb${i}" class="${SRC_BADGE[k][0]} shrink-0 w-28 text-right">${SRC_BADGE[k][1]}</span>`;
+    const tip = it.genreAlt ? ` title="Podría ser también: ${escapeHtml(it.genreAlt)}"` : '';
+    return `<span id="bb${i}"${tip} class="${SRC_BADGE[k][0]} shrink-0 w-28 text-right">${SRC_BADGE[k][1]}</span>`;
 }
+function bulkNeedsReview(it) { return !it.genre || it.source === 'revisar' || !!it.ratingConflict; }
+function bulkSummaryHtml() {
+    const n = bulkItems.length;
+    let sinGenero = 0, dudas = 0, keys = 0, dirty = 0, clean = 0, dups = 0, listos = 0;
+    for (const x of bulkItems) {
+        if (!x.genre) sinGenero++; else if (x.source === 'revisar') dudas++;
+        if (x.musicalKey) keys++;
+        if (x.rating === 'Dirty') dirty++; else if (x.rating === 'Clean') clean++;
+        if (x.dup) dups++;
+        if (x.done) listos++;
+    }
+    return `${n} archivo(s)${bulkReading ? ' · leyendo etiquetas…' : ''}${bulkIgnored ? ` · ${bulkIgnored} ignorado(s) por no ser audio` : ''}. ` +
+        `${sinGenero ? sinGenero + ' sin género detectado (usarán el género por defecto). ' : ''}${dudas ? dudas + ' con dudas de género (revísalos primero). ' : ''}` +
+        `${!sinGenero && !dudas && !bulkReading ? 'Géneros revisados. ' : ''}Tonalidad ya conocida: ${keys}/${n} (el resto se analiza al subir). Dirty: ${dirty} · Clean: ${clean} · Sin definir: ${n - dirty - clean}.` +
+        `${dups ? ' Duplicados: ' + dups + '.' : ''}`;
+}
+function updateBulkSubmit() {
+    const n = bulkItems.filter(it => !it.done).length;
+    uploadSubmitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> ${n ? `Procesar y publicar ${n} archivo(s)` : 'Procesar y Publicar Lote'}`;
+}
+function scheduleBulkRender() { if (bulkRenderTimer) return; bulkRenderTimer = setTimeout(() => { bulkRenderTimer = null; renderBulkReview(); }, 150); }
 function renderBulkReview() {
     const box = document.getElementById('bulkReview');
-    const opts = g => Array.from(bulkGenreTarget.options).map(o => `<option value="${escapeHtml(o.value)}"${o.value === g ? ' selected' : ''}>${escapeHtml(o.value)}</option>`).join('');
-    const sinDetectar = bulkItems.filter(x => !x.genre).length;
-    const keysPending = bulkItems.filter(x => x.keyStatus === 'analyzing').length;
-    const keysFound = bulkItems.filter(x => x.musicalKey).length;
-    const nDirty = bulkItems.filter(x => x.rating === 'Dirty').length, nClean = bulkItems.filter(x => x.rating === 'Clean').length, nUndef = bulkItems.length - nDirty - nClean;
-    const ratingBadge = it => it.ratingConflict ? `<span class="text-amber-400 shrink-0 text-right">Revisar: ${escapeHtml(it.ratingSource)} dice ${escapeHtml(it.rating)}, etiqueta dice ${escapeHtml(it.ratingConflict)}</span>` : it.rating ? `<span class="${it.rating === 'Dirty' ? 'text-red-400' : 'text-emerald-400'} shrink-0 text-right">${it.rating} · ${it.ratingSource === 'manual' ? 'elegido por ti' : 'por ' + escapeHtml(it.ratingSource)}</span>` : '<span class="text-slate-500 shrink-0 text-right">Dirty/Clean sin definir</span>';
-    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}. Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
-        bulkItems.map((it, i) => `<div class="flex flex-wrap items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
-            <span class="truncate flex-1 min-w-32 text-slate-200" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
+    updateBulkSubmit();
+    if (!bulkItems.length && !bulkReading) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.classList.remove('hidden');
+    const genreOpts = Array.from(bulkGenreTarget.options).map(o => o.value);
+    const optsHtml = g => genreOpts.map(v => `<option value="${escapeHtml(v)}"${v === g ? ' selected' : ''}>${escapeHtml(v)}</option>`).join('');
+    const first = [], rest = [];
+    bulkItems.forEach((it, i) => (bulkNeedsReview(it) || it.dup ? first : rest).push(i));
+    const order = first.concat(rest).slice(0, BULK_RENDER_MAX);
+    const ratingBadge = it => it.ratingConflict ? `<span class="text-amber-400 shrink-0 text-right">Revisar: ${escapeHtml(it.ratingSource)} dice ${escapeHtml(it.rating)}, etiqueta dice ${escapeHtml(it.ratingConflict)}</span>` : it.rating ? `<span class="${it.rating === 'Dirty' ? 'text-red-400' : 'text-emerald-400'} shrink-0 text-right">${it.rating} · ${it.ratingSource === 'manual' ? 'elegido por ti' : it.ratingSource === 'nombre' ? 'por el nombre' : 'etiqueta'}</span>` : '<span class="text-slate-500 shrink-0 text-right">Sin definir</span>';
+    const keyText = it => it.musicalKey ? `${escapeHtml(it.musicalKey)} · ${escapeHtml(it.camelotKey)}` : it.keyStatus === 'failed' ? 'No detectada' : 'Se analiza al subir';
+    const rows = order.map(i => {
+        const it = bulkItems[i];
+        return `<div class="flex flex-wrap items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
+            <span class="truncate flex-1 min-w-32 text-slate-200" title="${escapeHtml(it.file.webkitRelativePath || it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
+            ${it.dup ? `<span class="text-amber-400 shrink-0">Duplicado${it.dup === 'lote' ? ' en el lote' : ''}</span>` : ''}
             ${badgeHtml(i)}
             ${ratingBadge(it)}
             <select aria-label="Versión Dirty o Clean" onchange="setBulkRating(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white"><option value=""${it.rating ? '' : ' selected'}>Sin definir</option><option value="Dirty"${it.rating === 'Dirty' ? ' selected' : ''}>Dirty</option><option value="Clean"${it.rating === 'Clean' ? ' selected' : ''}>Clean</option></select>
-            <span class="w-24 text-center ${it.musicalKey ? 'text-emerald-400' : it.keyStatus === 'analyzing' ? 'text-amber-400' : 'text-slate-500'}">${it.musicalKey ? `${escapeHtml(it.musicalKey)} · ${escapeHtml(it.camelotKey)}` : it.keyStatus === 'analyzing' ? 'Analizando key…' : it.keyStatus === 'failed' ? 'No detectada' : 'Pendiente'}</span>
-            <select aria-label="Género" onchange="setBulkGenre(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">${opts(it.genre || bulkGenreTarget.value)}</select>
-        </div>`).join('');
+            <span class="w-28 text-center ${it.musicalKey ? 'text-emerald-400' : it.keyStatus === 'failed' ? 'text-amber-400' : 'text-slate-500'}">${keyText(it)}</span>
+            <select aria-label="Género" onchange="setBulkGenre(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">${optsHtml(it.genre || bulkGenreTarget.value)}</select>
+            <button type="button" aria-label="Quitar de la lista" onclick="removeBulkItem(${i})" class="text-slate-400 hover:text-rose-600 px-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>`;
+    }).join('');
+    const more = bulkItems.length - order.length;
+    box.innerHTML = `<p id="bulkSummary" class="text-xs text-slate-400">${bulkSummaryHtml()}</p>` + rows +
+        (more > 0 ? `<p class="text-xs text-slate-400 text-center py-2">…y ${more} más con género y versión ya detectados (se procesan igual). Los que necesitan revisión salen primero.</p>` : '');
 }
+function refreshBulkSummary() { const el = document.getElementById('bulkSummary'); if (el) el.innerHTML = bulkSummaryHtml(); }
 function setBulkGenre(i, g) {
-    bulkItems[i].genre = g; bulkItems[i].source = 'manual';
+    Object.assign(bulkItems[i], { genre: g, source: 'manual', genreAlt: '' });
     const el = document.getElementById('bb' + i);
-    el.className = SRC_BADGE.manual[0] + ' shrink-0 w-28 text-right'; el.textContent = SRC_BADGE.manual[1];
+    if (el) { el.className = SRC_BADGE.manual[0] + ' shrink-0 w-28 text-right'; el.textContent = SRC_BADGE.manual[1]; el.removeAttribute('title'); }
+    refreshBulkSummary();
 }
 function setBulkRating(i, v) { Object.assign(bulkItems[i], { rating: v, ratingSource: 'manual', ratingConflict: '' }); renderBulkReview(); }
-let bulkReviewRun = 0;
+function removeBulkItem(i) {
+    if (bulkUploading) return;
+    const it = bulkItems[i]; if (!it) return;
+    bulkItems.splice(i, 1);
+    const k = bulkFiles.indexOf(it.file); if (k >= 0) bulkFiles.splice(k, 1);
+    markBulkDuplicates(); renderBulkReview();
+}
+function clearBulkFiles() {
+    if (bulkUploading) { alert('Hay una subida en curso. Detenla primero.'); return; }
+    bulkReviewRun++; bulkFiles = []; bulkItems = []; bulkReading = false; bulkIgnored = 0;
+    renderBulkReview();
+}
 let keyAnalysisAudioContext = null;
 function fftInPlace(real, imag) {
     const n = real.length;
@@ -1960,96 +2230,155 @@ async function detectMusicalKey(file) {
     if(!camelot) throw new Error('Tonalidad estimada sin código Camelot.');
     return {musicalKey:result.key,camelotKey:camelot,duration:Number(buffer.duration.toFixed(2)),confidence:Number(result.confidence.toFixed(3))};
 }
+function bulkFileKey(f) { return (f.webkitRelativePath || f.name) + '|' + f.size + '|' + f.lastModified; }
+function addBulkFiles(list) {
+    const known = new Set(bulkFiles.map(bulkFileKey));
+    for (const f of Array.from(list || [])) {
+        const ext = (f.name.match(/\.([^.]+)$/) || [])[1];
+        if (!ext || !AUDIO_MIME[ext.toLowerCase()]) { bulkIgnored++; continue; }
+        const k = bulkFileKey(f);
+        if (known.has(k)) continue;
+        known.add(k); bulkFiles.push(f);
+    }
+    buildBulkReview();
+}
+const bulkTitleOf = f => f.name.replace(/\.[^/.]+$/, '');
+const bulkDupKey = (portal, title) => portal + '|' + normalizeText(String(title).replace(/\s*\((dirty|clean)\)\s*$/i, ''));
+function markBulkDuplicates() {
+    const portal = bulkPortalTarget.value;
+    const existing = new Set(allRemixes.map(t => bulkDupKey(t.portal, t.title)));
+    const seen = new Set();
+    for (const it of bulkItems) {
+        const k = bulkDupKey(portal, bulkTitleOf(it.file));
+        it.dup = existing.has(k) ? 'catalogo' : seen.has(k) ? 'lote' : '';
+        seen.add(k);
+    }
+}
+// Lee etiquetas y detecta género/versión de los archivos nuevos (rápido; la tonalidad por audio se analiza al subir).
 async function buildBulkReview() {
     const runId = ++bulkReviewRun;
-    const files = Array.from(bulkAudioFiles.files || []).slice(0, 100), box = document.getElementById('bulkReview');
-    bulkItems = [];
-    if (!files.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
-    box.classList.remove('hidden');
-    box.innerHTML = '<p class="text-xs text-slate-400">Leyendo etiquetas y detectando tonalidad automáticamente. Puede tardar según el tamaño de los archivos…</p>';
-    for (const f of files) {
-        let tag = {};
-        try { tag = await readId3(f); } catch (e) { console.error(e); }
-        if (runId !== bulkReviewRun) return;
-        let genre = matchGenre(tag.genre), source = genre ? 'etiqueta' : '';
-        if (!genre) { genre = matchGenre([f.name, tag.title, tag.artist].join(' ')); source = genre ? 'nombre' : ''; }
-        const rt = detectRating(f, tag);
-        const item={file:f,genre,source,rating:rt.rating,ratingSource:rt.source,ratingConflict:rt.conflict,bpm:tag.bpm||null,musicalKey:'',camelotKey:'',duration:null,keyStatus:'analyzing'};
-        bulkItems.push(item); renderBulkReview();
-        const preKey = djKeyFromName(f.name) || djKeyFromTag(tag);
-        if (preKey) { Object.assign(item, preKey, { keyStatus: 'analyzed' }); if (runId !== bulkReviewRun) return; renderBulkReview(); continue; }
-        try {
-            const detected=await detectMusicalKey(f);
-            if(runId!==bulkReviewRun)return;
-            Object.assign(item,detected,{keyStatus:'analyzed'});
-        } catch(e) { console.warn('No se pudo detectar la tonalidad de '+f.name,e); item.keyStatus='failed'; item.keyError=e.message; }
-        if(runId!==bulkReviewRun)return;
-        renderBulkReview();
-    }
+    if (!bulkFiles.length) { bulkItems = []; bulkReading = false; renderBulkReview(); return; }
+    const have = new Set(bulkItems.map(x => x.file));
+    const todo = bulkFiles.filter(f => !have.has(f));
+    bulkReading = true; renderBulkReview();
+    const learnedMap = artistGenreMap();
+    let next = 0;
+    const worker = async () => {
+        while (next < todo.length) {
+            if (runId !== bulkReviewRun) return;
+            const f = todo[next++], name = bulkTitleOf(f);
+            let tag = {};
+            try { tag = await readId3(f); } catch (e) { console.warn('Sin etiqueta legible en ' + f.name, e); }
+            if (runId !== bulkReviewRun) return;
+            const folders = f.webkitRelativePath ? f.webkitRelativePath.split('/').slice(0, -1) : [];
+            const info = parseTrackInfo({ title: tag.title || name, remixer: tag.remixer || tag.composer || '' });
+            const det = detectGenre({ tagGenre: tag.genre, folders, name, title: tag.title, artist: tag.artist, learned: learnedGenreFor(info.artist || tag.artist, learnedMap) });
+            const rt = detectRating(f, tag);
+            const item = { file: f, genre: det ? det.genre : '', source: det ? (det.conflict ? 'revisar' : det.source) : '', genreAlt: det ? det.conflict : '',
+                rating: rt.rating, ratingSource: rt.source, ratingConflict: rt.conflict, remixer: info.remixer || tag.remixer || tag.composer || '', bpm: tag.bpm || null, musicalKey: '', camelotKey: '', duration: null, keyStatus: 'pending', done: false, dup: '' };
+            const preKey = djKeyFromName(f.name) || djKeyFromTag(tag);
+            if (preKey) Object.assign(item, preKey, { keyStatus: 'analyzed' });
+            bulkItems.push(item);
+            scheduleBulkRender();
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(6, todo.length) }, worker));
+    if (runId !== bulkReviewRun) return;
+    const order = new Map(bulkFiles.map((f, i) => [f, i]));
+    bulkItems.sort((a, b) => order.get(a.file) - order.get(b.file));
+    bulkReading = false;
+    markBulkDuplicates();
+    clearTimeout(bulkRenderTimer); bulkRenderTimer = null;
+    renderBulkReview();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    bulkAudioFiles.addEventListener('change', buildBulkReview);
+    bulkAudioFiles.addEventListener('change', () => { addBulkFiles(bulkAudioFiles.files); bulkAudioFiles.value = ''; });
+    bulkAudioFolder.addEventListener('change', () => { addBulkFiles(bulkAudioFolder.files); bulkAudioFolder.value = ''; });
     bulkGenreTarget.addEventListener('change', () => { if (bulkItems.some(x => !x.genre)) renderBulkReview(); });
+    bulkPortalTarget.addEventListener('change', () => { markBulkDuplicates(); renderBulkReview(); });
+    document.getElementById('bulkSkipDup').addEventListener('change', refreshBulkSummary);
 });
+window.addEventListener('beforeunload', e => { if (bulkUploading) { e.preventDefault(); e.returnValue = ''; } });
 
+let bulkCancel = false, bulkUploading = false;
+const BULK_CONCURRENCY = 3;
+function cancelBulkUpload() { bulkCancel = true; uploadStatusText.textContent = 'Deteniendo… terminando las canciones que están en curso.'; }
+const bulkUuid = () => (window.crypto && typeof window.crypto.randomUUID === 'function') ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
 async function processBulkUpload() {
     if (!isAdmin) { alert('Acceso denegado.'); return; }
-    const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
-    const files = Array.from(bulkAudioFiles.files || []);
-    const allowedExt = new Set(Object.keys(AUDIO_MIME));
-    if (!files.length) { alert('Selecciona al menos un archivo de audio.'); return; }
-    if (files.length > 100) { alert('Puedes subir un máximo de 100 archivos por lote.'); return; }
-    const invalid = files.find(f => {
-        const ext = (f.name.match(/\.([^.]+)$/) || [])[1];
-        return !ext || !allowedExt.has(ext.toLowerCase()) || (f.type && !f.type.startsWith('audio/') && f.type !== 'video/mp4');
-    });
-    if (invalid) { alert('Formato no admitido: ' + invalid.name + '. Usa MP3, WAV, M4A, AAC, FLAC, OGG o MP4.'); return; }
+    if (bulkUploading) return;
+    if (bulkReading) { alert('Espera un momento: todavía se están leyendo las etiquetas de los archivos.'); return; }
+    const pending = bulkItems.filter(it => !it.done);
+    if (!pending.length) { alert('Selecciona al menos un archivo de audio.'); return; }
     if (!sb) { alert('La conexión con la base de datos no está configurada.'); return; }
-    uploadProgressContainer.classList.remove('hidden'); uploadSubmitBtn.classList.add('hidden');
-    uploadCloseBtn.classList.add('hidden');
-    let failed = 0, lastError = '', completed = 0;
+    const portal = bulkPortalTarget.value, defaultGenre = bulkGenreTarget.value, skipDup = document.getElementById('bulkSkipDup').checked;
+    bulkUploading = true; bulkCancel = false;
+    uploadProgressContainer.classList.remove('hidden'); uploadSubmitBtn.classList.add('hidden'); uploadCloseBtn.classList.add('hidden'); uploadStopBtn.classList.remove('hidden');
+    uploadProgressBar.style.width = '0%';
+    const total = pending.length, queue = pending.slice(), errors = [];
+    let ok = 0, failed = 0, skipped = 0, finished = 0, lock = Promise.resolve();
+    // El análisis de tonalidad decodifica audio y usa mucha memoria: uno a la vez, mientras otras canciones se suben en paralelo.
+    const analyze = f => { const run = lock.then(() => detectMusicalKey(f)); lock = run.catch(() => {}); return run; };
+    const tick = label => {
+        finished++;
+        uploadProgressBar.style.width = Math.round(finished / total * 100) + '%';
+        uploadStatusText.textContent = `${finished} de ${total} procesados · ${ok} subidos${failed ? ' · ' + failed + ' con error' : ''}${skipped ? ' · ' + skipped + ' omitidos' : ''}${label ? ' · último: ' + label : ''}`;
+    };
+    const uploadOne = async (it, title, ext) => {
+        const f = it.file;
+        const path = 'b2/' + bulkUuid() + '.' + ext;
+        try {
+            const signed = await audioApi({ action: 'upload', path });
+            if (!signed || !signed.url) throw new Error('No se recibió el enlace de subida.');
+            const up = await fetch(signed.url, { method: 'PUT', headers: { 'Content-Type': mimeFromExt(ext, f.type) }, body: f });
+            if (!up.ok) throw new Error('Backblaze respondió ' + up.status);
+            const finalTitle = (it.rating && !parseTrackInfo({ title }).rating) ? `${title} (${it.rating})` : title;
+            const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
+            const ins = await sb.from('tracks').insert({ title: finalTitle, artist: '', remixer: it.remixer || '', rating: it.rating || null, portal, genre: it.genre || defaultGenre, bpm, storage_path: path, ext,
+                musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
+                key_analysis_status: it.musicalKey ? 'analyzed' : 'pending', key_analyzed_at: it.musicalKey ? new Date().toISOString() : null });
+            if (ins.error) throw new Error(ins.error.message);
+        } catch (e) {
+            try { await audioApi({ action: 'delete', path }); } catch (cleanupError) { console.error('No se pudo limpiar el archivo incompleto:', cleanupError); }
+            throw e;
+        }
+    };
+    const worker = async () => {
+        while (queue.length && !bulkCancel) {
+            const it = queue.shift(), title = bulkTitleOf(it.file), ext = (it.file.name.match(/\.([^.]+)$/) || [])[1].toLowerCase();
+            if (skipDup && it.dup) { it.done = true; skipped++; tick(title); continue; }
+            try {
+                if (!it.musicalKey) {
+                    try { Object.assign(it, await analyze(it.file), { keyStatus: 'analyzed' }); }
+                    catch (ae) { console.warn('Análisis automático falló para', it.file.name, ae); it.keyStatus = 'failed'; it.keyError = ae.message; }
+                }
+                try { await uploadOne(it, title, ext); }
+                catch (first) { console.warn('Reintentando', it.file.name, first); await new Promise(r => setTimeout(r, 1500)); await uploadOne(it, title, ext); }
+                it.done = true; ok++;
+            } catch (e) {
+                console.error('Error subiendo ' + it.file.name, e);
+                failed++; errors.push(it.file.name + ': ' + (e && e.message ? e.message : e));
+            }
+            tick(title);
+        }
+    };
     try {
         await requireSession();
-        for (let i = 0; i < files.length; i++) {
-            const f = files[i], title = f.name.replace(/\.[^/.]+$/, ''), ext = (f.name.match(/\.([^.]+)$/) || [])[1].toLowerCase();
-            const analysisItem = bulkItems.find(x => x.file === f) || {};
-            if (!analysisItem.musicalKey) {
-                uploadStatusText.textContent = `Analizando tonalidad ${i + 1} de ${files.length}: ${title}…`;
-                try { const detected = await detectMusicalKey(f); Object.assign(analysisItem, detected, { keyStatus: 'analyzed' }); }
-                catch (analysisError) { console.warn('Análisis automático falló para', f.name, analysisError); analysisItem.keyStatus = 'failed'; analysisItem.keyError = analysisError.message; }
-            }
-            uploadStatusText.textContent = `Subiendo ${i + 1} de ${files.length}: ${title}${analysisItem.musicalKey ? ` · ${analysisItem.musicalKey} (${analysisItem.camelotKey})` : ' · key no detectada; se podrá reintentar'}`;
-            let path = null;
-            try {
-                path = 'b2/' + (window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)) + '.' + ext;
-                const signed = await audioApi({ action: 'upload', path });
-                if (!signed || !signed.url) throw new Error('No se recibió el enlace de subida.');
-                const up = await fetch(signed.url, { method: 'PUT', headers: { 'Content-Type': mimeFromExt(ext, f.type) }, body: f });
-                if (!up.ok) throw new Error('Backblaze respondió ' + up.status);
-                const it = bulkItems.find(x => x.file === f) || {};
-                const finalTitle = (it.rating && !parseTrackInfo({ title }).rating) ? `${title} (${it.rating})` : title;
-                const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
-                const ins = await sb.from('tracks').insert({ title: finalTitle, artist: '', portal, genre: it.genre || genre, bpm, storage_path: path, ext,
-                    musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
-                    key_analysis_status: it.musicalKey ? 'analyzed' : 'pending', key_analyzed_at: it.musicalKey ? new Date().toISOString() : null });
-                if (ins.error) throw new Error(ins.error.message);
-                completed++;
-            } catch (e) {
-                console.error('Error subiendo ' + f.name, e);
-                failed++; lastError = e && e.message ? e.message : String(e);
-                if (path) { try { await audioApi({ action: 'delete', path }); } catch (cleanupError) { console.error('No se pudo limpiar el archivo incompleto:', cleanupError); } }
-            }
-            uploadProgressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
-        }
+        await Promise.all(Array.from({ length: Math.min(BULK_CONCURRENCY, total) }, worker));
         await loadTracks();
-        uploadStatusText.textContent = failed ? `Subida terminada: ${completed} correcto(s), ${failed} fallido(s). Último error: ${lastError}` : '¡Completado y publicado con éxito!';
+        bulkItems = bulkItems.filter(it => !it.done); bulkFiles = bulkItems.map(it => it.file);
+        markBulkDuplicates();
+        const left = bulkItems.length;
+        uploadStatusText.textContent = (bulkCancel ? 'Detenido. ' : '') + `${ok} subido(s)` + (skipped ? `, ${skipped} omitido(s) por duplicado` : '') + (failed ? `, ${failed} con error` : '') +
+            (left ? ` · quedan ${left} en la lista: pulsa el botón para ${failed ? 'reintentar' : 'continuar'}.` : ' · ¡Lote completado y publicado!') + (errors.length ? ` Último error: ${errors[errors.length - 1]}` : '');
     } catch (e) {
         console.error('Error general en la subida:', e);
         uploadStatusText.textContent = 'No se pudo completar la subida: ' + (e && e.message ? e.message : e);
     } finally {
-        uploadSubmitBtn.classList.remove('hidden');
-        uploadCloseBtn.classList.remove('hidden');
+        bulkUploading = false;
+        uploadStopBtn.classList.add('hidden'); uploadSubmitBtn.classList.remove('hidden'); uploadCloseBtn.classList.remove('hidden');
+        renderBulkReview();
     }
 }
 
@@ -2494,44 +2823,59 @@ function djBatchTargetChange(){const n=document.getElementById('djBatchPlName');
 let djBatchRows=[],djBatchSel=new Set(),djDlCancel=false;
 const djV=id=>document.getElementById(id).value;
 function djCamSort(a,b){const p=v=>{const m=/^(\d+)([AB])$/.exec(v);return m?[+m[1],m[2]]:[99,'Z'];};const x=p(a),y=p(b);return x[0]-y[0]||x[1].localeCompare(y[1]);}
+const DJ_BATCH_LIMIT=400;
+let djBatchLimit=DJ_BATCH_LIMIT,djBatchTimer=null;
 function djBatchInit(){
  const g=document.getElementById('djBatchGenre'),k=document.getElementById('djBatchKey');
- if(g&&!g.options.length){g.innerHTML='<option value="">Todos los géneros</option>'+genresList.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');}
+ if(g){const old=g.value,counts={};allRemixes.forEach(t=>{if(t.genre)counts[t.genre]=(counts[t.genre]||0)+1;});
+  const names=[...new Set([...genresList,...Object.keys(counts)])].filter(n=>counts[n]).sort((a,b)=>a.localeCompare(b));
+  g.innerHTML='<option value="">Todos los géneros</option>'+names.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)} (${counts[x]})</option>`).join('');
+  if(old&&names.includes(old))g.value=old;}
  if(k&&!k.options.length){const a=[];for(let n=1;n<=12;n++)a.push(n+'A',n+'B');k.innerHTML='<option value="">Todas las tonalidades</option><option value="__none">Solo sin tonalidad</option>'+a.map(x=>`<option value="${x}">${x}</option>`).join('');}
  djBatchSearch();
 }
-const DJ_BATCH_LIMIT=400;
-let djBatchTimer=null;
 function djBatchSearchDebounced(){clearTimeout(djBatchTimer);djBatchTimer=setTimeout(djBatchSearch,250);}
-function djBatchSearch(){
+function djBatchReset(){['djBatchGenre','djBatchKey','djBatchVersion','djBatchText','djBatchBpmMin','djBatchBpmMax'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('djBatchCompat').checked=false;document.getElementById('djBatchSort').value='key';djBatchSearch();}
+function djBatchMore(){djBatchLimit+=DJ_BATCH_LIMIT;djBatchSearch(false);}
+// Texto de búsqueda de cada canción, calculado una sola vez
+function djBatchHay(t){if(t._bhay)return t._bhay;const i=parseTrackInfo(t);return (t._bhay=normalizeText([t.title,i.artist,i.song,i.remixer,t.genre].join(' ')));}
+function djBatchSearch(keep){
+ if(keep!==false)djBatchLimit=DJ_BATCH_LIMIT;
  const g=djV('djBatchGenre'),k=djV('djBatchKey'),v=djV('djBatchVersion'),q=djV('djBatchText'),mn=Number(djV('djBatchBpmMin'))||0,mx=Number(djV('djBatchBpmMax'))||0;
+ const compat=document.getElementById('djBatchCompat').checked,sort=djV('djBatchSort')||'key';
  const box=document.getElementById('djBatchResults'),infoEl=document.getElementById('djBatchInfo');
  if(!g&&!k&&!v&&!q.trim()&&!mn&&!mx){djBatchRows=[];djBatchSel=new Set();box.innerHTML='';infoEl.textContent='Elige un género o busca por artista para empezar.';djBatchCount();return;}
  const words=normalizeText(q).split(' ').filter(Boolean);
  const rank=t=>{const m=/^(\d+)([AB])$/.exec(t.camelotKey||'');return m?(+m[1])*2+(m[2]==='B'?1:0):999;};
+ const useCompat=compat&&k&&k!=='__none';
  const matches=allRemixes.filter(t=>{
   if(g&&t.genre!==g)return false;
-  if(k==='__none'){if(t.camelotKey)return false;}else if(k&&t.camelotKey!==k)return false;
+  if(k==='__none'){if(t.camelotKey)return false;}
+  else if(k){if(!t.camelotKey)return false;if(useCompat?!djCamelotCompatible(k,t.camelotKey):t.camelotKey!==k)return false;}
   if(mn||mx){const b=Number(t.bpm);if(!b||(mn&&b<mn)||(mx&&b>mx))return false;}
-  const info=parseTrackInfo(t);
-  if(v==='Dirty'&&info.rating!=='Dirty')return false;
-  if(v==='Clean'&&info.rating!=='Clean')return false;
-  if(v==='none'&&info.rating)return false;
-  if(words.length){const hay=normalizeText([t.title,info.artist,info.song,info.remixer,t.genre].join(' '));if(!words.every(w=>hay.includes(w)))return false;}
+  if(v){const r=parseTrackInfo(t).rating;if(v==='Dirty'&&r!=='Dirty')return false;if(v==='Clean'&&r!=='Clean')return false;if(v==='none'&&r)return false;}
+  if(words.length){const hay=djBatchHay(t);for(const w of words)if(!hay.includes(w))return false;}
   return true;
- }).sort((a,b)=>rank(a)-rank(b)||(Number(a.bpm)||999)-(Number(b.bpm)||999)||a.title.localeCompare(b.title));
- djBatchRows=matches.slice(0,DJ_BATCH_LIMIT);
+ });
+ const bpmOf=t=>Number(t.bpm)||999;
+ matches.sort({key:(a,b)=>rank(a)-rank(b)||bpmOf(a)-bpmOf(b)||a.title.localeCompare(b.title),
+  bpm:(a,b)=>bpmOf(a)-bpmOf(b)||rank(a)-rank(b)||a.title.localeCompare(b.title),
+  name:(a,b)=>a.title.localeCompare(b.title),
+  new:(a,b)=>String(b.date).localeCompare(String(a.date))||a.title.localeCompare(b.title)}[sort]||undefined);
+ djBatchRows=matches.slice(0,djBatchLimit);
  djBatchSel=new Set(djBatchRows.map(t=>t.id));
- const groups={};djBatchRows.forEach(t=>{const key=t.camelotKey||'SIN';(groups[key]=groups[key]||[]).push(t);});
+ const groups={};djBatchRows.forEach(t=>{const key=sort==='key'?(t.camelotKey||'SIN'):'ALL';(groups[key]=groups[key]||[]).push(t);});
  const badge=r=>r?`<span class="shrink-0 ${r==='Dirty'?'bg-red-50 text-red-600':'bg-emerald-50 text-emerald-600'} font-bold px-2 py-0.5 rounded-full text-[10px]">${r}</span>`:'';
- box.innerHTML=Object.keys(groups).sort((a,b)=>a==='SIN'?1:b==='SIN'?-1:djCamSort(a,b)).map(key=>{
+ const keys=Object.keys(groups);if(sort==='key')keys.sort((a,b)=>a==='SIN'?1:b==='SIN'?-1:djCamSort(a,b));
+ box.innerHTML=keys.map(key=>{
   const rows=groups[key];
-  const label=key==='SIN'?'Sin tonalidad':`${escapeHtml(key)} · ${escapeHtml(rows[0].musicalKey||'')}`;
+  const label=key==='ALL'?'Resultados':key==='SIN'?'Sin tonalidad':`${escapeHtml(key)} · ${escapeHtml(rows[0].musicalKey||'')}`;
   return `<div class="border border-brand-border rounded-lg"><label class="flex items-center gap-2 bg-slate-50 px-3 py-2 text-xs font-bold rounded-t-lg"><input type="checkbox" checked class="accent-blue-600" onchange="djBatchToggleGroup('${key}',this.checked)"> ${label} <span class="font-normal text-slate-400">(${rows.length})</span></label>`+
-   rows.map(t=>{const info=parseTrackInfo(t),name=(info.artist?info.artist+' - ':'')+info.song;return `<label class="flex items-center gap-2 px-3 py-1.5 text-xs border-t border-brand-border"><input type="checkbox" checked data-key="${key}" data-id="${escapeHtml(t.id)}" class="accent-blue-600" onchange="djBatchToggle('${escapeHtml(t.id)}',this.checked)"><span class="min-w-0 flex-1 truncate" title="${escapeHtml(t.title)}">${escapeHtml(name)}</span>${badge(info.rating)}<span class="text-slate-400 shrink-0 w-14 text-right">${t.bpm?escapeHtml(t.bpm)+' BPM':'—'}</span></label>`;}).join('')+'</div>';
- }).join('');
+   rows.map(t=>{const info=parseTrackInfo(t),name=(info.artist?info.artist+' - ':'')+info.song;return `<label class="flex items-center gap-2 px-3 py-1.5 text-xs border-t border-brand-border"><input type="checkbox" checked data-key="${key}" data-id="${escapeHtml(t.id)}" class="accent-blue-600" onchange="djBatchToggle('${escapeHtml(t.id)}',this.checked)"><span class="min-w-0 flex-1 truncate" title="${escapeHtml(t.title)}">${escapeHtml(name)}</span>${sort!=='key'&&t.camelotKey?`<span class="shrink-0 text-slate-500 font-semibold">${escapeHtml(t.camelotKey)}</span>`:''}${badge(info.rating)}<span class="text-slate-400 shrink-0 w-14 text-right">${t.bpm?escapeHtml(t.bpm)+' BPM':'—'}</span></label>`;}).join('')+'</div>';
+ }).join('')+(matches.length>djBatchRows.length?`<div class="xl:col-span-2 text-center py-2"><button onclick="djBatchMore()" class="bg-slate-100 hover:bg-slate-200 rounded-lg px-5 py-2.5 text-xs font-bold">Mostrar ${Math.min(DJ_BATCH_LIMIT,matches.length-djBatchRows.length)} más</button></div>`:'');
  let msg=matches.length?`${matches.length} canción(es) encontradas`:'No hay canciones con esos filtros.';
- if(matches.length>DJ_BATCH_LIMIT)msg+=` · mostrando las primeras ${DJ_BATCH_LIMIT}; filtra más para ver el resto.`;
+ if(useCompat&&matches.length)msg+=` · compatibles con ${k}`;
+ if(matches.length>djBatchRows.length)msg+=` · mostrando ${djBatchRows.length}; usa "Mostrar más" o filtra más.`;
  infoEl.textContent=msg;
  djBatchCount();
 }
@@ -2547,7 +2891,7 @@ async function djBatchDownload(){
  djDlCancel=false;btn.disabled=true;let ok=0,fail=0;
  try{for(let i=0;i<list.length&&!djDlCancel;i++){const t=list[i];st.textContent=`Descargando ${i+1} de ${list.length}: ${t.title}`;
   try{const url=await signedUrl(t.path,120,{download:`${t.title}${t.artist?' - '+t.artist:''}.${t.ext}`});const a=document.createElement('a');a.href=url;document.body.appendChild(a);a.click();a.remove();ok++;}catch(e){console.warn(e);fail++;}
-  await new Promise(r=>setTimeout(r,1500));}
+  await new Promise(r=>setTimeout(r,1000));}
   st.textContent=djDlCancel?`Cancelado tras ${ok} descarga(s).`:`Listo: ${ok} descargada(s)${fail?`, ${fail} con error`:''}.`;
  }finally{btn.disabled=false;}
 }
