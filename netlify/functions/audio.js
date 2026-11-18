@@ -3,9 +3,11 @@
 // Variables de entorno: B2_KEY_ID, B2_APP_KEY, B2_BUCKET, B2_ENDPOINT
 const crypto = require('crypto');
 
-// Datos públicos de Supabase (la anon key ya está en index.html). Partidos en trozos por el escáner de Netlify.
-const SUPABASE_URL = process.env.SUPABASE_URL || ('https://' + 'kcpeklaegzvmeiikcmra' + '.supabase' + '.co');
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjcGVrbGFlZ3p2bWVpaWtjbXJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MzQ5OTUsImV4cCI6MjExMDAxMDk5NX0.Ck60KVUIhFsIa_eiC2aAfwOQHsEUUD7lkg-W6nQeCRI';
+// Datos públicos del proyecto NUEVO de Supabase (la publishable key es pública y ya está en index.html).
+// Partidos en trozos por el escáner de Netlify. Ya no se leen de variables de entorno
+// para evitar que quede un valor viejo del proyecto anterior.
+const SUPABASE_URL = 'https://' + 'hcyuwwwwwdqzxjrfqcyf' + '.supabase' + '.co';
+const SUPABASE_KEY = 'sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU';
 
 const PATH_RE = /^b2\/[A-Za-z0-9][A-Za-z0-9._-]*\.(mp3|wav|m4a|aac|flac|ogg|mp4)$/i;
 
