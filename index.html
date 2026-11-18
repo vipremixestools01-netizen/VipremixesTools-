@@ -548,9 +548,6 @@
     <!-- BOTTOM AUDIO PLAYER -->
     <footer id="bottomPlayer" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-brand-border shadow-[0_-4px_20px_rgba(15,23,42,0.06)] px-4 lg:px-8 py-3 z-50 flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="flex items-center space-x-4 w-full md:w-80">
-            <div id="playerCoverArt" class="w-14 h-14 rounded-xl bg-brand-cardBg border border-brand-crimson/40 overflow-hidden flex items-center justify-center shrink-0 shadow-md">
-                <span class="cd" style="width:40px;height:40px" aria-hidden="true"></span>
-            </div>
             <div class="min-w-0 flex-1">
                 <h4 id="playerTrackTitle" class="text-sm font-bold text-white truncate">Selecciona un Remix</h4>
                 <p id="playerTrackArtist" class="text-xs text-slate-400 truncate">VIPREMIXESTOOLS</p>
@@ -606,7 +603,7 @@
     <div id="registerModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-md w-full p-6 relative shadow-2xl">
             <button onclick="closeRegisterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-black/30 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
-            <div class="flex items-center space-x-3 mb-6">
+            <div class="flex items-center space-x-3 mb-3">
                 <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-user-plus text-lg"></i></div>
                 <div>
                     <h3 class="text-lg font-bold text-white">Registro de DJ</h3>
@@ -737,8 +734,8 @@
     </div>
 
     <!-- MODAL: BULK UPLOAD -->
-    <div id="bulkModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-brand-panelBg border border-brand-border rounded-3xl max-w-xl w-full p-6 relative shadow-2xl">
+    <div id="bulkModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-3">
+        <div class="bg-brand-panelBg border border-brand-border rounded-2xl max-w-lg w-full max-h-[94vh] overflow-y-auto overscroll-contain p-4 sm:p-5 relative shadow-2xl">
             <button onclick="closeBulkModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-black/30 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
             <div class="flex items-center space-x-3 mb-6">
                 <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-cloud-arrow-up text-lg"></i></div>
@@ -747,7 +744,7 @@
                     <p class="text-xs text-slate-400">Herramienta exclusiva de Administrador Djanthonymejia</p>
                 </div>
             </div>
-            <div class="space-y-4">
+            <div class="space-y-3">
                 <div class="hidden">
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Portal de Destino</label>
                     <select id="bulkPortalTarget" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
@@ -781,7 +778,7 @@
                     <p id="previewStatus" class="text-[11px] mt-2 text-slate-300 hidden"></p>
                 </div>
                 <datalist id="djKnownList"></datalist>
-                <div id="bulkReview" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+                <div id="bulkReview" class="hidden space-y-2 max-h-48 overflow-y-auto pr-1"></div>
                 <div id="uploadProgressContainer" class="hidden">
                     <p id="uploadStatusText" class="text-xs font-semibold text-rose-400 mb-1">Subiendo y procesando...</p>
                     <div class="w-full bg-brand-cardBg h-2.5 rounded-full overflow-hidden border border-brand-border">
@@ -792,7 +789,7 @@
                 <button id="uploadSubmitBtn" onclick="processBulkUpload()" class="w-full bg-gradient-to-r from-brand-crimson to-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-bolt"></i> Procesar y Publicar Lote
                 </button>
-                <button id="uploadCloseBtn" onclick="closeBulkModal()" class="w-full bg-brand-cardBg border border-brand-border text-white font-bold py-3 rounded-xl transition-all text-sm hidden">
+                <button id="uploadCloseBtn" onclick="closeBulkModal()" class="sticky bottom-0 z-10 w-full bg-brand-cardBg border border-brand-border text-white font-bold py-2.5 rounded-xl transition-all text-sm hidden shadow-lg">
                     Terminado / Cerrar
                 </button>
             </div>
@@ -833,6 +830,7 @@
         let currentPlayingId = null;
         let newOnly = false;
         let audioPlayer = new Audio();
+        audioPlayer.preload = 'metadata';
         
         let currentUser = null;
         let isAdmin = false;
@@ -1185,17 +1183,18 @@ function filterByDj(name) {
         function renderTracksTable() {
             renderRatingFilter();
             const tbody = document.getElementById('tracksTableBody');
-            const idx = allRemixes.findIndex(r => r.id === currentPlayingId);
+            const indexById = new Map(allRemixes.map((track, index) => [track.id, index]));
+            const idx = currentPlayingId !== null ? (indexById.get(currentPlayingId) ?? -1) : -1;
             currentPlayingIndex = (currentPlayingId !== null && idx >= 0) ? idx : null;
 
+            const searchWords = normalizeText(searchQuery).split(' ').filter(Boolean);
             let filtered = allRemixes.filter(track => {
                 const matchesPortal = currentPortalFilter === "ALL" || track.portal === currentPortalFilter;
                 const matchesGenre = currentGenreFilter === "ALL" || track.genre === currentGenreFilter;
                 const matchesMonth = currentMonthFilter === "ALL" || (track.date || '').startsWith(currentMonthFilter);
                 const matchesRating = currentRatingFilter === "ALL" || parseTrackInfo(track).rating === currentRatingFilter;
-                const monthText = track.date ? monthLabel(track.date.slice(0, 7)) : '';
-                const haystack = normalizeText([track.title, track.artist, track.genre, monthText, track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey, parseTrackInfo(track).rating, parseTrackInfo(track).remixer, parseTrackInfo(track).version].join(' '));
-                const words = normalizeText(searchQuery).split(' ').filter(Boolean);
+                const haystack = track._searchText || '';
+                const words = searchWords;
                 const matchesSearch = words.every(w => haystack.includes(w));
                 const matchesMode = currentMode === 'video' ? isVideoTrack(track) : !isVideoTrack(track);
                 return matchesMode && matchesPortal && matchesGenre && matchesMonth && matchesRating && matchesSearch;
@@ -1229,7 +1228,7 @@ function filterByDj(name) {
 
             let html = "";
             filtered.forEach((track) => {
-                const realIndex = allRemixes.findIndex(r => r.id === track.id);
+                const realIndex = indexById.get(track.id) ?? -1;
                 const isCurrent = currentPlayingIndex === realIndex;
                 const favClass = track.isFavorite ? "fa-solid text-brand-crimson" : "fa-regular text-slate-400";
                 const info = parseTrackInfo(track);
@@ -1243,10 +1242,6 @@ function filterByDj(name) {
                                 <button onclick="playTrack(${realIndex})" aria-label="Reproducir" class="w-9 h-9 rounded-full bg-brand-crimson hover:bg-red-600 flex items-center justify-center transition shrink-0 shadow-sm">
                                     <i class="fa-solid ${isCurrent && isPlaying ? 'fa-pause' : 'fa-play'} text-xs"></i>
                                 </button>
-                                <div class="relative w-10 h-10 hidden sm:flex rounded-lg bg-brand-cardBg border border-brand-border overflow-hidden flex items-center justify-center shrink-0">
-                                    <img src="${escapeHtml(safeMediaUrl(track.coverUrl, DEFAULT_COVER))}" alt="Cover" onerror="this.style.display='none'" class="w-full h-full object-cover">
-                                    ${track.isVip ? '<span class="absolute top-0 right-0 bg-brand-crimson text-white text-[8px] font-bold px-1 rounded-bl">VIP</span>' : ''}
-                                </div>
                                 <div class="min-w-0">
                                     <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${escapeHtml(info.song)}</div>
                                     ${info.artist ? `<div class="sm:hidden text-xs text-slate-500 truncate">${escapeHtml(info.artist)}</div>` : ''}
@@ -1440,14 +1435,18 @@ function filterByDj(name) {
             filterByPortal("ALL");
         }
 
+        let searchRenderTimer = null;
         function handleSearch() {
-            searchQuery = document.getElementById('searchInput').value;
-            renderTracksTable();
-            // El banner es alto: lleva la vista a los resultados para que se note que buscó
-            const bar = document.getElementById('searchBar');
-            if (searchQuery.trim() && bar && bar.getBoundingClientRect().top > 140) {
-                bar.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            const input = document.getElementById('searchInput');
+            searchQuery = input ? input.value : '';
+            clearTimeout(searchRenderTimer);
+            searchRenderTimer = setTimeout(() => {
+                renderTracksTable();
+                const bar = document.getElementById('searchBar');
+                if (searchQuery.trim() && bar && bar.getBoundingClientRect().top > 140) {
+                    bar.scrollIntoView({ behavior: 'auto', block: 'start' });
+                }
+            }, 90);
         }
 
         function playTrack(index) {
@@ -1464,7 +1463,6 @@ function filterByDj(name) {
             isPlaying = true;
             document.getElementById('playerTrackTitle').textContent = track.title;
             document.getElementById('playerTrackArtist').textContent = track.artist || 'VIPREMIXESTOOLS';
-            document.getElementById('playerCoverArt').innerHTML = `<img src="${track.coverUrl}" class="w-full h-full object-cover">`;
             updatePlayPauseUI();
             renderTracksTable();
         }
@@ -1623,6 +1621,14 @@ async function loadTracks() {
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
     allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', remixer: t.remixer || '', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
         date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), fileSize: Number(t.file_size) || 0, musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
+    // Índice de búsqueda precalculado: evita normalizar y analizar cada canción en cada tecla.
+    allRemixes.forEach(track => {
+        const info = parseTrackInfo(track);
+        const monthText = track.date ? monthLabel(track.date.slice(0, 7)) : '';
+        track._searchText = normalizeText([track.title, track.artist, track.genre, monthText,
+            track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey,
+            info.rating, info.remixer, info.version].join(' '));
+    });
     buildDjRegistry(allRemixes);
     renderPortalsSidebar(); renderTracksTable(); updateSummaryCounts();
 }
@@ -2054,7 +2060,6 @@ async function playTrack(index) {
     if (previousBlobUrl) URL.revokeObjectURL(previousBlobUrl);
     audioPlayer.src = url; audioPlayer.play().catch(err => { console.error(err); stopPlaybackUI(); }); isPlaying = true;
     playerTrackTitle.textContent = t.title; playerTrackArtist.textContent = t.artist || 'VIPREMIXESTOOLS';
-    playerCoverArt.innerHTML = `<img src="${t.coverUrl}" class="w-full h-full object-cover">`;
     updatePlayPauseUI(); renderTracksTable();
 }
 
@@ -2248,8 +2253,25 @@ let bulkSourceFiles = [];
 function genreFromPath(f) {
     const path = (f && f.webkitRelativePath) || '';
     if (!path) return null;
-    const folders = path.split('/').slice(0, -1).reverse(); // de la subcarpeta más profunda hacia arriba
-    for (const folder of folders) { const g = matchGenre(folder); if (g) return g; }
+    // La carpeta más cercana al archivo tiene prioridad. Primero se compara
+    // el nombre completo de la carpeta contra el catálogo, sin coincidencias parciales.
+    const normalizeFolder = value => String(value || '').trim().toLowerCase()
+        .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+        .replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
+    const catalog = new Map(genresList.map(g => [normalizeFolder(g), g]));
+    const aliases = new Map([
+        ['transition', 'Transición'], ['transicion', 'Transición'], ['segue', 'Transición'],
+        ['segway', 'SEGWAY'], ['amapiano', 'Amapian'], ['regueton', 'Reggaeton'],
+        ['hiphop', 'Hip Hop'], ['moombah', 'Moombahton']
+    ]);
+    const folders = path.split('/').slice(0, -1).reverse();
+    for (const folder of folders) {
+        const key = normalizeFolder(folder);
+        if (catalog.has(key)) return catalog.get(key);
+        if (aliases.has(key)) return aliases.get(key);
+        const detected = matchGenre(folder);
+        if (detected) return detected;
+    }
     return null;
 }
 const SRC_BADGE = {
