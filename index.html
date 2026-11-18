@@ -131,13 +131,61 @@
         #bannerCard .hero-feature { opacity:.85; }
         @keyframes heroFloat { 0%,100%{ transform:translateY(0); opacity:.82 } 50%{ transform:translateY(-8px); opacity:1 } }
         @media (prefers-reduced-motion: reduce) { .cd,.smoke,.jog,.jog-led,#bannerCard #bannerTitle,#bannerCard #bannerDesc,#bannerCard #bannerCategoryTag { animation:none; } .smoke{opacity:.3} }
+        /* Portada y reproductor de video: el tema claro del sitio oscurece .text-white; aquí se mantiene blanco */
+        #landingView .text-white, #videoModal .text-white, #landingView h1, #landingView button { color:#fff; }
+        #landingView .text-slate-400 { color:#94a3b8; }
+        #landingView h1 { text-shadow:0 4px 40px rgba(37,99,235,.55); }
     </style>
 </head>
 <body class="bg-brand-bg text-slate-800 min-h-screen flex flex-col selection:bg-brand-crimson selection:text-white">
 
+    <!-- PORTADA: elegir VIDEOS o AUDIOS -->
+    <section id="landingView" class="fixed inset-0 z-[60] overflow-y-auto" style="background:radial-gradient(ellipse at 75% 40%,#0B2A6B 0%,#050b1f 55%,#02040c 100%)">
+        <div class="min-h-full flex flex-col justify-between px-6 lg:px-16 py-8">
+            <div class="flex items-center gap-3 self-end">
+                <span class="cd" style="width:46px;height:46px" aria-hidden="true"></span>
+                <div class="leading-none text-right">
+                    <div class="logo-font text-2xl lg:text-3xl text-white">VIPREMIXES<span class="font-black">TOOLS</span></div>
+                    <div class="text-[10px] font-bold tracking-widest text-white/80 mt-1">AUDIO &amp; VIDEO REMIXES PARA DJS</div>
+                </div>
+            </div>
+            <div class="py-10">
+                <h1 class="logo-font font-black text-white uppercase leading-[0.95] tracking-tight" style="font-size:clamp(2.6rem,9vw,7.5rem)">Sube de nivel<br>tu librería DJ<br>con música<br>exclusiva</h1>
+                <div class="flex flex-col sm:flex-row gap-4 mt-10 max-w-2xl">
+                    <button type="button" onclick="enterMode('video')" class="flex-1 py-5 rounded-md text-white text-lg font-semibold tracking-wide bg-blue-600 hover:bg-blue-500 transition"><i class="fa-solid fa-film mr-2"></i>VIDEOS</button>
+                    <button type="button" onclick="enterMode('audio')" class="flex-1 py-5 rounded-md text-white text-lg font-semibold tracking-wide bg-blue-800 hover:bg-blue-700 transition"><i class="fa-solid fa-headphones mr-2"></i>AUDIOS</button>
+                </div>
+            </div>
+            <p class="text-center text-xs text-slate-400 max-w-3xl mx-auto">VIPREMIXESTOOLS es un servicio diseñado para mejorar el desempeño de los DJs. Al acceder certificas que eres DJ en activo y que no revenderás ni redistribuirás los archivos obtenidos.</p>
+        </div>
+    </section>
+
+    <!-- REPRODUCTOR DE VIDEO -->
+    <div id="videoModal" class="fixed inset-0 z-[55] bg-black/90 hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-4xl">
+            <div class="flex items-center justify-between mb-3 text-white">
+                <div id="videoModalTitle" class="font-bold truncate pr-4"></div>
+                <button type="button" onclick="closeVideoModal()" aria-label="Cerrar" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="relative">
+                <video id="videoModalPlayer" controls playsinline disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" oncontextmenu="return false" class="w-full max-h-[80vh] bg-black rounded-xl"></video>
+                <div id="videoPreviewEnd" class="hidden absolute inset-0 rounded-xl bg-black/85 flex flex-col items-center justify-center text-center p-6">
+                    <i class="fa-solid fa-lock text-3xl text-white mb-3"></i>
+                    <p class="text-white font-bold mb-1">Fin de la vista previa</p>
+                    <p class="text-slate-300 text-sm mb-4">Hazte socio para descargar el video completo.</p>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeVideoModal(); openPaywallModal();" class="bg-brand-crimson text-white font-bold text-sm px-5 py-2.5 rounded-full">Ver membresías</button>
+                        <button type="button" onclick="replayVideoPreview()" class="bg-white/10 text-white font-bold text-sm px-5 py-2.5 rounded-full">Repetir preview</button>
+                    </div>
+                </div>
+            </div>
+            <p class="text-slate-400 text-xs mt-2 text-center">Vista previa de <span id="videoPreviewSecs">30</span> segundos</p>
+        </div>
+    </div>
+
     <!-- HEADER NAVIGATION -->
     <header class="bg-white border-b border-brand-border sticky top-0 z-40 flex items-stretch justify-between shadow-sm">
-        <div class="flex items-center bg-brand-crimson px-5 lg:px-12 py-4 cursor-pointer lg:min-w-[340px]" onclick="resetFilters()">
+        <div class="flex items-center bg-brand-crimson px-5 lg:px-12 py-4 cursor-pointer lg:min-w-[340px]" onclick="showLanding()" title="Volver al inicio">
             <div class="flex items-center gap-3">
                 <span class="cd" style="width:46px;height:46px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))" aria-hidden="true"></span>
                 <div class="leading-none">
@@ -171,7 +219,7 @@
         <!-- SIDEBAR PORTALS -->
         <aside id="sidebarPools" class="w-full lg:w-72 bg-white border-r border-brand-border p-5 lg:block shrink-0">
             <div class="flex items-center justify-between mb-4 pb-2 border-b border-brand-border">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Portales / Pools</span>
+                <span id="sidebarTitle" class="text-xs font-bold uppercase tracking-wider text-slate-400">Portales / Pools</span>
                 <span id="poolCountsSummary" class="text-xs bg-brand-cardBg text-brand-crimson font-bold px-2.5 py-1 rounded-full border border-brand-border">Todo (0)</span>
             </div>
             <div id="portalsListContainer" class="space-y-1.5 overflow-y-auto pr-1"></div>
@@ -581,6 +629,7 @@
                     <p class="text-xs text-slate-400">Acceso para DJs y administrador</p>
                 </div>
             </div>
+            <p id="loginGateMsg" class="hidden text-xs font-semibold text-brand-crimson bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 mb-4"><i class="fa-solid fa-circle-info mr-1"></i> Inicia sesión o regístrate gratis para escuchar el audio y ver los videos. La descarga se habilita con tu membresía.</p>
             <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico</label>
@@ -593,6 +642,7 @@
                 <p id="loginMsg" class="text-xs hidden" role="alert" aria-live="polite"></p>
                 <button type="button" id="loginResendBtn" onclick="resendFromLogin()" class="hidden w-full text-center text-xs font-semibold text-brand-crimson hover:text-white underline">Reenviar correo de confirmación</button>
                 <button id="loginBtn" type="submit" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2">Entrar a la Plataforma</button>
+                <button type="button" onclick="closeLoginModal(); openRegisterModal();" class="w-full text-center text-sm font-bold text-brand-crimson hover:underline pt-1">¿No tienes cuenta? Regístrate</button>
                 <button type="button" onclick="openForgotModal()" class="w-full text-center text-xs text-slate-400 hover:text-white underline pt-1">¿Olvidaste tu contraseña?</button>
             </form>
         </div>
@@ -675,9 +725,16 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Audio (.mp3 / .wav)</label>
-                    <input type="file" id="bulkAudioFiles" multiple accept="audio/*" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
+                    <input type="file" id="bulkAudioFiles" multiple accept="audio/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
                 </div>
                 <p class="text-[11px] text-slate-400 -mt-2">Sin límite de archivos. En lotes grandes la tonalidad se detecta durante la subida: deja esta pestaña abierta hasta que termine.</p>
+                <div class="border border-brand-border rounded-xl p-3 bg-brand-cardBg">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5"><i class="fa-solid fa-film mr-1"></i> Previews de video (clips de 30 s)</label>
+                    <input type="file" id="previewFiles" multiple accept="video/mp4,.mp4" class="w-full text-xs mb-2">
+                    <p class="text-[11px] text-slate-400 mb-2">Los videos nuevos generan su preview automáticamente al subirlos. Esta sección es solo para videos que ya estaban publicados: cada clip debe llamarse igual que el video completo.</p>
+                    <button type="button" id="previewUploadBtn" onclick="uploadVideoPreviews()" class="w-full bg-brand-crimson text-white font-bold py-2.5 rounded-xl text-xs">Subir previews</button>
+                    <p id="previewStatus" class="text-[11px] mt-2 text-slate-300 hidden"></p>
+                </div>
                 <datalist id="djKnownList"></datalist>
                 <div id="bulkReview" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
                 <div id="uploadProgressContainer" class="hidden">
@@ -725,6 +782,9 @@
         let currentGenreFilter = "ALL";
         let currentMonthFilter = "ALL";
         let currentRatingFilter = "ALL";
+        let currentMode = 'audio';
+        const VIDEO_EXTS = ['mp4','mov','m4v','webm'];
+        const isVideoTrack = t => VIDEO_EXTS.includes(String((t && t.ext) || '').toLowerCase());
         let searchQuery = "";
         let currentPlayingIndex = null;
         let isPlaying = false;
@@ -809,15 +869,16 @@
 
         function renderPortalsSidebar() {
             const container = document.getElementById('portalsListContainer');
+            if (currentMode === 'video') { renderGenresSidebar(container); return; }
             let html = `
                 <button onclick="filterByPortal('ALL')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentPortalFilter === 'ALL' ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}">
                     <span class="flex items-center gap-2"><i class="fa-solid fa-globe"></i><span>Todo el Catálogo</span></span>
-                    <span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px]">${allRemixes.length}</span>
+                    <span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px]">${allRemixes.filter(r => !isVideoTrack(r)).length}</span>
                 </button>
             `;
 
             portalsList.forEach(portal => {
-                const count = allRemixes.filter(r => r.portal === portal).length;
+                const count = allRemixes.filter(r => r.portal === portal && !isVideoTrack(r)).length;
                 const isActive = currentPortalFilter === portal;
                 html += `
                     <button onclick="filterByPortal('${portal}')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${isActive ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}">
@@ -870,7 +931,7 @@
         function filterByRating(v) { currentRatingFilter = v; renderTracksTable(); }
 
         function updateSummaryCounts() {
-            document.getElementById('poolCountsSummary').textContent = `Todo (${allRemixes.length})`;
+            document.getElementById('poolCountsSummary').textContent = `Todo (${allRemixes.filter(r => currentMode === 'video' ? isVideoTrack(r) : !isVideoTrack(r)).length})`;
             renderMonthFilter();
             renderRatingFilter();
         }
@@ -1073,7 +1134,8 @@ function filterByDj(name) {
                 const haystack = normalizeText([track.title, track.artist, track.genre, track.portal, monthText, track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey, parseTrackInfo(track).rating, parseTrackInfo(track).remixer, parseTrackInfo(track).version].join(' '));
                 const words = normalizeText(searchQuery).split(' ').filter(Boolean);
                 const matchesSearch = words.every(w => haystack.includes(w));
-                return matchesPortal && matchesGenre && matchesMonth && matchesRating && matchesSearch;
+                const matchesMode = currentMode === 'video' ? isVideoTrack(track) : !isVideoTrack(track);
+                return matchesMode && matchesPortal && matchesGenre && matchesMonth && matchesRating && matchesSearch;
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
@@ -1183,6 +1245,74 @@ function filterByDj(name) {
                 updateSummaryCounts();
             }
         }
+
+
+        // ===== Portada y modo VIDEOS / AUDIOS =====
+        function renderGenresSidebar(container) {
+            const vids = allRemixes.filter(isVideoTrack);
+            const btn = (g, label, n, icon) => `<button onclick="filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentGenreFilter === g ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
+            let html = btn('ALL', 'Todos los videos', vids.length, 'fa-film');
+            genresList.forEach(g => { html += btn(g, g, vids.filter(v => v.genre === g).length, 'fa-circle-play'); });
+            container.innerHTML = html;
+        }
+        function filterByGenreSidebar(g) {
+            const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = g;
+            filterByDropdownGenre(g);
+            renderPortalsSidebar();
+        }
+        function applyModeUI() {
+            const video = currentMode === 'video';
+            const title = document.getElementById('sidebarTitle'); if (title) title.textContent = video ? 'Géneros' : 'Portales / Pools';
+            const tag = document.getElementById('bannerCategoryTag'); if (tag) tag.textContent = video ? 'Video Remixes VIP' : 'Record Pool VIP';
+            const bt = document.getElementById('bannerTitle'); if (bt) bt.textContent = video ? 'Catálogo de Videos' : 'Catálogo General de Remixes';
+            const bd = document.getElementById('bannerDesc'); if (bd) bd.textContent = video ? 'Video remixes para DJs, organizados por género.' : 'Explorando las mejores versiones y herramientas exclusivas para DJs.';
+        }
+        function enterMode(mode) {
+            currentMode = mode === 'video' ? 'video' : 'audio';
+            document.getElementById('landingView').classList.add('hidden');
+            applyModeUI();
+            resetFilters();
+            window.scrollTo(0, 0);
+        }
+        function showLanding() { closeVideoModal(); audioPlayer.pause(); isPlaying = false; try { updatePlayPauseUI(); } catch (_) {} document.getElementById('landingView').classList.remove('hidden'); }
+        // Los videos solo se reproducen en modo preview (no completos)
+        const VIDEO_PREVIEW_SECONDS = 30;
+        function videoPreviewGuard() {
+            const v = document.getElementById('videoModalPlayer');
+            if (isAdmin) return;
+            if (v.currentTime >= VIDEO_PREVIEW_SECONDS) {
+                v.pause();
+                v.currentTime = VIDEO_PREVIEW_SECONDS - 0.1;
+                document.getElementById('videoPreviewEnd').classList.remove('hidden');
+            }
+        }
+        function replayVideoPreview() {
+            const v = document.getElementById('videoModalPlayer');
+            document.getElementById('videoPreviewEnd').classList.add('hidden');
+            v.currentTime = 0; v.play().catch(() => {});
+        }
+        function openVideoModal(url, t) {
+            document.getElementById('videoModalTitle').textContent = (t.title || '') + (t.artist ? ' — ' + t.artist : '');
+            document.getElementById('videoPreviewSecs').textContent = VIDEO_PREVIEW_SECONDS;
+            document.getElementById('videoPreviewEnd').classList.add('hidden');
+            const v = document.getElementById('videoModalPlayer');
+            if (!v.dataset.guard) {
+                v.dataset.guard = '1';
+                v.addEventListener('timeupdate', videoPreviewGuard);
+                v.addEventListener('seeking', videoPreviewGuard);
+                v.addEventListener('ended', videoPreviewGuard);
+            }
+            v.src = url;
+            document.getElementById('videoModal').classList.remove('hidden');
+            v.play().catch(() => {});
+        }
+        function closeVideoModal() {
+            const v = document.getElementById('videoModalPlayer'); if (!v) return;
+            v.pause(); v.removeAttribute('src'); v.load();
+            document.getElementById('videoPreviewEnd').classList.add('hidden');
+            document.getElementById('videoModal').classList.add('hidden');
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideoModal(); });
 
         function filterByPortal(portalName) {
             currentPortalFilter = portalName;
@@ -1318,7 +1448,9 @@ function filterByDj(name) {
         function openRegisterModal() { document.getElementById('registerModal').classList.remove('hidden'); }
         function closeRegisterModal() { document.getElementById('registerModal').classList.add('hidden'); }
         function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
-        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); const g = document.getElementById('loginGateMsg'); if (g) g.classList.add('hidden'); }
+        // Sin sesión: manda a iniciar sesión (con enlace a registrarse) cuando elige audio o video
+        function openAuthGate() { openLoginModal(); const g = document.getElementById('loginGateMsg'); if (g) g.classList.remove('hidden'); }
         function openPaywallModal() { document.getElementById('paywallModal').classList.remove('hidden'); }
         function closePaywallModal() { document.getElementById('paywallModal').classList.add('hidden'); }
         function openBulkModal() { 
@@ -1804,7 +1936,7 @@ async function signedUrl(key, seconds, options) {
     return data.signedUrl;
 }
 
-const AUDIO_MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', ogg: 'audio/ogg', mp4: 'audio/mp4' };
+const AUDIO_MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', ogg: 'audio/ogg', mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/mp4', webm: 'video/webm' };
 function mimeFromExt(ext, fallback) { return AUDIO_MIME[String(ext).toLowerCase()] || fallback || 'audio/mpeg'; }
 
 function stopPlaybackUI() { isPlaying = false; updatePlayPauseUI(); renderTracksTable(); }
@@ -1846,11 +1978,12 @@ async function handleAudioError() {
 async function playTrack(index) {
     const t = allRemixes[index]; if (!t) return;
     if (currentPlayingId === t.id) { togglePlayPause(); return; }
-    if (!currentUser) { openLoginModal(); return; }
+    if (!currentUser) { openAuthGate(); return; }
     // Escuchar: cualquier usuario registrado. Descargar: solo socios (ver handleDownloadClick).
     let url;
     try { url = await signedUrl(t.path, 3600); }
-    catch (e) { alert('No se pudo cargar el audio: ' + e.message); return; }
+    catch (e) { alert('No se pudo cargar el archivo: ' + e.message); return; }
+    if (isVideoTrack(t)) { audioPlayer.pause(); isPlaying = false; try { updatePlayPauseUI(); } catch (_) {} openVideoModal(url, t); return; }
     currentPlayingId = t.id; currentPlayingIndex = index;
     const previousBlobUrl = audioPlayer.dataset.blobUrl;
     audioPlayer.dataset.blob = ''; audioPlayer.dataset.blobUrl = '';
@@ -1859,6 +1992,36 @@ async function playTrack(index) {
     playerTrackTitle.textContent = t.title; playerTrackArtist.textContent = t.artist || 'VIPREMIXESTOOLS';
     playerCoverArt.innerHTML = `<img src="${t.coverUrl}" class="w-full h-full object-cover">`;
     updatePlayPauseUI(); renderTracksTable();
+}
+
+// Sube clips de preview y los empareja por nombre con los videos ya publicados.
+// El servidor los guarda como b2/pv-<id del video>.mp4 y es lo único que se reproduce.
+async function uploadVideoPreviews() {
+    if (!isAdmin) return;
+    const input = document.getElementById('previewFiles'), st = document.getElementById('previewStatus'), btn = document.getElementById('previewUploadBtn');
+    const files = Array.from(input.files || []);
+    st.classList.remove('hidden');
+    if (!files.length) { st.textContent = 'Elige primero los clips de preview.'; return; }
+    const keyOf = n => normalizeText(String(n).replace(/\.[^/.]+$/, ''));
+    const byTitle = new Map();
+    allRemixes.filter(t => isVideoTrack(t) && isB2(t.path)).forEach(t => { byTitle.set(keyOf(t.title), t); });
+    btn.disabled = true; let ok = 0; const sinPar = [], fallo = [];
+    try {
+        for (let i = 0; i < files.length; i++) {
+            const f = files[i], t = byTitle.get(keyOf(f.name));
+            if (!t) { sinPar.push(f.name); continue; }
+            st.textContent = `Subiendo preview ${i + 1} de ${files.length}: ${f.name}`;
+            const pvPath = t.path.replace(/^b2\//, 'b2/pv-').replace(/\.[^.]+$/, '.mp4');
+            try {
+                const signed = await audioApi({ action: 'upload', path: pvPath });
+                const up = await fetch(signed.url, { method: 'PUT', headers: { 'Content-Type': 'video/mp4' }, body: f });
+                if (!up.ok) throw new Error('Backblaze respondió ' + up.status);
+                ok++;
+            } catch (e) { console.error(e); fallo.push(f.name); }
+        }
+        st.textContent = `Listo: ${ok} preview(s) subidos.` + (sinPar.length ? ` Sin video con ese nombre: ${sinPar.length}${sinPar.length <= 5 ? ' (' + sinPar.join(', ') + ')' : ' (ver consola)'}.` : '') + (fallo.length ? ` Con error: ${fallo.length}${fallo.length <= 5 ? ' (' + fallo.join(', ') + ')' : ''}.` : '');
+        if (sinPar.length > 5) console.warn('Previews sin video:', sinPar);
+    } finally { btn.disabled = false; }
 }
 
 async function handleDownloadClick(i) {
@@ -1986,6 +2149,41 @@ async function readId3(file) {
     return out;
 }
 
+// Etiquetas dentro de MP4/MOV/M4V (atoms moov > udta > meta > ilst). Lee solo cabeceras, no carga el video.
+async function readMp4Tags(file) {
+    const rd = async (a, n) => new DataView(await file.slice(a, a + n).arrayBuffer());
+    const box = async (pos, end) => {
+        if (pos + 8 > end) return null;
+        const dv = await rd(pos, 16);
+        let size = dv.getUint32(0), hdr = 8;
+        const type = String.fromCharCode(dv.getUint8(4), dv.getUint8(5), dv.getUint8(6), dv.getUint8(7));
+        if (size === 1) { size = dv.getUint32(8) * 4294967296 + dv.getUint32(12); hdr = 16; }
+        else if (size === 0) size = end - pos;
+        if (size < hdr || pos + size > end) return null;
+        return { type, start: pos, hdr, end: pos + size };
+    };
+    const find = async (from, to, type) => {
+        let p = from;
+        for (let n = 0; n < 4000; n++) { const b = await box(p, to); if (!b) return null; if (b.type === type) return b; p = b.end; }
+        return null;
+    };
+    const moov = await find(0, file.size, 'moov'); if (!moov) return {};
+    const udta = await find(moov.start + moov.hdr, moov.end, 'udta'); if (!udta) return {};
+    const meta = await find(udta.start + udta.hdr, udta.end, 'meta'); if (!meta) return {};
+    const ilst = await find(meta.start + meta.hdr + 4, meta.end, 'ilst'); if (!ilst) return {};
+    const names = { '\u00a9gen': 'genre', '\u00a9nam': 'title', '\u00a9ART': 'artist', '\u00a9cmt': 'notes', '\u00a9alb': 'album', 'desc': 'description' };
+    const out = {};
+    let p = ilst.start + ilst.hdr;
+    while (p < ilst.end) {
+        const it = await box(p, ilst.end); if (!it) break; p = it.end;
+        const key = names[it.type]; if (!key) continue;
+        const data = await find(it.start + it.hdr, it.end, 'data'); if (!data) continue;
+        const bytes = new Uint8Array(await file.slice(data.start + data.hdr + 8, data.end).arrayBuffer());
+        out[key] = new TextDecoder('utf-8').decode(bytes).trim();
+    }
+    return out;
+}
+
 function detectRating(f, tag) {
     const byName = parseTrackInfo({ title: f.name.replace(/\.[^/.]+$/, '') }).rating;
     let byTag = parseTrackInfo({ title: tag.title || '' }).rating || ratingOf([tag.notes, tag.genre].join(' | '));
@@ -2015,7 +2213,7 @@ function renderBulkReview() {
     const keysPending = bulkItems.filter(x => x.keyStatus === 'analyzing').length;
     const keysFound = bulkItems.filter(x => x.musicalKey).length;
     const djsFound = bulkItems.filter(x => x.remixer).length;
-    const nDirty = bulkItems.filter(x => x.rating === 'Dirty').length, nClean = bulkItems.filter(x => x.rating === 'Clean').length, nUndef = bulkItems.length - nDirty - nClean;
+    const audioItems = bulkItems.filter(x => !x.isVideo), nDirty = audioItems.filter(x => x.rating === 'Dirty').length, nClean = audioItems.filter(x => x.rating === 'Clean').length, nUndef = audioItems.length - nDirty - nClean;
     const ratingBadge = it => it.ratingConflict ? `<span class="text-amber-400 shrink-0 text-right">Revisar: ${escapeHtml(it.ratingSource)} dice ${escapeHtml(it.rating)}, etiqueta dice ${escapeHtml(it.ratingConflict)}</span>` : it.rating ? `<span class="${it.rating === 'Dirty' ? 'text-red-400' : 'text-emerald-400'} shrink-0 text-right">${it.rating} · ${it.ratingSource === 'manual' ? 'elegido por ti' : 'por ' + escapeHtml(it.ratingSource)}</span>` : '<span class="text-slate-500 shrink-0 text-right">Dirty/Clean sin definir</span>';
     const djBadge = it => it.remixer ? `<span class="text-emerald-400 shrink-0 text-right">DJ · ${it.remixerSource === 'manual' ? 'elegido por ti' : escapeHtml(it.remixerSource)}</span>` : '<span class="text-slate-500 shrink-0 text-right">DJ sin detectar</span>';
     const big = true;
@@ -2028,8 +2226,8 @@ function renderBulkReview() {
             <span class="truncate flex-1 min-w-32 text-slate-200" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
             ${isDup(it) ? '<span class="bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded-full text-[10px] shrink-0">Ya existe</span>' : ''}
             ${badgeHtml(i)}
-            ${ratingBadge(it)}
-            <select aria-label="Versión Dirty o Clean" onchange="setBulkRating(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white"><option value=""${it.rating ? '' : ' selected'}>Sin definir</option><option value="Dirty"${it.rating === 'Dirty' ? ' selected' : ''}>Dirty</option><option value="Clean"${it.rating === 'Clean' ? ' selected' : ''}>Clean</option></select>
+            ${it.isVideo ? '<span class="text-slate-500 shrink-0">Video</span>' : ratingBadge(it)}
+            <select aria-label="Versión Dirty o Clean" onchange="setBulkRating(${i}, this.value)" class="${it.isVideo ? 'hidden ' : ''}bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white"><option value=""${it.rating ? '' : ' selected'}>Sin definir</option><option value="Dirty"${it.rating === 'Dirty' ? ' selected' : ''}>Dirty</option><option value="Clean"${it.rating === 'Clean' ? ' selected' : ''}>Clean</option></select>
             ${djBadge(it)}
             <input list="djKnownList" value="${escapeHtml(it.remixer || '')}" onchange="setBulkRemixer(${i}, this.value)" placeholder="DJ / Remixer" aria-label="DJ o artista que hizo el remix" class="w-36 bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">
             <span class="w-24 text-center ${it.musicalKey ? 'text-emerald-400' : it.keyStatus === 'analyzing' ? 'text-amber-400' : 'text-slate-500'}">${it.musicalKey ? `${escapeHtml(it.musicalKey)} · ${escapeHtml(it.camelotKey)}` : it.keyStatus === 'analyzing' ? 'Analizando key…' : it.keyStatus === 'failed' ? 'No detectada' : 'Pendiente'}</span>
@@ -2198,15 +2396,17 @@ async function buildBulkReview() {
     for (let n = 0; n < files.length; n++) {
         const f = files[n];
         let tag = {};
-        try { tag = await readId3(f); } catch (e) { console.error(e); }
+        const isVid = VIDEO_EXTS.includes(((f.name.match(/\.([^.]+)$/) || [])[1] || '').toLowerCase());
+        try { tag = isVid ? await readMp4Tags(f) : await readId3(f); } catch (e) { console.error(e); }
         if (runId !== bulkReviewRun) return;
         let genre = matchGenre(tag.genre), source = genre ? 'etiqueta' : '';
         if (!genre) { genre = matchGenre([f.name, tag.title, tag.artist].join(' ')); source = genre ? 'nombre' : ''; }
-        const rt = detectRating(f, tag);
+        const rt = isVid ? { rating: '', source: '', conflict: '' } : detectRating(f, tag);
         const dj = detectBulkDj(f, tag);
-        const item = { file: f, genre, source, rating: rt.rating, ratingSource: rt.source, ratingConflict: rt.conflict, remixer: dj.remixer, remixerSource: dj.source, bpm: tag.bpm || null, musicalKey: '', camelotKey: '', duration: null, keyStatus: big ? 'pending' : 'analyzing' };
+        const item = { file: f, genre, source, rating: rt.rating, ratingSource: rt.source, ratingConflict: rt.conflict, remixer: dj.remixer, remixerSource: dj.source, bpm: tag.bpm || null, musicalKey: '', camelotKey: '', duration: null, isVideo: isVid, keyStatus: isVid ? 'skipped' : (big ? 'pending' : 'analyzing') };
         bulkItems.push(item);
         if (!big || n % 25 === 0) renderBulkReview();
+        if (isVid) { if (n % 10 === 0) await yieldUi(); continue; }
         const preKey = djKeyFromName(f.name) || djKeyFromTag(tag);
         if (preKey) { Object.assign(item, preKey, { keyStatus: 'analyzed' }); if (!big) renderBulkReview(); if (big && n % 10 === 0) await yieldUi(); continue; }
         if (big) { if (n % 10 === 0) await yieldUi(); continue; }
@@ -2243,6 +2443,56 @@ function bulkFinalTitle(title, it) {
     }
     return t;
 }
+// ====== Preview automático de video (ffmpeg dentro del navegador) ======
+// Corta los primeros segundos del video SIN recodificar (rápido) y, si falla, lo recodifica.
+// Se usa al subir un lote: el clip se sube junto al video como b2/pv-<id>.mp4.
+let ffmpegPromise = null;
+function loadScriptOnce(src) {
+    return new Promise((res, rej) => {
+        const sc = document.createElement('script');
+        sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error('No se pudo cargar ' + src));
+        document.head.appendChild(sc);
+    });
+}
+function getFFmpeg() {
+    if (!ffmpegPromise) ffmpegPromise = (async () => {
+        const cdn = 'https://cdn.jsdelivr.net/npm';
+        await loadScriptOnce(cdn + '/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
+        await loadScriptOnce(cdn + '/@ffmpeg/util@0.12.1/dist/umd/index.js');
+        const ff = new window.FFmpegWASM.FFmpeg(), toBlobURL = window.FFmpegUtil.toBlobURL;
+        await ff.load({
+            classWorkerURL: await toBlobURL(cdn + '/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js', 'text/javascript'),
+            coreURL: await toBlobURL(cdn + '/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js', 'text/javascript'),
+            wasmURL: await toBlobURL(cdn + '/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm', 'application/wasm')
+        });
+        return ff;
+    })().catch(e => { ffmpegPromise = null; throw e; });
+    return ffmpegPromise;
+}
+async function makeVideoPreview(file, ext) {
+    const secs = String(typeof VIDEO_PREVIEW_SECONDS !== 'undefined' ? VIDEO_PREVIEW_SECONDS : 30);
+    const ff = await getFFmpeg(), inName = 'entrada.' + ext, outName = 'preview.mp4';
+    try { await ff.createDir('/in'); } catch (_) {}
+    // WORKERFS lee el archivo por partes: no carga el video completo en memoria.
+    await ff.mount('WORKERFS', { files: [new File([file], inName)] }, '/in');
+    try {
+        let code = await ff.exec(['-y', '-i', '/in/' + inName, '-t', secs, '-c', 'copy', '-movflags', '+faststart', outName], 120000);
+        if (code !== 0) {
+            try { await ff.deleteFile(outName); } catch (_) {}
+            code = await ff.exec(['-y', '-i', '/in/' + inName, '-t', secs, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '30', '-c:a', 'aac', '-movflags', '+faststart', outName], 600000);
+        }
+        if (code !== 0) throw new Error('No se pudo cortar el preview del video.');
+        const data = await ff.readFile(outName);
+        if (!data || !data.length) throw new Error('El preview salió vacío.');
+        return new Blob([data], { type: 'video/mp4' });
+    } catch (e) {
+        try { ff.terminate(); } catch (_) {} ffmpegPromise = null; throw e;
+    } finally {
+        try { await ff.deleteFile(outName); } catch (_) {}
+        try { await ff.unmount('/in'); } catch (_) {}
+    }
+}
+
 async function processBulkUpload() {
     if (!isAdmin) { alert('Acceso denegado.'); return; }
     const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
@@ -2251,7 +2501,7 @@ async function processBulkUpload() {
     if (!allFiles.length) { alert('Selecciona al menos un archivo de audio.'); return; }
     const isValid = f => {
         const ext = (f.name.match(/\.([^.]+)$/) || [])[1];
-        return !!ext && allowedExt.has(ext.toLowerCase()) && !(f.type && !f.type.startsWith('audio/') && f.type !== 'video/mp4');
+        return !!ext && allowedExt.has(ext.toLowerCase()) && !(f.type && !f.type.startsWith('audio/') && !f.type.startsWith('video/'));
     };
     let files = allFiles.filter(isValid), skipped = allFiles.length - files.length;
     if (!files.length) { alert('Ningún archivo tiene un formato admitido. Usa MP3, WAV, M4A, AAC, FLAC, OGG o MP4.'); return; }
@@ -2288,8 +2538,12 @@ async function processBulkUpload() {
             const it = itemMap.get(f) || {};
             const counts = `✔ ${completed} · ✖ ${failed}`;
             uploadStatusText.textContent = `Subiendo ${i + 1} de ${total}: ${title}${it.musicalKey ? ` · ${it.musicalKey} (${it.camelotKey})` : ' · key pendiente de analizar'} (${counts})`;
-            let path = null;
+            let path = null, pvPath = null, pvBlob = null;
             try {
+                if (VIDEO_EXTS.includes(ext)) {
+                    uploadStatusText.textContent = `Generando preview de 30 s: ${title} (${counts})`;
+                    pvBlob = await makeVideoPreview(f, ext);
+                }
                 for (let attempt = 1; attempt <= 2; attempt++) {
                     try {
                         path = 'b2/' + (window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)) + '.' + ext;
@@ -2304,9 +2558,17 @@ async function processBulkUpload() {
                         await sleep(1500);
                     }
                 }
+                if (pvBlob) {
+                    uploadStatusText.textContent = `Subiendo preview: ${title} (${counts})`;
+                    pvPath = path.replace(/^b2\//, 'b2/pv-').replace(/\.[^.]+$/, '.mp4');
+                    const signedPv = await audioApi({ action: 'upload', path: pvPath });
+                    if (!signedPv || !signedPv.url) throw new Error('No se recibió el enlace de subida del preview.');
+                    const upPv = await fetch(signedPv.url, { method: 'PUT', headers: { 'Content-Type': 'video/mp4' }, body: pvBlob });
+                    if (!upPv.ok) throw new Error('Backblaze respondió ' + upPv.status + ' al subir el preview');
+                }
                 const finalTitle = bulkFinalTitle(title, it);
                 const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
-                const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal, genre: it.genre || genre, bpm, storage_path: path, ext,
+                const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal: (VIDEO_EXTS.includes(ext) ? 'VIDEOS' : portal), genre: it.genre || genre, bpm, storage_path: path, ext,
                     musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
                     key_analysis_status: it.musicalKey ? 'analyzed' : 'pending', key_analyzed_at: it.musicalKey ? new Date().toISOString() : null });
                 if (ins.error) throw new Error(ins.error.message);
@@ -2315,6 +2577,7 @@ async function processBulkUpload() {
                 console.error('Error subiendo ' + f.name, e);
                 failed++; failedNames.push(f.name); lastError = e && e.message ? e.message : String(e);
                 if (path) { try { await audioApi({ action: 'delete', path }); } catch (cleanupError) { console.error('No se pudo limpiar el archivo incompleto:', cleanupError); } }
+                if (pvPath) { try { await audioApi({ action: 'delete', path: pvPath }); } catch (_) {} }
             }
             uploadProgressBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
         }
@@ -2508,7 +2771,7 @@ function djAnalyzeRefreshUI(){
  if(pc)pc.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
  const b=document.getElementById('djAnalyzeAllBtn');if(b&&!b.dataset.busy)b.textContent=total-withKey?`Analizar ${total-withKey} pendientes`:'Todo analizado';
  const rs=document.getElementById('djRatingSummary');
- if(rs){let d=0,c=0,p=0;allRemixes.forEach(t=>{const r=parseTrackInfo(t).rating;if(r==='Dirty')d++;else if(r==='Clean')c++;else if(!t.ratingStatus)p++;});
+ if(rs){let d=0,c=0,p=0;allRemixes.filter(t=>!isVideoTrack(t)).forEach(t=>{const r=parseTrackInfo(t).rating;if(r==='Dirty')d++;else if(r==='Clean')c++;else if(!t.ratingStatus)p++;});
   rs.textContent=`${d} Dirty · ${c} Clean · ${total-d-c} sin definir (${p} por revisar)`;
   const rb=document.getElementById('djRatingBtn');if(rb&&!rb.dataset.busy)rb.innerHTML=p?`<i class="fa-solid fa-bolt mr-1"></i>Analizar Dirty/Clean (${p})`:'<i class="fa-solid fa-check mr-1"></i>Dirty/Clean revisado';}
 }
@@ -2554,6 +2817,16 @@ async function djKeyStageTag(t){
 }
 // Fase 3: analizar el audio (fragmento del centro si es MP3 y el servidor lo permite; si no, archivo completo)
 async function djAnalyzeAudio(t){
+ if(isVideoTrack(t)&&isB2(t.path)&&t.fileSize&&t.fileSize>170*1024*1024){
+  t._stage='descargando preview';
+  const pv=t.path.replace(/^b2\//,'b2/pv-').replace(/\.[^.]+$/,'.mp4');
+  const pvUrl=await djTimeout(signedUrl(pv,3600),20000,'enlace del preview');
+  const pr=await djFetchBlob(pvUrl,{},60000);
+  if(!pr.blob)throw new Error('Video muy grande y su preview no se pudo descargar ('+pr.status+').');
+  t._stage='decodificando';
+  const dv=await detectMusicalKey(new File([pr.blob],`${t.title}.mp4`,{type:'video/mp4'}));
+  return Object.assign(dv,{partial:true,source:'audio'});
+ }
  if(String(t.ext||'mp3').toLowerCase()==='mp3'&&djPartialOk!==false){
   try{
    t._stage='preparando';
@@ -2604,7 +2877,7 @@ async function djAnalyzeRatings(){
  if(kb&&kb.dataset.busy){alert('Espera a que termine el análisis de tonalidad.');return;}
  const btn=document.getElementById('djRatingBtn'),stop=document.getElementById('djRatingStopBtn'),notice=document.getElementById('djRatingNotice');
  const say=v=>{if(notice)notice.textContent=v;};
- const pending=allRemixes.filter(t=>!parseTrackInfo(t).rating&&!t.ratingStatus);
+ const pending=allRemixes.filter(t=>!isVideoTrack(t)&&!parseTrackInfo(t).rating&&!t.ratingStatus);
  if(!pending.length){say('Todo el catálogo ya fue revisado por nombre y etiqueta.');return;}
  const pre=await sb.from('tracks').select('rating,rating_status').limit(1);
  if(pre.error){say('Falta crear las columnas en Supabase. Corre este SQL en el SQL Editor y vuelve a intentar: '+DJ_RATING_SQL);alert('Antes de analizar, corre esto en Supabase (SQL Editor):\n\n'+DJ_RATING_SQL);return;}
@@ -2652,7 +2925,7 @@ async function djAnalyzeRatings(){
  finally{
   djRatingRunning=false;btn.disabled=false;delete btn.dataset.busy;stop.classList.add('hidden');
   renderTracksTable();updateSummaryCounts();djAnalyzeRefreshUI();if(typeof djBatchSearch==='function')djBatchSearch();
-  const left=allRemixes.filter(t=>!parseTrackInfo(t).rating&&!t.ratingStatus).length;
+  const left=allRemixes.filter(t=>!isVideoTrack(t)&&!parseTrackInfo(t).rating&&!t.ratingStatus).length;
   let msg=abortMsg||`${djAnalyzeStop?'Detenido. Se guardaron':'Terminado:'} ${by.nombre} por nombre, ${by.etiqueta} por etiqueta, ${by.ninguno} sin ninguna marca (quedan como Sin definir), ${fail} con error. Por revisar aún: ${left}.`;
   if(!abortMsg&&tagOff)msg+=' Las etiquetas no se pudieron leer: el almacenamiento no acepta descargas parciales.';
   if(!abortMsg&&failures.length)msg+=` Primer error: "${failures[0].title}" → ${failures[0].reason}`;
