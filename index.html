@@ -908,9 +908,20 @@ function cleanDjName(raw) {
     return (prefix + n).trim();
 }
 function canonDj(n) { return DJ_CANON.get(djKey(n)) || n; }
+// Palabras de género que NO forman parte del nombre del DJ ("DJ Zen Reggaeton Remix" -> "DJ Zen")
+const DJ_GENRE_WORDS = new Set('reggaeton regueton reguetonero dembow trap latin urbano urbana urban bachata salsa merengue guaracha cumbia electro house techno afro afrobeat afrobeats mambo dancehall reggae hip hop pop rock perreo tropical vallenato norteno banda corridos corrido tribal drill moombahton amapiano edm'.split(' '));
+function stripGenreWords(name) {
+    const toks = String(name || '').split(/\s+/).filter(Boolean);
+    let end = toks.length;
+    while (end > 0 && DJ_GENRE_WORDS.has(normalizeText(toks[end - 1]))) end--;
+    if (end === toks.length) return name;
+    const kept = toks.slice(0, end).join(' ').trim();
+    if (kept && !isGenericDj(kept)) return kept;
+    return /^(dj|mc)\s/i.test(name) ? name : '';
+}
 function splitDjs(raw) {
     return String(raw || '').split(/\s*(?:&|\/|\+|,|;|\bx\b|\by\b|\band\b|\bvs\.?\s|\bfeat\.?\s|\bft\.?\s)\s*/i)
-        .map(cleanDjName).filter(n => n && !isGenericDj(n));
+        .map(n => stripGenreWords(cleanDjName(n))).filter(n => n && !isGenericDj(n));
 }
 function extractRemix(rest) {
     let m = rest.match(/\b(remix(?:ed)?|edit(?:ed)?|flip|rework(?:ed)?|bootleg|refix|mashup|blend)\s+by\s+(.+)$/i);
