@@ -130,7 +130,27 @@
         #bannerCard #bannerCategoryTag { animation: heroFloat 6s ease-in-out -4s infinite; }
         #bannerCard .hero-feature { opacity:.85; }
         @keyframes heroFloat { 0%,100%{ transform:translateY(0); opacity:.82 } 50%{ transform:translateY(-8px); opacity:1 } }
+        .genre-marquee { position:relative; z-index:10; overflow:hidden; margin:28px -8px 0; padding:10px 0; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
+        .genre-track { display:flex; width:max-content; gap:12px; animation:genreScroll var(--genre-dur,40s) linear infinite; }
+        .genre-marquee:hover .genre-track { animation-play-state:paused; }
+        .genre-chip { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; padding:9px 18px; border-radius:9999px; font-size:13px; font-weight:700; color:#fff; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.22); cursor:pointer; transition:background .2s, transform .2s; }
+        .genre-chip:hover { background:rgba(37,99,235,.55); transform:translateY(-1px); }
+        .genre-chip small { font-size:11px; font-weight:700; opacity:.75; }
+        @keyframes genreScroll { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+        @media (prefers-reduced-motion: reduce) { .genre-track { animation:none; flex-wrap:wrap; width:auto; justify-content:center; } }
         @media (prefers-reduced-motion: reduce) { .cd,.smoke,.jog,.jog-led,#bannerCard #bannerTitle,#bannerCard #bannerDesc,#bannerCard #bannerCategoryTag { animation:none; } .smoke{opacity:.3} }
+
+        /* Logos de record pools desplazándose dentro del banner */
+        .pool-logo-marquee { position:relative; z-index:10; overflow:hidden; margin:18px -8px 6px; padding:8px 0; border-top:1px solid rgba(255,255,255,.13); border-bottom:1px solid rgba(255,255,255,.13); -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent); mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent); }
+        .pool-logo-track { display:flex; align-items:center; gap:11px; width:max-content; animation:poolLogoScroll 48s linear infinite; }
+        .pool-logo-marquee:hover .pool-logo-track { animation-play-state:paused; }
+        .pool-logo { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; padding:7px 13px; white-space:nowrap; border:1px solid rgba(255,255,255,.28); border-radius:10px; background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.055)); box-shadow:0 5px 18px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.12); color:#fff; font-size:11px; font-weight:900; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 2px 10px rgba(0,0,0,.35); }
+        .pool-logo i { color:#93c5fd; font-size:13px; }
+        .pool-logo:nth-child(3n) i { color:#fbbf24; }
+        .pool-logo:nth-child(3n + 1) i { color:#67e8f9; }
+        @keyframes poolLogoScroll { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+        @media (prefers-reduced-motion: reduce) { .pool-logo-track { animation:none; flex-wrap:wrap; width:auto; justify-content:center; } }
+
         /* Portada y reproductor de video: el tema claro del sitio oscurece .text-white; aquí se mantiene blanco */
         #landingView .text-white, #videoModal .text-white, #landingView h1, #landingView button { color:#fff; }
         #landingView .text-slate-400 { color:#94a3b8; }
@@ -219,7 +239,7 @@
         <!-- SIDEBAR PORTALS -->
         <aside id="sidebarPools" class="w-full lg:w-72 bg-white border-r border-brand-border p-5 lg:block shrink-0">
             <div class="flex items-center justify-between mb-4 pb-2 border-b border-brand-border">
-                <span id="sidebarTitle" class="text-xs font-bold uppercase tracking-wider text-slate-400">Portales / Pools</span>
+                <span id="sidebarTitle" class="text-xs font-bold uppercase tracking-wider text-slate-400">Géneros</span>
                 <span id="poolCountsSummary" class="text-xs bg-brand-cardBg text-brand-crimson font-bold px-2.5 py-1 rounded-full border border-brand-border">Todo (0)</span>
             </div>
             <div id="portalsListContainer" class="space-y-1.5 overflow-y-auto pr-1"></div>
@@ -288,6 +308,40 @@
                     <div class="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6 max-w-5xl mx-auto">
                         <div class="hero-feature flex items-center gap-3 text-left"><div class="hero-icon"><i class="fa-solid fa-headphones text-white"></i></div><div class="leading-tight"><b class="text-sm font-bold">Remixes exclusivos</b><span class="block text-xs">Producidos por los mejores DJs</span></div></div><div class="hero-feature flex items-center gap-3 text-left"><div class="hero-icon"><i class="fa-solid fa-music text-white"></i></div><div class="leading-tight"><b class="text-sm font-bold">Todos los géneros</b><span class="block text-xs">De urbano y latino a electrónico</span></div></div><div class="hero-feature flex items-center gap-3 text-left"><div class="hero-icon"><i class="fa-solid fa-layer-group text-white"></i></div><div class="leading-tight"><b class="text-sm font-bold">Variedad de versiones</b><span class="block text-xs">Intros, transiciones y breaks</span></div></div><div class="hero-feature flex items-center gap-3 text-left"><div class="hero-icon"><i class="fa-solid fa-circle-check text-white"></i></div><div class="leading-tight"><b class="text-sm font-bold">Calidad y creatividad</b><span class="block text-xs">Lleva tus sets al siguiente nivel</span></div></div>
                     </div>
+                    <div class="pool-logo-marquee" aria-label="Record pools latinos destacados">
+                        <div class="pool-logo-track">
+                            <span class="pool-logo"><i class="fa-solid fa-compact-disc"></i> DJ City Latino</span>
+                            <span class="pool-logo"><i class="fa-solid fa-wave-square"></i> BPM Latino</span>
+                            <span class="pool-logo"><i class="fa-solid fa-infinity"></i> Unlimited Latin</span>
+                            <span class="pool-logo"><i class="fa-solid fa-record-vinyl"></i> Latin Remixes</span>
+                            <span class="pool-logo"><i class="fa-solid fa-bolt"></i> Pro Latin Remix</span>
+                            <span class="pool-logo"><i class="fa-solid fa-headphones"></i> Intensa Music</span>
+                            <span class="pool-logo"><i class="fa-solid fa-fire"></i> Club Killers Latino</span>
+                            <span class="pool-logo"><i class="fa-solid fa-sliders"></i> Crooklyn Clan Latino</span>
+                            <span class="pool-logo"><i class="fa-solid fa-globe"></i> Cuba Remixes</span>
+                            <span class="pool-logo"><i class="fa-solid fa-music"></i> Cuban Pool</span>
+                            <span class="pool-logo"><i class="fa-solid fa-video"></i> BPM Latino Videos</span>
+                            <span class="pool-logo"><i class="fa-solid fa-star"></i> America Remix</span>
+                            <span class="pool-logo"><i class="fa-solid fa-earth-americas"></i> Europa Remix</span>
+                            <span class="pool-logo"><i class="fa-solid fa-box-open"></i> Latin Box</span>
+                            <!-- Segunda vuelta para un desplazamiento continuo -->
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-compact-disc"></i> DJ City Latino</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-wave-square"></i> BPM Latino</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-infinity"></i> Unlimited Latin</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-record-vinyl"></i> Latin Remixes</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-bolt"></i> Pro Latin Remix</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-headphones"></i> Intensa Music</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-fire"></i> Club Killers Latino</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-sliders"></i> Crooklyn Clan Latino</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-globe"></i> Cuba Remixes</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-music"></i> Cuban Pool</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-video"></i> BPM Latino Videos</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-star"></i> America Remix</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-earth-americas"></i> Europa Remix</span>
+                            <span class="pool-logo" aria-hidden="true"><i class="fa-solid fa-box-open"></i> Latin Box</span>
+                        </div>
+                    </div>
+                    <div id="genreMarquee" class="genre-marquee" aria-label="Géneros disponibles"><div id="genreTrack" class="genre-track"></div></div>
                 </div>
 
                 <div id="searchBar" class="flex flex-col md:flex-row items-center gap-4 mb-6" style="scroll-margin-top:96px">
@@ -708,7 +762,7 @@
                 </div>
             </div>
             <div class="space-y-4">
-                <div>
+                <div class="hidden">
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Portal de Destino</label>
                     <select id="bulkPortalTarget" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
                         <option value="BPM Latino">BPM Latino</option><option value="Cuba Remixes">Cuba Remixes</option><option value="Dale Mas Bajo">Dale Mas Bajo</option><option value="DJ City Latino">DJ City Latino</option>
@@ -726,6 +780,11 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Audio (.mp3 / .wav)</label>
                     <input type="file" id="bulkAudioFiles" multiple accept="audio/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
+                </div>
+                <div class="border border-brand-border rounded-xl p-3 bg-brand-cardBg">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5"><i class="fa-solid fa-folder-open mr-1"></i> O sube una carpeta completa (subcarpetas = géneros)</label>
+                    <input type="file" id="bulkFolderFiles" webkitdirectory multiple class="w-full text-xs">
+                    <p class="text-[11px] text-slate-400 mt-2">Ejemplo: <b>Lote/Reggaeton/…</b>, <b>Lote/Bachata/…</b>. Cada canción toma el género de su subcarpeta. Antes de subir podrás revisarlo y corregirlo.</p>
                 </div>
                 <p class="text-[11px] text-slate-400 -mt-2">Sin límite de archivos. En lotes grandes la tonalidad se detecta durante la subida: deja esta pestaña abierta hasta que termine.</p>
                 <div class="border border-brand-border rounded-xl p-3 bg-brand-cardBg">
@@ -841,7 +900,7 @@
         }
 
         function fillBulkSelects() {
-            document.getElementById('bulkPortalTarget').innerHTML = portalsList.map(p => `<option value="${p}">${p}</option>`).join('');
+            document.getElementById('bulkPortalTarget').innerHTML = '<option value="General">General</option>';
             document.getElementById('bulkGenreTarget').innerHTML = genresList.map(g => `<option value="${g}">${g}</option>`).join('');
         }
 
@@ -867,9 +926,30 @@
             }
         }
 
+        function renderGenreMarquee() {
+            const track = document.getElementById('genreTrack'); if (!track) return;
+            const video = currentMode === 'video';
+            const pool = allRemixes.filter(t => video ? isVideoTrack(t) : !isVideoTrack(t));
+            let items = genresList.map(g => ({ g, n: pool.filter(t => t.genre === g).length })).filter(x => x.n > 0);
+            if (!items.length) items = genresList.map(g => ({ g, n: 0 }));
+            const chips = items.map(x => `<button type="button" class="genre-chip" data-genre="${escapeHtml(x.g)}"><i class="fa-solid fa-music"></i>${escapeHtml(x.g)}${x.n ? ` <small>${x.n}</small>` : ''}</button>`).join('');
+            track.innerHTML = chips + chips; // se duplica para que el recorrido no tenga cortes
+            track.style.setProperty('--genre-dur', Math.max(25, items.length * 3) + 's');
+            Array.from(track.children).slice(items.length).forEach(c => { c.setAttribute('aria-hidden', 'true'); c.tabIndex = -1; });
+            if (!track.dataset.bound) {
+                track.dataset.bound = '1';
+                track.addEventListener('click', e => {
+                    const b = e.target.closest('.genre-chip'); if (!b) return;
+                    filterByGenreSidebar(b.dataset.genre);
+                    const bar = document.getElementById('searchBar'); if (bar) bar.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+        }
+
         function renderPortalsSidebar() {
+            renderGenreMarquee();
             const container = document.getElementById('portalsListContainer');
-            if (currentMode === 'video') { renderGenresSidebar(container); return; }
+            renderGenresSidebar(container); return;
             let html = `
                 <button onclick="filterByPortal('ALL')" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentPortalFilter === 'ALL' ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}">
                     <span class="flex items-center gap-2"><i class="fa-solid fa-globe"></i><span>Todo el Catálogo</span></span>
@@ -1131,7 +1211,7 @@ function filterByDj(name) {
                 const matchesMonth = currentMonthFilter === "ALL" || (track.date || '').startsWith(currentMonthFilter);
                 const matchesRating = currentRatingFilter === "ALL" || parseTrackInfo(track).rating === currentRatingFilter;
                 const monthText = track.date ? monthLabel(track.date.slice(0, 7)) : '';
-                const haystack = normalizeText([track.title, track.artist, track.genre, track.portal, monthText, track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey, parseTrackInfo(track).rating, parseTrackInfo(track).remixer, parseTrackInfo(track).version].join(' '));
+                const haystack = normalizeText([track.title, track.artist, track.genre, monthText, track.bpm ? track.bpm + ' bpm' : '', track.musicalKey, track.camelotKey, parseTrackInfo(track).rating, parseTrackInfo(track).remixer, parseTrackInfo(track).version].join(' '));
                 const words = normalizeText(searchQuery).split(' ').filter(Boolean);
                 const matchesSearch = words.every(w => haystack.includes(w));
                 const matchesMode = currentMode === 'video' ? isVideoTrack(track) : !isVideoTrack(track);
@@ -1188,7 +1268,7 @@ function filterByDj(name) {
                                     <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${escapeHtml(info.song)}</div>
                                     ${info.artist ? `<div class="sm:hidden text-xs text-slate-500 truncate">${escapeHtml(info.artist)}</div>` : ''}
                                     ${info.remixer ? `<div class="lg:hidden text-[11px] text-brand-crimson truncate"><i class="fa-solid fa-headphones text-[9px]"></i> ${escapeHtml(info.remixer)}</div>` : ''}
-                                    <div class="text-[11px] text-slate-400 truncate">${escapeHtml(track.date || '')}${track.portal ? ' · ' + escapeHtml(track.portal) : ''}</div>
+                                    <div class="text-[11px] text-slate-400 truncate">${escapeHtml(track.date || '')}${track.genre ? ' · ' + escapeHtml(track.genre) : ''}</div>
                                 </div>
                             </div>
                         </td>
@@ -1249,10 +1329,11 @@ function filterByDj(name) {
 
         // ===== Portada y modo VIDEOS / AUDIOS =====
         function renderGenresSidebar(container) {
-            const vids = allRemixes.filter(isVideoTrack);
+            const video = currentMode === 'video';
+            const vids = allRemixes.filter(t => video ? isVideoTrack(t) : !isVideoTrack(t));
             const btn = (g, label, n, icon) => `<button onclick="filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentGenreFilter === g ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
-            let html = btn('ALL', 'Todos los videos', vids.length, 'fa-film');
-            genresList.forEach(g => { html += btn(g, g, vids.filter(v => v.genre === g).length, 'fa-circle-play'); });
+            let html = btn('ALL', video ? 'Todos los videos' : 'Todo el Catálogo', vids.length, video ? 'fa-film' : 'fa-globe');
+            genresList.forEach(g => { html += btn(g, g, vids.filter(v => v.genre === g).length, video ? 'fa-circle-play' : 'fa-music'); });
             container.innerHTML = html;
         }
         function filterByGenreSidebar(g) {
@@ -1262,7 +1343,7 @@ function filterByDj(name) {
         }
         function applyModeUI() {
             const video = currentMode === 'video';
-            const title = document.getElementById('sidebarTitle'); if (title) title.textContent = video ? 'Géneros' : 'Portales / Pools';
+            const title = document.getElementById('sidebarTitle'); if (title) title.textContent = 'Géneros';
             const tag = document.getElementById('bannerCategoryTag'); if (tag) tag.textContent = video ? 'Video Remixes VIP' : 'Record Pool VIP';
             const bt = document.getElementById('bannerTitle'); if (bt) bt.textContent = video ? 'Catálogo de Videos' : 'Catálogo General de Remixes';
             const bd = document.getElementById('bannerDesc'); if (bd) bd.textContent = video ? 'Video remixes para DJs, organizados por género.' : 'Explorando las mejores versiones y herramientas exclusivas para DJs.';
@@ -2194,8 +2275,17 @@ function detectRating(f, tag) {
     return { rating: '', source: '', conflict: '' };
 }
 let bulkItems = [];
+let bulkSourceFiles = [];
+function genreFromPath(f) {
+    const path = (f && f.webkitRelativePath) || '';
+    if (!path) return null;
+    const folders = path.split('/').slice(0, -1).reverse(); // de la subcarpeta más profunda hacia arriba
+    for (const folder of folders) { const g = matchGenre(folder); if (g) return g; }
+    return null;
+}
 const SRC_BADGE = {
     'etiqueta': ['text-emerald-400', 'Etiqueta del archivo'],
+    'carpeta': ['text-violet-400', 'Por la carpeta'],
     'nombre': ['text-sky-400', 'Por el nombre'],
     'manual': ['text-slate-400', 'Elegido por ti'],
     'revisar': ['text-amber-400', 'Revisar']
@@ -2220,8 +2310,10 @@ function renderBulkReview() {
     const exTitles = new Set(allRemixes.map(t => normalizeText(t.title))), exSizes = new Set(allRemixes.filter(t => t.fileSize).map(t => t.fileSize));
     const isDup = it => { const base = it.file.name.replace(/\.[^/.]+$/, ''); return exTitles.has(normalizeText(base)) || exTitles.has(normalizeText(bulkFinalTitle(base, it))) || (it.file.size && exSizes.has(it.file.size)); };
     const nDup = bulkItems.filter(isDup).length;
+    const porGenero = {}; bulkItems.forEach(x => { const g = x.genre || ('Sin detectar → ' + bulkGenreTarget.value); porGenero[g] = (porGenero[g] || 0) + 1; });
+    const resumenGeneros = Object.entries(porGenero).sort((a, b) => b[1] - a[1]).map(([g, n]) => `<span class="inline-block bg-brand-panelBg border border-brand-border rounded-full px-2 py-0.5 mr-1 mb-1 text-white">${escapeHtml(g)}: <b>${n}</b></span>`).join('');
     const shown = bulkItems.slice(0, BULK_RENDER_MAX);
-    box.innerHTML = `<p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} ${big ? 'Tonalidad: solo si viene en el nombre o la etiqueta; el resto se analiza después desde el panel DJ.' : `Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}.`} DJs detectados: ${djsFound}/${bulkItems.length}.${nDup ? ` <b class="text-red-500">${nDup} ya existen en la web y se rechazarán al subir.</b>` : ''} Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
+    box.innerHTML = `<div class="text-xs text-slate-400">${resumenGeneros}</div><p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} ${big ? 'Tonalidad: solo si viene en el nombre o la etiqueta; el resto se analiza después desde el panel DJ.' : `Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}.`} DJs detectados: ${djsFound}/${bulkItems.length}.${nDup ? ` <b class="text-red-500">${nDup} ya existen en la web y se rechazarán al subir.</b>` : ''} Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
         shown.map((it, i) => `<div class="flex flex-wrap items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
             <span class="truncate flex-1 min-w-32 text-slate-200" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
             ${isDup(it) ? '<span class="bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded-full text-[10px] shrink-0">Ya existe</span>' : ''}
@@ -2387,7 +2479,7 @@ async function detectMusicalKey(file) {
 }
 async function buildBulkReview() {
     const runId = ++bulkReviewRun;
-    const files = Array.from(bulkAudioFiles.files || []), box = document.getElementById('bulkReview');
+    const files = bulkSourceFiles.slice(), box = document.getElementById('bulkReview');
     bulkItems = [];
     if (!files.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     box.classList.remove('hidden');
@@ -2399,7 +2491,8 @@ async function buildBulkReview() {
         const isVid = VIDEO_EXTS.includes(((f.name.match(/\.([^.]+)$/) || [])[1] || '').toLowerCase());
         try { tag = isVid ? await readMp4Tags(f) : await readId3(f); } catch (e) { console.error(e); }
         if (runId !== bulkReviewRun) return;
-        let genre = matchGenre(tag.genre), source = genre ? 'etiqueta' : '';
+        let genre = genreFromPath(f), source = genre ? 'carpeta' : '';
+        if (!genre) { genre = matchGenre(tag.genre); source = genre ? 'etiqueta' : ''; }
         if (!genre) { genre = matchGenre([f.name, tag.title, tag.artist].join(' ')); source = genre ? 'nombre' : ''; }
         const rt = isVid ? { rating: '', source: '', conflict: '' } : detectRating(f, tag);
         const dj = detectBulkDj(f, tag);
@@ -2422,7 +2515,18 @@ async function buildBulkReview() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    bulkAudioFiles.addEventListener('change', buildBulkReview);
+    bulkAudioFiles.addEventListener('change', () => {
+        bulkSourceFiles = Array.from(bulkAudioFiles.files || []);
+        const fo = document.getElementById('bulkFolderFiles'); if (fo) fo.value = '';
+        buildBulkReview();
+    });
+    const folderInput = document.getElementById('bulkFolderFiles');
+    if (folderInput) folderInput.addEventListener('change', () => {
+        const ok = new Set(Object.keys(AUDIO_MIME));
+        bulkSourceFiles = Array.from(folderInput.files || []).filter(f => { const e = (f.name.match(/\.([^.]+)$/) || [])[1]; return !!e && ok.has(e.toLowerCase()) && !f.name.startsWith('._'); });
+        bulkAudioFiles.value = '';
+        buildBulkReview();
+    });
     bulkGenreTarget.addEventListener('change', () => { if (bulkItems.some(x => !x.genre)) renderBulkReview(); });
 });
 
@@ -2496,7 +2600,7 @@ async function makeVideoPreview(file, ext) {
 async function processBulkUpload() {
     if (!isAdmin) { alert('Acceso denegado.'); return; }
     const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
-    const allFiles = Array.from(bulkAudioFiles.files || []);
+    const allFiles = bulkSourceFiles.slice();
     const allowedExt = new Set(Object.keys(AUDIO_MIME));
     if (!allFiles.length) { alert('Selecciona al menos un archivo de audio.'); return; }
     const isValid = f => {
