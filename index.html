@@ -416,6 +416,7 @@
                     <button id="djTabBtn-batch" onclick="djShowTab('batch')" class="rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-layer-group mr-1.5"></i>Lotes</button>
                     <button id="djTabBtn-playlists" onclick="djShowTab('playlists')" class="rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-list-music mr-1.5"></i>Mis playlists</button>
                     <button id="djTabBtn-keys" onclick="djShowTab('keys')" class="hidden rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-key mr-1.5"></i>Tonalidades (admin)</button>
+                    <button id="djTabBtn-genres" onclick="djShowTab('genres')" class="hidden rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>Organizar géneros (admin)</button>
                 </div>
 
                 <!-- TAB 1: LOTES -->
@@ -497,6 +498,19 @@
                         <div class="flex gap-2"><select id="djCompatibleKey" class="min-w-0 flex-1 border border-brand-border rounded-lg p-2.5 text-sm"></select><button onclick="djFindCompatible()" class="bg-slate-100 hover:bg-slate-200 rounded-lg px-4 py-2 text-xs font-bold">Buscar</button></div>
                         <div id="djCompatibleResults" class="mt-3 space-y-2 text-xs text-slate-600 max-h-96 overflow-y-auto"></div>
                     </div>
+                </div>
+
+                <!-- TAB: CLASIFICAR GENEROS DE ARCHIVOS YA PUBLICADOS -->
+                <div id="djTab-genres" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-extrabold text-lg mb-1">Detectar y organizar géneros del catálogo</h3>
+                    <p class="text-xs text-slate-500 mb-4">Revisa los archivos que ya están publicados. Detecta el género por el nombre y la ruta del archivo, muestra una vista previa y permite guardar la clasificación en lote. No modifica los archivos ni sus demás datos.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="djGenreScanBtn" onclick="djGenreScanCatalog()" class="bg-slate-800 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-magnifying-glass mr-1"></i>Detectar géneros</button>
+                        <button id="djGenreApplyBtn" onclick="djGenreApplyCatalog()" disabled class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold opacity-40">Guardar géneros detectados</button>
+                    </div>
+                    <p id="djGenreNotice" class="text-xs text-slate-500 mt-3" role="status">Solo el administrador puede ejecutar esta herramienta.</p>
+                    <div id="djGenreSummary" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3"></div>
+                    <div id="djGenrePreview" class="mt-4 max-h-96 overflow-y-auto space-y-1 text-xs"></div>
                 </div>
 
                 <!-- TAB 3: TONALIDADES (solo admin) -->
@@ -795,14 +809,11 @@
         ];
 
         const genresList = [
-            "Acapella Starter", "Bacharengue", "Bachata", "Banda Bailable", "Cubaton", 
-            "Cumbia", "Cumbia Sonidera", "Cumbia Wepa", "Dancehall", "Dembow", 
-            "Drops", "Duranguense", "Ecuatoriana", "Electro", "Guaracha", 
-            "Halloween", "Huapango", "Latin / Urban", "Mambo", "Merengue", 
-            "Moombah", "Navidad / Año Nuevo", "Nortenas con Sax", "Norteno", "Pop", 
-            "Punta", "Quebradita", "Reggae / HipHop", "Reggaeton", "Regional Mexicano", 
-            "Rock", "Rock en Espanol", "Salsa", "Techno", "Tipico", 
-            "Transition / Segway", "Trap", "Tribal", "Vallenato"
+            "Latino", "Bacharengue", "Bachata", "Cubatón", "Cumbia",
+            "Dancehall", "Dembow", "Reggaeton", "Electro", "Guaracha",
+            "Merengue", "Típico", "Moombahton", "Hip Hop", "Reggae",
+            "Techno", "Transición", "SEGWAY", "Trap", "Rock", "Salsa",
+            "Afro House", "Tech House", "Amapian"
         ];
 
         // START CLEAN (NO DEFAULT DEMO SONGS)
@@ -2111,47 +2122,33 @@ async function deleteTrack(i) {
 
 // ====== Detección automática de género por canción ======
 const GENRE_KEYWORDS = [
-    // Los más específicos primero, para que "cumbia sonidera" no caiga en "cumbia" ni "rock en espanol" en "rock"
-    ['Nortenas con Sax', /nortenas? con sax/],
-    ['Rock en Espanol', /rock (en )?espanol/],
-    ['Cumbia Sonidera', /sonidera/],
-    ['Cumbia Wepa', /wepa/],
+    // Palabras de clasificación que pueden venir en el nombre del archivo.
+    // Se revisan primero para asignar el género correcto al subir lotes.
+    ['SEGWAY', /segway/],
+    ['Transición', /transicion|transition|segue/],
+    // Los géneros específicos se revisan antes que los generales.
+    ['Afro House', /afro[\s-]*house/],
+    ['Tech House', /tech[\s-]*house/],
+    ['Amapian', /amapian(?:o)?/],
+    ['Moombahton', /moombahton|moombah/],
     ['Bacharengue', /bacharengue/],
-    ['Banda Bailable', /banda bailable/],
-    ['Regional Mexicano', /regional mexicano/],
-    ['Navidad / Año Nuevo', /navidad|navideno|ano nuevo|christmas|xmas|new year/],
-    ['Transition / Segway', /transition|segway|segue/],
-    ['Acapella Starter', /acapella|starter/],
-    ['Guaracha', /guaracha|aleteo|zapateo/],
-    ['Dembow', /dembow|dembou/],
-    ['Moombah', /moombah/],
-    ['Cubaton', /cubaton/],
-    ['Cumbia', /cumbia/],
     ['Bachata', /bachata/],
-    ['Merengue', /merengue/],
-    ['Salsa', /\bsalsa\b/],
-    ['Mambo', /\bmambo\b/],
-    ['Punta', /\bpunta\b/],
-    ['Tipico', /\btipico\b/],
-    ['Vallenato', /vallenato/],
-    ['Quebradita', /quebradita/],
-    ['Duranguense', /duranguense/],
-    ['Huapango', /huapango/],
-    ['Norteno', /nortena|norteno/],
-    ['Banda Bailable', /\bbanda\b/],
-    ['Ecuatoriana', /ecuatorian/],
-    ['Tribal', /\btribal\b/],
+    ['Cubatón', /cubaton/],
+    ['Cumbia', /cumbia/],
     ['Dancehall', /dancehall/],
-    ['Halloween', /halloween/],
-    ['Drops', /\bdrops?\b/],
-    ['Trap', /\btrap\b/],
+    ['Dembow', /dembow|dembou/],
+    ['Reggaeton', /reggaeton|regueton|perreo/],
+    ['Electro', /electro|\bedm\b/],
+    ['Guaracha', /guaracha|aleteo|zapateo/],
+    ['Merengue', /merengue/],
+    ['Típico', /tipico/],
+    ['Hip Hop', /hip[\s-]?hop|hiphop/],
+    ['Reggae', /reggae/],
     ['Techno', /techno/],
-    ['Electro', /electro|\bedm\b|\bhouse\b/],
-    ['Reggaeton', /reggaeton|reguetón|regueton|perreo/],
-    ['Reggae / HipHop', /reggae|hip[\s-]?hop/],
+    ['Trap', /\btrap\b/],
     ['Rock', /\brock\b/],
-    ['Pop', /\bpop\b/],
-    ['Latin / Urban', /\blatin\b|urban[oa]?\b/]
+    ['Salsa', /\bsalsa\b/],
+    ['Latino', /\blatin\b|latino|latina|urban[oa]?/]
 ];
 function matchGenre(text) {
     if (!text) return null;
@@ -2798,7 +2795,8 @@ function djPopulateSelectors(){
  ['djKeyTrack'].forEach(id=>{const el=document.getElementById(id);if(el){const old=el.value;el.innerHTML=opts;if(old)el.value=old;}});
  const key=document.getElementById('djKeyValue'); if(key)key.innerHTML='<option value="">Selecciona tonalidad…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
  const compatible=document.getElementById('djCompatibleKey'); if(compatible&&!compatible.options.length)compatible.innerHTML='<option value="">Elige una tonalidad de referencia…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k} · ${DJ_CAMELOT[k]}</option>`).join('');
- const kt=document.getElementById('djTabBtn-keys');if(kt)kt.classList.toggle('hidden',!isAdmin);djAnalyzeRefreshUI();const pc=document.getElementById('djPendingCount');if(pc){const n=allRemixes.filter(t=>!t.musicalKey).length;pc.textContent=n?`${n} canciones sin tonalidad`:'Todo el catálogo tiene tonalidad';}
+ const kt=document.getElementById('djTabBtn-keys');if(kt)kt.classList.toggle('hidden',!isAdmin);
+ const gt=document.getElementById('djTabBtn-genres');if(gt)gt.classList.toggle('hidden',!isAdmin);djAnalyzeRefreshUI();const pc=document.getElementById('djPendingCount');if(pc){const n=allRemixes.filter(t=>!t.musicalKey).length;pc.textContent=n?`${n} canciones sin tonalidad`:'Todo el catálogo tiene tonalidad';}
  const analyze=document.getElementById('djAnalyzeCatalogBtn'); if(analyze){analyze.disabled=!isAdmin;analyze.classList.toggle('opacity-40',!isAdmin);analyze.title=isAdmin?'Analiza canciones antiguas sin tonalidad':'Solo el administrador puede ejecutar el análisis del catálogo';}
  const save=document.getElementById('djSaveKeyBtn'); if(save){save.disabled=!isAdmin;save.classList.toggle('opacity-40',!isAdmin);save.title=isAdmin?'Guardar tonalidad':'Solo el administrador puede editar tonalidades';}
 }
@@ -3124,6 +3122,52 @@ function djShowTab(name){
   b.className=(b.classList.contains('hidden')?'hidden ':'')+'rounded-xl px-4 py-2.5 text-sm font-bold transition '+(n===name?'bg-brand-crimson text-white shadow':'bg-white border border-brand-border text-slate-600 hover:bg-slate-50');
  });
 }
+// ===== CLASIFICACION EN LOTE DE GENEROS PARA ARCHIVOS YA PUBLICADOS =====
+let djGenreMatches=[];
+let djGenreRunning=false;
+function djGenreScanCatalog(){
+ if(!isAdmin){alert('Solo el administrador puede organizar los géneros.');return;}
+ const counts={},matches=[],unmatched=[];
+ for(const t of allRemixes){
+  if(isVideoTrack(t))continue;
+  const filename=String((t.path||'').split('/').pop()||'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ');
+  // El título y el nombre/ruta física se analizan juntos; matchGenre prioriza etiquetas específicas.
+  const detected=matchGenre([filename,t.title].filter(Boolean).join(' '));
+  if(detected){counts[detected]=(counts[detected]||0)+1;if(detected!==t.genre)matches.push({track:t,genre:detected,previous:t.genre||'Sin género'});}
+  else unmatched.push(t);
+ }
+ djGenreMatches=matches;
+ const total=Object.values(counts).reduce((a,b)=>a+b,0);
+ const summary=document.getElementById('djGenreSummary'),preview=document.getElementById('djGenrePreview'),apply=document.getElementById('djGenreApplyBtn'),notice=document.getElementById('djGenreNotice');
+ summary.innerHTML=`<div class="rounded-lg bg-slate-50 p-3"><b class="block text-lg">${allRemixes.filter(t=>!isVideoTrack(t)).length}</b><span class="text-slate-500">Archivos revisados</span></div><div class="rounded-lg bg-slate-50 p-3"><b class="block text-lg">${total}</b><span class="text-slate-500">Con género detectado</span></div><div class="rounded-lg bg-slate-50 p-3"><b class="block text-lg">${matches.length}</b><span class="text-slate-500">Para actualizar</span></div><div class="rounded-lg bg-slate-50 p-3"><b class="block text-lg">${unmatched.length}</b><span class="text-slate-500">Sin detectar</span></div>`;
+ const rows=matches.slice(0,300).map(x=>`<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 py-2"><span class="min-w-0 flex-1 truncate">${escapeHtml(x.track.title)}</span><span class="text-slate-400">${escapeHtml(x.previous)} →</span><b class="text-brand-crimson">${escapeHtml(x.genre)}</b></div>`).join('');
+ const byGenre=Object.entries(counts).sort((a,b)=>a[0].localeCompare(b[0])).map(([g,n])=>`${escapeHtml(g)}: ${n}`).join(' · ');
+ preview.innerHTML=`<p class="font-semibold text-slate-700 mb-2">Detectados por género: ${byGenre||'Ninguno'}</p>${rows||'<p class="text-slate-500">No hay cambios de género pendientes.</p>'}${matches.length>300?`<p class="text-slate-400 mt-2">Mostrando 300 de ${matches.length}; todos se actualizarán.</p>`:''}`;
+ apply.disabled=!matches.length;apply.classList.toggle('opacity-40',!matches.length);
+ notice.textContent=`Vista previa lista. Se actualizarán ${matches.length} registros; los ${unmatched.length} sin coincidencia conservarán su género actual.`;
+}
+async function djGenreApplyCatalog(){
+ if(!isAdmin){alert('Solo el administrador puede organizar los géneros.');return;}
+ if(djGenreRunning||!djGenreMatches.length)return;
+ if(!confirm(`Se actualizará el género de ${djGenreMatches.length} archivos ya publicados según su nombre. No se cambiarán archivos, títulos ni otros datos. ¿Continuar?`))return;
+ djGenreRunning=true;const btn=document.getElementById('djGenreApplyBtn'),notice=document.getElementById('djGenreNotice');btn.disabled=true;
+ let ok=0,fail=0;const errors=[];
+ try{
+  await requireSession();
+  for(let i=0;i<djGenreMatches.length;i++){
+   const item=djGenreMatches[i];
+   const {error}=await sb.from('tracks').update({genre:item.genre}).eq('id',item.track.id);
+   if(error){fail++;if(errors.length<5)errors.push(`${item.track.title}: ${error.message}`);}
+   else{item.track.genre=item.genre;ok++;}
+   if((i+1)%25===0||i===djGenreMatches.length-1)notice.textContent=`Guardando géneros: ${i+1}/${djGenreMatches.length} · ${ok} correctos · ${fail} errores`;
+  }
+  djGenreMatches=[];renderTracksTable();updateSummaryCounts();renderPortalsSidebar();djBatchSearch();
+  notice.textContent=`Proceso terminado: ${ok} géneros actualizados y ${fail} errores.${errors.length?' Primeros errores: '+errors.join(' | '):''}`;
+  djGenreScanCatalog();
+ }catch(e){notice.textContent='No se pudo completar: '+(e.message||e);}
+ finally{djGenreRunning=false;btn.disabled=!djGenreMatches.length;btn.classList.toggle('opacity-40',btn.disabled);}
+}
+
 function djBatchTargetChange(){const n=document.getElementById('djBatchPlName');if(n)n.classList.toggle('hidden',djV('djBatchTarget')!=='new');}
 let djBatchRows=[],djBatchSel=new Set(),djDlCancel=false;
 const djV=id=>document.getElementById(id).value;
