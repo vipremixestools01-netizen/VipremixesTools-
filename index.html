@@ -1251,7 +1251,7 @@ function computeTrackInfo(t, useRegistry) {
     if (artist) song = (parts.length > 1 && parts[0].toLowerCase() === artist.toLowerCase()) ? parts.slice(1).join(' - ') : parts.join(' - ');
     else if (parts.length > 1) { artist = parts[0]; song = parts.slice(1).join(' - '); }
     else song = parts[0] || '';
-    return { artist, song: song || String(t.title || ''), version: (detectedVersions.length ? detectedVersions : [...new Set(version)]).join(' · '), remixer: djs.join(' & '), remixers: djs, remixerSource: djSource, rating: rating || t.rating || '' };
+    return { artist, song: song || String(t.title || ''), version: (t.catalogVersion || (detectedVersions.length ? detectedVersions : [...new Set(version)]).join(' · ')), remixer: djs.join(' & '), remixers: djs, remixerSource: djSource, rating: rating || t.rating || '' };
 }
 function parseTrackInfo(t) {
     if (t._info) return t._info;
@@ -1818,7 +1818,7 @@ function toggleFavorite(i) {
     saveToLocalStorage(); renderTracksTable();
 }
 
-const TRACK_COLS = 'id,title,artist,remixer,portal,genre,bpm,created_at,storage_path,ext,file_size,musical_key,camelot_key,duration_seconds,key_analysis_status,rating,rating_status,cover_url';
+const TRACK_COLS = 'id,title,artist,remixer,portal,genre,bpm,created_at,storage_path,ext,file_size,musical_key,camelot_key,duration_seconds,key_analysis_status,rating,rating_status,cover_url,version';
 async function fetchTrackPage(from, cols, withCount) {
     return sb.from('tracks').select(cols, withCount ? { count: 'exact' } : undefined)
         .order('created_at', { ascending: false }).order('id', { ascending: true }).range(from, from + 999);
@@ -1843,7 +1843,7 @@ async function loadTracks() {
     }
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
     allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', remixer: t.remixer || '', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
-        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), fileSize: Number(t.file_size) || 0, musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
+        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), fileSize: Number(t.file_size) || 0, musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', catalogVersion: t.version || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
     // Índice de búsqueda precalculado: evita normalizar y analizar cada canción en cada tecla.
     allRemixes.forEach(track => {
         const info = parseTrackInfo(track);
@@ -2908,7 +2908,8 @@ async function processBulkUpload() {
                 }
                 const finalTitle = bulkFinalTitle(title, it);
                 const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
-                const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal: (VIDEO_EXTS.includes(ext) ? 'VIDEOS' : portal), genre: it.genre || bulkFallbackGenre(), bpm, storage_path: path, ext,
+                const detectedUploadVersion = detectCatalogVersion(f.name + ' ' + finalTitle).join(' · ');
+                const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal: (VIDEO_EXTS.includes(ext) ? 'VIDEOS' : portal), genre: it.genre || bulkFallbackGenre(), bpm, storage_path: path, ext, version: detectedUploadVersion || null,
                     musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
                     key_analysis_status: it.musicalKey ? 'analyzed' : 'pending', key_analyzed_at: it.musicalKey ? new Date().toISOString() : null });
                 if (ins.error) throw new Error(ins.error.message);
@@ -3100,26 +3101,48 @@ async function djAddTrackToPlaylist(trackId){
  const {error}=await sb.from('playlist_tracks').insert({playlist_id:playlistId,track_id:track.id,position});
  if(error){alert('No se pudo agregar: '+(error.code==='23505'?'Ese remix ya está en la playlist.':error.message));return;}await djLoadPlaylists();
 }
-function djAnalyzeCatalogVersions(){
+async function djAnalyzeCatalogVersions(){
  if(!isAdmin){alert('Solo el administrador puede analizar las versiones del catálogo.');return;}
  const btn=document.getElementById('djVersionAnalyzeBtn'),summary=document.getElementById('djVersionAnalyzeSummary'),notice=document.getElementById('djVersionAnalyzeNotice');
  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-1"></i>Analizando…';}
- let detected=0,missing=0;const counts={};
+ let detected=0,missing=0,saved=0;const counts={},updates=[];
  try{
+  // Primero detecta las versiones de todo el catálogo y las refleja inmediatamente en la tabla.
   for(const track of allRemixes){
    if(isVideoTrack(track))continue;
    track._info=null;
    const info=parseTrackInfo(track);
-   if(info.version){detected++;for(const label of info.version.split(' · '))counts[label]=(counts[label]||0)+1;}else missing++;
+   if(info.version){
+    detected++;
+    track.catalogVersion=info.version;
+    for(const label of info.version.split(' · '))counts[label]=(counts[label]||0)+1;
+    updates.push({id:track.id,version:info.version});
+   }else missing++;
+   track._info=null;
    track._searchText=normalizeText([track.title,track.artist,track.genre,track.bpm?track.bpm+' bpm':'',track.musicalKey,track.camelotKey,info.rating,info.remixer,info.version].join(' '));
   }
   renderTracksTable();
   if(typeof djBatchSearch==='function' && document.getElementById('djBatchResults'))djBatchSearch();
+  if(summary)summary.textContent=`Detectadas ${detected} versiones. Guardando en el catálogo…`;
+  // Guarda cada etiqueta en tracks.version para que siga visible tras recargar la página.
+  // Se limita la concurrencia para no saturar Supabase en catálogos grandes.
+  const concurrency=20;
+  for(let i=0;i<updates.length;i+=concurrency){
+   const batch=updates.slice(i,i+concurrency);
+   const results=await Promise.all(batch.map(item=>sb.from('tracks').update({version:item.version}).eq('id',item.id)));
+   const failed=results.find(r=>r.error);
+   if(failed)throw failed.error;
+   saved+=batch.length;
+   if(summary)summary.textContent=`Detectadas ${detected} versiones · Guardadas ${saved} de ${updates.length}…`;
+  }
   const details=Object.entries(counts).sort((a,b)=>a[0].localeCompare(b[0])).map(([name,n])=>`${name}: ${n}`).join(' · ');
-  if(summary)summary.textContent=`Análisis terminado: ${detected} canciones con versión detectada · ${missing} sin coincidencia.`;
+  if(summary)summary.textContent=`Análisis terminado: ${detected} versiones detectadas y guardadas en el catálogo · ${missing} sin coincidencia.`;
   if(notice)notice.textContent=details||'No se encontraron nombres de versión reconocidos. Revisa que estén escritos en el nombre del archivo.';
- }catch(error){if(summary)summary.textContent='No se pudo completar el análisis: '+(error.message||error);}
- finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-rotate mr-1"></i>Volver a analizar';}}
+ }catch(error){
+  if(summary)summary.textContent='Las versiones se detectaron, pero no se pudieron guardar en la base de datos: '+(error.message||error);
+  if(notice)notice.textContent='Si el error indica que no existe la columna version, agrega la columna version (tipo text) a la tabla tracks en Supabase y vuelve a analizar. La tabla ya muestra las detecciones de esta sesión.';
+  console.error('djAnalyzeCatalogVersions:',error);
+ }finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-rotate mr-1"></i>Volver a analizar';}}
 }
 
 function djAnalyzeRefreshUI(){
