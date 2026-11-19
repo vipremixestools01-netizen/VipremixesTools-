@@ -1,13 +1,13 @@
 // Netlify Function: entrega y gestiona audios alojados en Backblaze B2 (solo los que empiezan por "b2/").
 // Las canciones antiguas siguen en Supabase y no pasan por aquí.
-// Variables de entorno: B2_KEY_ID, B2_APP_KEY, B2_BUCKET, B2_ENDPOINT, SUPABASE_SERVICE_ROLE_KEY
+// Variables de entorno: B2_KEY_ID, B2_APP_KEY, B2_BUCKET, B2_ENDPOINT
 const crypto = require('crypto');
 
 const SUPABASE_URL = 'https://' + 'hcyuwwwwwdqzxjrfqcyf' + '.supabase' + '.co';
 const SUPABASE_KEY = 'sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU';
 
 // Límite de descarga por usuario al mes (los administradores no tienen límite)
-const LIMITE_BYTES = 10 * 1024 ** 3; // 10 GB
+const LIMITE_BYTES = 5 * 1024 ** 3; // 5 GB
 
 const PATH_RE = /^b2\/[A-Za-z0-9][A-Za-z0-9._-]*\.(mp3|wav|m4a|aac|flac|ogg|mp4)$/i;
 
@@ -98,7 +98,7 @@ async function getUser(event) {
   return { id: u.id, isAdmin, member };
 }
 
-// Motivo del último fallo (se muestra en el mensaje de error para poder diagnosticar)
+// Motivo del último fallo (para diagnóstico)
 let lastErr = '';
 
 // Tamaño del archivo en bytes. Primero HEAD firmado; si falla, GET firmado pidiendo solo 1 byte.
@@ -125,17 +125,14 @@ async function tamanoArchivo(base) {
   return 0;
 }
 
-// Descuenta bytes del cupo mensual del usuario. Devuelve true (permitido), false (cupo agotado) o null (error).
-async function consumirCupo(userId, bytes) {
-  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-  if (!key) { lastErr = 'falta SUPABASE_SERVICE_ROLE_KEY'; console.error('[audio] ' + lastErr); return null; }
+// Descuenta bytes del cupo mensual del usuario usando SU PROPIA sesión (no hace falta la service role key).
+// Devuelve true (permitido), false (cupo agotado) o null (error).
+async function consumirCupo(authHeader, bytes) {
   try {
-    const headers = { apikey: key, 'Content-Type': 'application/json' };
-    if (!key.startsWith('sb_')) headers.Authorization = `Bearer ${key}`; // solo llaves JWT antiguas
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/consume_download`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/consume_my_download`, {
       method: 'POST',
-      headers,
-      body: JSON.stringify({ p_user: userId, p_bytes: bytes, p_limit: LIMITE_BYTES })
+      headers: { apikey: SUPABASE_KEY, Authorization: authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_bytes: bytes, p_limit: LIMITE_BYTES })
     });
     if (!r.ok) { lastErr = 'Supabase ' + r.status + ' ' + (await r.text()).slice(0, 120); console.error('[audio]', lastErr); return null; }
     return (await r.json()) === true;
@@ -166,20 +163,22 @@ exports.handler = async (event) => {
     if (!user.member) return reply(403, { error: 'Necesitas una membresía activa para descargar.' });
 
     // Límite mensual por usuario (el administrador no tiene límite)
+    let aviso = '';
     if (!user.isAdmin) {
       const bytes = await tamanoArchivo(base);
       if (!bytes) {
+        aviso = 'tamano: ' + lastErr;
         console.error('[audio] No se pudo leer el tamaño; se permite la descarga sin contar cupo. ' + lastErr);
       } else {
-        const permitido = await consumirCupo(user.id, bytes);
-        if (permitido === null) console.error('[audio] Cupo no disponible; se permite la descarga. ' + lastErr);
-        else if (!permitido) return reply(429, { error: 'Llegaste a tu límite de 10 GB de descargas este mes. Se reinicia el día 1.' });
+        const permitido = await consumirCupo(event.headers.authorization || event.headers.Authorization || '', bytes);
+        if (permitido === null) { aviso = 'cupo: ' + lastErr; console.error('[audio] Cupo no disponible; se permite la descarga. ' + lastErr); }
+        else if (!permitido) return reply(429, { error: 'Llegaste a tu límite de 5 GB de descargas este mes. Se reinicia el día 1.' });
       }
     }
 
     const safe = String(filename || path.split('/').pop()).replace(/[\r\n"\\\/]/g, '_').slice(0, 180);
     const cd = `attachment; filename="${safe.replace(/[^\x20-\x7E]/g, '_')}"; filename*=UTF-8''${enc(safe)}`;
-    return reply(200, { url: presign({ ...base, method: 'GET', expires: 120, extraQuery: { 'response-content-disposition': cd } }) });
+    return reply(200, { url: presign({ ...base, method: 'GET', expires: 120, extraQuery: { 'response-content-disposition': cd } }), aviso: aviso || undefined });
   }
   if (action === 'upload') {
     if (!user.isAdmin) return reply(403, { error: 'Solo el administrador puede subir.' });
