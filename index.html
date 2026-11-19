@@ -200,7 +200,10 @@
         <div class="w-full max-w-4xl">
             <div class="flex items-center justify-between mb-3 text-white">
                 <div id="videoModalTitle" class="font-bold truncate pr-4"></div>
-                <button type="button" onclick="closeVideoModal()" aria-label="Cerrar" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="downloadCurrentVideo()" class="vp-dl"><i class="fa-solid fa-download"></i><span>Descargar</span></button>
+                    <button type="button" onclick="closeVideoModal()" aria-label="Cerrar" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+                </div>
             </div>
             <div class="relative">
                 <video id="videoModalPlayer" controls playsinline disablePictureInPicture controlsList="nodownload noplaybackrate noremoteplayback" oncontextmenu="return false" class="w-full max-h-[80vh] bg-black rounded-xl"></video>
@@ -214,7 +217,7 @@
                     </div>
                 </div>
             </div>
-            <p class="text-slate-400 text-xs mt-2 text-center">Vista previa de <span id="videoPreviewSecs">30</span> segundos</p>
+            <p id="videoPreviewNote" class="text-slate-400 text-xs mt-2 text-center">Vista previa de <span id="videoPreviewSecs">30</span> segundos</p>
         </div>
     </div>
 
@@ -826,7 +829,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Video (.mp4 / .mov / .m4v / .webm)</label>
                         <input type="file" id="bulkVideoFiles" multiple accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
-                        <p class="text-[11px] text-slate-400 mt-2">Solo videos: no necesitas subir audio. Cada video genera su preview de 30 s automáticamente al publicarse.</p>
+                        <p class="text-[11px] text-slate-400 mt-2">Solo videos: no necesitas subir audio.</p>
                     </div>
                     <div class="border border-brand-border rounded-xl p-3 bg-brand-cardBg">
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5"><i class="fa-solid fa-film mr-1"></i> Previews de video (clips de 30 s)</label>
@@ -1025,10 +1028,11 @@
             const select = document.getElementById('monthSelectFilter');
             if (!select) return;
             const nowYm = new Date().toLocaleDateString('en-CA').slice(0, 7);
-            const months = [...new Set(allRemixes.map(r => (r.date || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+            const modePool = allRemixes.filter(r => currentMode === 'video' ? isVideoTrack(r) : !isVideoTrack(r));
+            const months = [...new Set(modePool.map(r => (r.date || '').slice(0, 7)).filter(Boolean))].sort().reverse();
             let html = `<option value="ALL">Mes (Todos)</option>`;
             months.forEach(ym => {
-                const count = allRemixes.filter(r => (r.date || '').startsWith(ym)).length;
+                const count = modePool.filter(r => (r.date || '').startsWith(ym)).length;
                 html += `<option value="${ym}" ${currentMonthFilter === ym ? 'selected' : ''}>${monthLabel(ym)}${ym === nowYm ? ' (este mes)' : ''} · ${count}</option>`;
             });
             select.innerHTML = html;
@@ -1040,6 +1044,7 @@
             // Los contadores respetan la lista, el género y el mes elegidos.
             const n = { Clean: 0, Dirty: 0 };
             allRemixes.forEach(r => {
+                if (currentMode === 'video' ? !isVideoTrack(r) : isVideoTrack(r)) return;
                 if (currentPortalFilter !== "ALL" && r.portal !== currentPortalFilter) return;
                 if (currentGenreFilter !== "ALL" && r.genre !== currentGenreFilter) return;
                 if (currentMonthFilter !== "ALL" && !(r.date || '').startsWith(currentMonthFilter)) return;
@@ -1383,6 +1388,17 @@ function filterByDj(name) {
             const title = document.getElementById('sidebarTitle'); if (title) title.textContent = 'Géneros';
             const tag = document.getElementById('bannerCategoryTag'); if (tag) tag.textContent = video ? 'Video Remixes VIP' : 'Record Pool VIP';
             const bt = document.getElementById('bannerTitle'); if (bt) bt.textContent = video ? 'Catálogo de Videos' : 'Catálogo General de Remixes';
+            // Audio y video van totalmente separados en la web
+            const foot = document.getElementById('bottomPlayer');
+            if (video) {
+                try { audioPlayer.pause(); audioPlayer.removeAttribute('src'); audioPlayer.load(); } catch (_) {}
+                isPlaying = false; currentPlayingId = null; currentPlayingIndex = null;
+                try { updatePlayPauseUI(); } catch (_) {}
+                if (foot) foot.classList.add('hidden');
+            } else {
+                closeVideoModal();
+                if (foot) foot.classList.remove('hidden');
+            }
             const bd = document.getElementById('bannerDesc'); if (bd) bd.textContent = video ? 'Video remixes para DJs, organizados por género.' : 'Explorando las mejores versiones y herramientas exclusivas para DJs.';
         }
         function enterMode(mode) {
@@ -1397,7 +1413,7 @@ function filterByDj(name) {
         const VIDEO_PREVIEW_SECONDS = 30;
         function videoPreviewGuard() {
             const v = document.getElementById('videoModalPlayer');
-            if (isAdmin) return;
+            if (hasMembership()) return;
             if (v.currentTime >= VIDEO_PREVIEW_SECONDS) {
                 v.pause();
                 v.currentTime = VIDEO_PREVIEW_SECONDS - 0.1;
@@ -1409,7 +1425,16 @@ function filterByDj(name) {
             document.getElementById('videoPreviewEnd').classList.add('hidden');
             v.currentTime = 0; v.play().catch(() => {});
         }
+        let currentVideoIndex = null;
+        function downloadCurrentVideo() {
+            if (currentVideoIndex === null) return;
+            if (!hasMembership()) { closeVideoModal(); openPaywallModal(); return; }
+            handleDownloadClick(currentVideoIndex);
+        }
         function openVideoModal(url, t) {
+            currentVideoIndex = allRemixes.indexOf(t);
+            const full = hasMembership();
+            const note = document.getElementById('videoPreviewNote'); if (note) note.classList.toggle('hidden', full);
             document.getElementById('videoModalTitle').textContent = (t.title || '') + (t.artist ? ' — ' + t.artist : '');
             document.getElementById('videoPreviewSecs').textContent = VIDEO_PREVIEW_SECONDS;
             document.getElementById('videoPreviewEnd').classList.add('hidden');
@@ -1545,16 +1570,15 @@ function filterByDj(name) {
             }
         }
 
-        function nextTrack() {
-            if(allRemixes.length === 0) return;
-            let nextIdx = currentPlayingIndex === null ? 0 : (currentPlayingIndex + 1) % allRemixes.length;
-            playTrack(nextIdx);
-        }
-
-        function prevTrack() {
-            if(allRemixes.length === 0) return;
-            let prevIdx = currentPlayingIndex === null ? 0 : (currentPlayingIndex - 1 + allRemixes.length) % allRemixes.length;
-            playTrack(prevIdx);
+        function nextTrack() { stepAudioTrack(1); }
+        function prevTrack() { stepAudioTrack(-1); }
+        function stepAudioTrack(dir) {
+            const n = allRemixes.length; if (!n) return;
+            let i = currentPlayingIndex === null ? (dir > 0 ? -1 : 0) : currentPlayingIndex;
+            for (let k = 0; k < n; k++) {
+                i = (i + dir + n) % n;
+                if (!isVideoTrack(allRemixes[i])) { playTrack(i); return; }
+            }
         }
 
         function changeVolume(val) { audioPlayer.volume = val; }
@@ -2628,56 +2652,6 @@ function bulkFinalTitle(title, it) {
     }
     return t;
 }
-// ====== Preview automático de video (ffmpeg dentro del navegador) ======
-// Corta los primeros segundos del video SIN recodificar (rápido) y, si falla, lo recodifica.
-// Se usa al subir un lote: el clip se sube junto al video como b2/pv-<id>.mp4.
-let ffmpegPromise = null;
-function loadScriptOnce(src) {
-    return new Promise((res, rej) => {
-        const sc = document.createElement('script');
-        sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error('No se pudo cargar ' + src));
-        document.head.appendChild(sc);
-    });
-}
-function getFFmpeg() {
-    if (!ffmpegPromise) ffmpegPromise = (async () => {
-        const cdn = 'https://cdn.jsdelivr.net/npm';
-        await loadScriptOnce(cdn + '/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
-        await loadScriptOnce(cdn + '/@ffmpeg/util@0.12.1/dist/umd/index.js');
-        const ff = new window.FFmpegWASM.FFmpeg(), toBlobURL = window.FFmpegUtil.toBlobURL;
-        await ff.load({
-            classWorkerURL: await toBlobURL(cdn + '/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js', 'text/javascript'),
-            coreURL: await toBlobURL(cdn + '/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js', 'text/javascript'),
-            wasmURL: await toBlobURL(cdn + '/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm', 'application/wasm')
-        });
-        return ff;
-    })().catch(e => { ffmpegPromise = null; throw e; });
-    return ffmpegPromise;
-}
-async function makeVideoPreview(file, ext) {
-    const secs = String(typeof VIDEO_PREVIEW_SECONDS !== 'undefined' ? VIDEO_PREVIEW_SECONDS : 30);
-    const ff = await getFFmpeg(), inName = 'entrada.' + ext, outName = 'preview.mp4';
-    try { await ff.createDir('/in'); } catch (_) {}
-    // WORKERFS lee el archivo por partes: no carga el video completo en memoria.
-    await ff.mount('WORKERFS', { files: [new File([file], inName)] }, '/in');
-    try {
-        let code = await ff.exec(['-y', '-i', '/in/' + inName, '-t', secs, '-c', 'copy', '-movflags', '+faststart', outName], 120000);
-        if (code !== 0) {
-            try { await ff.deleteFile(outName); } catch (_) {}
-            code = await ff.exec(['-y', '-i', '/in/' + inName, '-t', secs, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '30', '-c:a', 'aac', '-movflags', '+faststart', outName], 600000);
-        }
-        if (code !== 0) throw new Error('No se pudo cortar el preview del video.');
-        const data = await ff.readFile(outName);
-        if (!data || !data.length) throw new Error('El preview salió vacío.');
-        return new Blob([data], { type: 'video/mp4' });
-    } catch (e) {
-        try { ff.terminate(); } catch (_) {} ffmpegPromise = null; throw e;
-    } finally {
-        try { await ff.deleteFile(outName); } catch (_) {}
-        try { await ff.unmount('/in'); } catch (_) {}
-    }
-}
-
 async function processBulkUpload() {
     if (!isAdmin) { alert('Acceso denegado.'); return; }
     const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
@@ -2724,12 +2698,8 @@ async function processBulkUpload() {
             const it = itemMap.get(f) || {};
             const counts = `✔ ${completed} · ✖ ${failed}`;
             uploadStatusText.textContent = `Subiendo ${i + 1} de ${total}: ${title}${it.musicalKey ? ` · ${it.musicalKey} (${it.camelotKey})` : (isVidMode ? '' : ' · key pendiente de analizar')} (${counts})`;
-            let path = null, pvPath = null, pvBlob = null;
+            let path = null;
             try {
-                if (VIDEO_EXTS.includes(ext)) {
-                    uploadStatusText.textContent = `Generando preview de 30 s: ${title} (${counts})`;
-                    pvBlob = await makeVideoPreview(f, ext);
-                }
                 for (let attempt = 1; attempt <= 2; attempt++) {
                     try {
                         path = 'b2/' + (window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)) + '.' + ext;
@@ -2744,14 +2714,6 @@ async function processBulkUpload() {
                         await sleep(1500);
                     }
                 }
-                if (pvBlob) {
-                    uploadStatusText.textContent = `Subiendo preview: ${title} (${counts})`;
-                    pvPath = path.replace(/^b2\//, 'b2/pv-').replace(/\.[^.]+$/, '.mp4');
-                    const signedPv = await audioApi({ action: 'upload', path: pvPath });
-                    if (!signedPv || !signedPv.url) throw new Error('No se recibió el enlace de subida del preview.');
-                    const upPv = await fetch(signedPv.url, { method: 'PUT', headers: { 'Content-Type': 'video/mp4' }, body: pvBlob });
-                    if (!upPv.ok) throw new Error('Backblaze respondió ' + upPv.status + ' al subir el preview');
-                }
                 const finalTitle = bulkFinalTitle(title, it);
                 const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
                 const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal: (VIDEO_EXTS.includes(ext) ? 'VIDEOS' : portal), genre: it.genre || genre, bpm, storage_path: path, ext,
@@ -2763,7 +2725,6 @@ async function processBulkUpload() {
                 console.error('Error subiendo ' + f.name, e);
                 failed++; failedNames.push(f.name); lastError = e && e.message ? e.message : String(e);
                 if (path) { try { await audioApi({ action: 'delete', path }); } catch (cleanupError) { console.error('No se pudo limpiar el archivo incompleto:', cleanupError); } }
-                if (pvPath) { try { await audioApi({ action: 'delete', path: pvPath }); } catch (_) {} }
             }
             uploadProgressBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
         }
