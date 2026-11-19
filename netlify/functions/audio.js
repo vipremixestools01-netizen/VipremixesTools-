@@ -9,7 +9,13 @@ const SUPABASE_KEY = 'sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU';
 // Límite de descarga por usuario al mes (los administradores no tienen límite)
 const LIMITE_BYTES = 5 * 1024 ** 3; // 5 GB
 
+// Vista previa para quien NO es socio: solo se le entrega el inicio del archivo (no el archivo completo).
+// ~1 MB equivale a ~60 s de un MP3 a 128 kbps (~25 s a 320 kbps). El reproductor además corta a los 40 s.
+const PREVIEW_BYTES = 1024 * 1024;
+
 const PATH_RE = /^b2\/[A-Za-z0-9][A-Za-z0-9._-]*\.(mp3|wav|m4a|aac|flac|ogg|mp4)$/i;
+const PREVIEW_PATH_RE = /^b2\/pv-/i; // clips de preview de video ya recortados
+const MIME = { mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac', ogg: 'audio/ogg', mp4: 'video/mp4' };
 
 const sha256hex = d => crypto.createHash('sha256').update(d).digest('hex');
 const hmac = (k, d) => crypto.createHmac('sha256', k).update(d).digest();
@@ -139,6 +145,31 @@ async function consumirCupo(authHeader, bytes) {
   } catch (e) { lastErr = 'Supabase error: ' + e.message; console.error('[audio]', lastErr); return null; }
 }
 
+// Vista previa para quien no es socio. NUNCA devuelve el archivo completo.
+//  - Video: clip ya recortado  b2/pv-<id>.mp4  (el mismo que sube "Subir previews").
+//  - Audio: solo los primeros PREVIEW_BYTES, leídos aquí en el servidor y entregados como data URL.
+async function urlPreview(cfg, base, path) {
+  const ext = path.split('.').pop().toLowerCase();
+
+  if (ext === 'mp4') {
+    const pv = path.replace(/^b2\//, 'b2/pv-').replace(/\.[^.]+$/, '.mp4');
+    const pvBase = { ...base, path: `/${cfg.bucket}/${pv}` };
+    const h = await signedRequest({ ...pvBase, method: 'HEAD' });
+    if (!h.ok) throw new Error('Este video aún no tiene vista previa (' + h.status + ')');
+    return presign({ ...pvBase, method: 'GET', expires: 3600 });
+  }
+
+  const r = await fetch(presign({ ...base, method: 'GET', expires: 60 }), { headers: { Range: `bytes=0-${PREVIEW_BYTES - 1}` } });
+  if (r.status !== 206 && r.status !== 200) throw new Error('Backblaze ' + r.status);
+  if (r.status === 200) {
+    // El servidor ignoró el rango: si el archivo es grande, NO se lee entero.
+    const len = parseInt(r.headers.get('content-length') || '0', 10) || 0;
+    if (!len || len > PREVIEW_BYTES) { try { await r.body.cancel(); } catch (_) {} throw new Error('Rango no soportado'); }
+  }
+  const buf = Buffer.from(await r.arrayBuffer());
+  return `data:${MIME[ext] || 'audio/mpeg'};base64,${buf.toString('base64')}`;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return reply(405, { error: 'Método no permitido' });
   let body;
@@ -157,7 +188,17 @@ exports.handler = async (event) => {
   const base = { host: cfg.host, path: objPath, accessKey: cfg.accessKey, secret: cfg.secret, region: cfg.region };
 
   if (action === 'play') {
-    return reply(200, { url: presign({ ...base, method: 'GET', expires: 3600 }) });
+    // Socios y administradores: archivo completo. Los clips pv- ya son preview.
+    if (user.member || PREVIEW_PATH_RE.test(path)) {
+      return reply(200, { url: presign({ ...base, method: 'GET', expires: 3600 }) });
+    }
+    // Usuarios registrados sin membresía: solo vista previa.
+    try {
+      return reply(200, { url: await urlPreview(cfg, base, path), preview: true });
+    } catch (e) {
+      console.error('[audio] preview:', e.message, path);
+      return reply(404, { error: 'La vista previa no está disponible para este archivo. Hazte socio para escucharlo completo.' });
+    }
   }
   if (action === 'download') {
     if (!user.member) return reply(403, { error: 'Necesitas una membresía activa para descargar.' });
