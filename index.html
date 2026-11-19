@@ -159,7 +159,7 @@
         #landingView .text-slate-400 { color:#94a3b8; }
         #landingView h1 { text-shadow:0 4px 40px rgba(37,99,235,.55); }
     
-        /* ===== Reproductor con doble onda (apariencia clara de la web) ===== */
+        /* ===== Reproductor con onda única (apariencia clara de la web) ===== */
         .vp-cover { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #0B2A6B, #2563EB); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37,99,235,.25); }
         #bottomPlayer.vp-playing .vp-cover i { animation: vpSpin 3s linear infinite; }
         @keyframes vpSpin { to { transform: rotate(360deg); } }
@@ -169,9 +169,8 @@
         .vp-play:hover { background: #1d4ed8; transform: scale(1.06); }
         .vp-wf { position: relative; border: 1px solid #1c1c24; border-radius: 8px; overflow: hidden; background: #060608; }
         .vp-wf canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
-        .vp-wf-ov { height: 20px; }
-        .vp-wf-zm { height: 44px; }
-        @media (min-width: 768px) { .vp-wf-ov { height: 22px; } .vp-wf-zm { height: 60px; } }
+        .vp-wf-ov { height: 48px; }
+        @media (min-width: 768px) { .vp-wf-ov { height: 60px; } }
         .vp-dl { background: #2563EB; color: #fff; border-radius: 9999px; padding: .6rem 1.1rem; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: .5rem; transition: background .15s; box-shadow: 0 4px 14px rgba(37,99,235,.25); }
         .vp-dl:hover { background: #1d4ed8; }
     </style>
@@ -618,14 +617,13 @@
                 <button onclick="nextTrack()" class="text-slate-400 hover:text-brand-crimson transition p-1" title="Siguiente"><i class="fa-solid fa-forward-step"></i></button>
             </div>
 
-            <!-- Doble onda: vista general + zoom -->
-            <div id="waveformVisualizer" class="order-last basis-full md:order-none md:basis-0 md:flex-1 min-w-0 flex flex-col gap-1">
+            <!-- Onda única -->
+            <div id="waveformVisualizer" class="order-last basis-full w-full min-w-0 flex flex-col gap-1">
                 <div class="vp-wf vp-wf-ov"><canvas id="wfOverview"></canvas></div>
-                <div class="vp-wf vp-wf-zm"><canvas id="wfZoom"></canvas></div>
             </div>
 
             <!-- Acciones -->
-            <div class="flex items-center gap-3 shrink-0 md:ml-0">
+            <div class="flex items-center gap-3 shrink-0 md:ml-auto">
                 <button onclick="toggleFavoriteCurrent()" class="text-slate-400 hover:text-brand-crimson text-xl p-1 transition" title="Favorito"><i id="playerFavIcon" class="fa-regular fa-heart"></i></button>
                 <div class="hidden xl:flex items-center gap-2">
                     <i class="fa-solid fa-volume-high text-slate-400 text-sm"></i>
@@ -873,11 +871,11 @@
         ];
 
         const genresList = [
-            "Latino", "Bacharengue", "Bachata", "Cubatón", "Cumbia",
-            "Dancehall", "Dembow", "Reggaeton", "Electro", "Guaracha",
-            "Merengue", "Típico", "Moombahton", "Hip Hop", "Reggae",
-            "Techno", "Transición", "SEGWAY", "Trap", "Rock", "Salsa",
-            "Afro House", "Tech House", "Amapian"
+            "Bachata", "Cubatón", "Cumbia", "Dancehall", "Dembow",
+            "Reggaeton", "Electro", "Guaracha", "Merengue", "Típico",
+            "Moombahton", "Hip Hop", "Reggae", "Techno", "Transición",
+            "SEGWAY", "Trap", "Rock", "Salsa", "Afro House", "Tech House",
+            "Amapiano", "Mashup", "House", "Latin House", "Open Show"
         ];
 
         // START CLEAN (NO DEFAULT DEMO SONGS)
@@ -2295,12 +2293,14 @@ const GENRE_KEYWORDS = [
     // Se revisan primero para asignar el género correcto al subir lotes.
     ['SEGWAY', /segway/],
     ['Transición', /transicion|transition|segue/],
+    ['Open Show', /open[\s-]*shows?/],
+    ['Mashup', /mash[\s-]?ups?/],
     // Los géneros específicos se revisan antes que los generales.
     ['Afro House', /afro[\s-]*house/],
     ['Tech House', /tech[\s-]*house/],
-    ['Amapian', /amapian(?:o)?/],
+    ['Latin House', /latin[\s-]*house/],
+    ['Amapiano', /amapian(?:o)?/],
     ['Moombahton', /moombahton|moombah/],
-    ['Bacharengue', /bacharengue/],
     ['Bachata', /bachata/],
     ['Cubatón', /cubaton/],
     ['Cumbia', /cumbia/],
@@ -2317,7 +2317,7 @@ const GENRE_KEYWORDS = [
     ['Trap', /\btrap\b/],
     ['Rock', /\brock\b/],
     ['Salsa', /\bsalsa\b/],
-    ['Latino', /\blatin\b|latino|latina|urban[oa]?/]
+    ['House', /\bhouse\b/]
 ];
 function matchGenre(text) {
     if (!text) return null;
@@ -2448,15 +2448,22 @@ function genreFromPath(f) {
     // La carpeta más cercana al archivo tiene prioridad. Primero se compara
     // el nombre completo de la carpeta contra el catálogo, sin coincidencias parciales.
     const normalizeFolder = value => String(value || '').trim().toLowerCase()
-        .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
-        .replace(/[_-]+/g, ' ').replace(/\\s+/g, ' ');
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
     const catalog = new Map(genresList.map(g => [normalizeFolder(g), g]));
     const aliases = new Map([
         ['transition', 'Transición'], ['transicion', 'Transición'], ['segue', 'Transición'],
-        ['segway', 'SEGWAY'], ['amapiano', 'Amapian'], ['regueton', 'Reggaeton'],
+        ['segway', 'SEGWAY'], ['amapiano', 'Amapiano'], ['latin house', 'Latin House'], ['open show', 'Open Show'], ['regueton', 'Reggaeton'],
         ['hiphop', 'Hip Hop'], ['moombah', 'Moombahton']
     ]);
     const folders = path.split('/').slice(0, -1).reverse();
+    // Mashup y Open Show tienen prioridad: si CUALQUIER carpeta o subcarpeta de la ruta
+    // se llama así, el archivo va a ese género aunque esté dentro de otra subcarpeta.
+    for (const folder of folders) {
+        const key = normalizeFolder(folder);
+        if (/mash ?ups?/.test(key)) return 'Mashup';
+        if (/open ?shows?/.test(key)) return 'Open Show';
+    }
     for (const folder of folders) {
         const key = normalizeFolder(folder);
         if (catalog.has(key)) return catalog.get(key);
@@ -3509,16 +3516,16 @@ async function djDelRun() {
  }
 }
 
-// ===== Reproductor con doble onda (vista general + zoom) =====
+// ===== Reproductor con onda única =====
 function downloadCurrent() {
  const i = allRemixes.findIndex(r => r.id === currentPlayingId);
  if (i < 0) return;
  handleDownloadClick(i);
 }
 (function () {
- const ov = document.getElementById('wfOverview'), zm = document.getElementById('wfZoom'), foot = document.getElementById('bottomPlayer');
- if (!ov || !zm || !foot) return;
- const PPS = 100, ZOOM_SECS = 8, MAX_BYTES = 60 * 1024 * 1024;
+ const ov = document.getElementById('wfOverview'), foot = document.getElementById('bottomPlayer');
+ if (!ov || !foot) return;
+ const PPS = 100, MAX_BYTES = 60 * 1024 * 1024;
  let OV_LOW, OV_MID, OV_HIGH;
  const dpr = Math.min(window.devicePixelRatio || 1, 2);
  let data = null, status = 'idle', loadedId = null, token = 0, raf = 0, actx = null, ovCache = null, ovCacheW = 0, ovCacheH = 0;
@@ -3599,7 +3606,6 @@ function downloadCurrent() {
 
  function draw() {
   const dur = audioPlayer.duration || (data ? data.dur : 0), cur = audioPlayer.currentTime || 0;
-  // --- Vista general (colores mezclados, simétrica) ---
   const [W1, H1] = fit(ov), g1 = ov.getContext('2d');
   g1.clearRect(0, 0, W1, H1);
   if (data) {
@@ -3607,28 +3613,11 @@ function downloadCurrent() {
    g1.drawImage(ovCache, 0, 0);
    const px = dur ? Math.min(1, cur / dur) * W1 : 0;
    g1.fillStyle = 'rgba(0,0,0,.5)'; g1.fillRect(0, 0, px, H1);
-   g1.fillStyle = '#ffffff'; g1.fillRect(Math.round(px), 0, Math.max(1, Math.round(dpr)), H1);
+   g1.fillStyle = '#ffffff'; g1.fillRect(Math.round(px), 0, Math.max(1, Math.round(dpr * 1.5)), H1);
   } else {
    g1.fillStyle = '#2a2a33'; g1.fillRect(0, H1 / 2 - 0.5 * dpr, W1, dpr);
+   msg(g1, W1, H1, status === 'loading' ? 'Cargando onda…' : status === 'na' ? 'Onda no disponible para este archivo' : status === 'err' ? 'No se pudo generar la onda' : 'Selecciona un remix para ver la onda');
   }
-  // --- Zoom simétrico en 3 capas: graves = rojo, medios = blanco, agudos = azul/lila ---
-  const [W2, H2] = fit(zm), g2 = zm.getContext('2d');
-  g2.clearRect(0, 0, W2, H2);
-  if (data) {
-   const pps = W2 / ZOOM_SECS, colW = pps / PPS, cx = W2 / 2, mid = H2 / 2, maxH = mid - dpr, w = Math.max(1, Math.ceil(colW));
-   const c0 = Math.floor((cur - ZOOM_SECS / 2) * PPS), c1 = Math.ceil((cur + ZOOM_SECS / 2) * PPS);
-   for (let c = Math.max(0, c0); c <= c1 && c < data.cols; c++) {
-    const A = data.amp[c] * maxH; if (A < 0.5) continue;
-    const bm = data.bm[c], bh = data.bh[c], x = Math.floor(cx + (c / PPS - cur) * pps);
-    const bl = data.bl[c], hl = Math.max(dpr, A * (0.3 + 0.7 * bl)), hm = A * Math.pow(bm, 1.4) * 0.62, hh = A * Math.pow(bh, 1.3) * 0.4;
-    g2.fillStyle = PAL_LOW[(bl * 15) | 0]; g2.fillRect(x, mid - hl, w, hl * 2);
-    if (hm >= 0.5) { g2.fillStyle = PAL_MID[(bm * 15) | 0]; g2.fillRect(x, mid - hm, w, hm * 2); }
-    if (hh >= 0.5) { g2.fillStyle = PAL_HIGH[(bh * 15) | 0]; g2.fillRect(x, mid - hh, w, hh * 2); }
-   }
-  } else {
-   msg(g2, W2, H2, status === 'loading' ? 'Cargando onda…' : status === 'na' ? 'Onda no disponible para este archivo' : status === 'err' ? 'No se pudo generar la onda' : 'Selecciona un remix para ver la onda');
-  }
-  g2.fillStyle = '#ffffff'; g2.fillRect(Math.round(W2 / 2 - dpr / 2), 0, Math.max(1, Math.round(dpr * 1.5)), H2);
  }
 
  async function loadFor(id) {
@@ -3656,16 +3645,6 @@ function downloadCurrent() {
  ov.addEventListener('pointermove', e => { if (ov._drag) seekOverview(e); });
  ov.addEventListener('pointerup', () => { ov._drag = false; });
  ov.addEventListener('pointercancel', () => { ov._drag = false; });
- // Arrastrar el zoom: desliza la onda como en un plato
- let zx = 0, zt = 0, zdrag = false;
- zm.addEventListener('pointerdown', e => { if (!audioPlayer.duration) return; zm.setPointerCapture(e.pointerId); zdrag = true; zx = e.clientX; zt = audioPlayer.currentTime; });
- zm.addEventListener('pointermove', e => {
-  if (!zdrag) return;
-  const pxs = zm.getBoundingClientRect().width / ZOOM_SECS;
-  audioPlayer.currentTime = Math.min(audioPlayer.duration, Math.max(0, zt - (e.clientX - zx) / pxs)); draw();
- });
- zm.addEventListener('pointerup', () => { zdrag = false; });
- zm.addEventListener('pointercancel', () => { zdrag = false; });
 
  function loop() { draw(); raf = audioPlayer.paused ? 0 : requestAnimationFrame(loop); }
  audioPlayer.addEventListener('loadstart', () => { if (currentPlayingId !== null && currentPlayingId !== loadedId) loadFor(currentPlayingId); });
@@ -3674,7 +3653,7 @@ function downloadCurrent() {
  audioPlayer.addEventListener('pause', () => { foot.classList.remove('vp-playing'); draw(); });
  audioPlayer.addEventListener('ended', () => foot.classList.remove('vp-playing'));
  ['seeked', 'durationchange'].forEach(ev => audioPlayer.addEventListener(ev, draw));
- if (window.ResizeObserver) { const ro = new ResizeObserver(draw); ro.observe(ov); ro.observe(zm); } else window.addEventListener('resize', draw);
+ if (window.ResizeObserver) { const ro = new ResizeObserver(draw); ro.observe(ov); } else window.addEventListener('resize', draw);
  draw();
 })();
 </script>
