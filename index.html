@@ -154,6 +154,22 @@
         #landingView .text-white, #videoModal .text-white, #landingView h1, #landingView button { color:#fff; }
         #landingView .text-slate-400 { color:#94a3b8; }
         #landingView h1 { text-shadow:0 4px 40px rgba(37,99,235,.55); }
+    
+        /* ===== Reproductor con doble onda (apariencia clara de la web) ===== */
+        .vp-cover { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #0B2A6B, #2563EB); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(37,99,235,.25); }
+        #bottomPlayer.vp-playing .vp-cover i { animation: vpSpin 3s linear infinite; }
+        @keyframes vpSpin { to { transform: rotate(360deg); } }
+        .vp-title { color: #0f172a; }
+        .vp-time { font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: #94a3b8; margin-top: 4px; }
+        .vp-play { width: 44px; height: 44px; border-radius: 9999px; background: #2563EB; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(37,99,235,.35); transition: transform .15s, background .15s; flex-shrink: 0; }
+        .vp-play:hover { background: #1d4ed8; transform: scale(1.06); }
+        .vp-wf { position: relative; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; background: #F8FAFC; }
+        .vp-wf canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
+        .vp-wf-ov { height: 24px; }
+        .vp-wf-zm { height: 48px; }
+        @media (min-width: 768px) { .vp-wf-ov { height: 28px; } .vp-wf-zm { height: 68px; } }
+        .vp-dl { background: #2563EB; color: #fff; border-radius: 9999px; padding: .6rem 1.1rem; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: .5rem; transition: background .15s; box-shadow: 0 4px 14px rgba(37,99,235,.25); }
+        .vp-dl:hover { background: #1d4ed8; }
     </style>
 </head>
 <body class="bg-brand-bg text-slate-800 min-h-screen flex flex-col selection:bg-brand-crimson selection:text-white">
@@ -417,6 +433,7 @@
                     <button id="djTabBtn-playlists" onclick="djShowTab('playlists')" class="rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-list-music mr-1.5"></i>Mis playlists</button>
                     <button id="djTabBtn-keys" onclick="djShowTab('keys')" class="hidden rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-key mr-1.5"></i>Tonalidades (admin)</button>
                     <button id="djTabBtn-genres" onclick="djShowTab('genres')" class="hidden rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>Organizar géneros (admin)</button>
+                    <button id="djTabBtn-delete" onclick="djShowTab('delete')" class="hidden rounded-xl px-4 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-trash-can mr-1.5"></i>Eliminar en lote (admin)</button>
                 </div>
 
                 <!-- TAB 1: LOTES -->
@@ -513,6 +530,32 @@
                     <div id="djGenrePreview" class="mt-4 max-h-96 overflow-y-auto space-y-1 text-xs"></div>
                 </div>
 
+                                <!-- TAB: ELIMINAR EN LOTE (solo admin) -->
+                <div id="djTab-delete" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-extrabold text-lg mb-1">Eliminar canciones en lote</h3>
+                    <p class="text-xs text-slate-500 mb-4">Filtra el catálogo, marca las canciones y quítalas de la web. Por seguridad no hay nada seleccionado hasta que tú lo marques.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        <div class="lg:col-span-2"><label class="block text-xs font-semibold mb-1" for="djDelText">Buscar (artista o título)</label><input id="djDelText" oninput="djDelSearchDebounced()" type="text" placeholder="Ej: Bad Bunny" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></div>
+                        <div><label class="block text-xs font-semibold mb-1" for="djDelGenre">Género</label><select id="djDelGenre" onchange="djDelSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"></select></div>
+                        <div><label class="block text-xs font-semibold mb-1" for="djDelVersion">Versión</label><select id="djDelVersion" onchange="djDelSearch()" class="w-full border border-brand-border rounded-lg p-2.5 text-sm"><option value="">Todas</option><option value="Clean">Clean</option><option value="Dirty">Dirty</option><option value="none">Sin versión</option></select></div>
+                        <div class="grid grid-cols-2 gap-2"><div><label class="block text-xs font-semibold mb-1" for="djDelFrom">Subido desde</label><input id="djDelFrom" onchange="djDelSearch()" type="date" class="w-full border border-brand-border rounded-lg p-2 text-xs"></div><div><label class="block text-xs font-semibold mb-1" for="djDelTo">Hasta</label><input id="djDelTo" onchange="djDelSearch()" type="date" class="w-full border border-brand-border rounded-lg p-2 text-xs"></div></div>
+                    </div>
+                    <div class="mt-4 rounded-xl border border-brand-border bg-slate-50 p-3 text-xs space-y-2">
+                        <label class="flex items-start gap-2 cursor-pointer"><input type="radio" name="djDelMode" value="catalog" checked class="accent-blue-600 mt-0.5"><span><b>Solo quitar del catálogo de la web</b> · los archivos se conservan en el almacenamiento.</span></label>
+                        <label class="flex items-start gap-2 cursor-pointer"><input type="radio" name="djDelMode" value="files" class="accent-blue-600 mt-0.5"><span><b>Quitar de la web y borrar los archivos</b> · libera espacio, no se puede deshacer.</span></label>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 mt-4">
+                        <button onclick="djDelSelectAll(true)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg px-3 py-2 text-xs font-bold">Seleccionar todo</button>
+                        <button onclick="djDelSelectAll(false)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg px-3 py-2 text-xs font-bold">Quitar selección</button>
+                        <button id="djDelRunBtn" onclick="djDelRun()" disabled class="bg-rose-600 hover:bg-rose-700 text-white rounded-lg px-4 py-2 text-xs font-bold opacity-40"><i class="fa-solid fa-trash mr-1"></i> Eliminar seleccionadas (0)</button>
+                        <button id="djDelStopBtn" onclick="djDelStop()" class="hidden bg-slate-800 text-white rounded-lg px-4 py-2 text-xs font-bold">Detener</button>
+                    </div>
+                    <p id="djDelInfo" class="text-xs text-slate-500 mt-3" role="status">Usa los filtros para encontrar las canciones que quieres eliminar.</p>
+                    <div class="h-2 rounded-full bg-slate-100 overflow-hidden mt-2"><div id="djDelBar" class="h-full rounded-full bg-rose-500 transition-all" style="width:0%"></div></div>
+                    <p id="djDelStatus" class="text-xs text-slate-500 mt-2"></p>
+                    <div id="djDelResults" class="mt-3 max-h-96 overflow-y-auto border border-brand-border rounded-lg"></div>
+                </div>
+
                 <!-- TAB 3: TONALIDADES (solo admin) -->
                 <div id="djTab-keys" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm max-w-3xl">
                     <h3 class="font-extrabold text-lg mb-1">Tonalidad y Camelot</h3>
@@ -546,41 +589,44 @@
     </div>
 
     <!-- BOTTOM AUDIO PLAYER -->
-    <footer id="bottomPlayer" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-brand-border shadow-[0_-4px_20px_rgba(15,23,42,0.06)] px-4 lg:px-8 py-3 z-50 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex items-center space-x-4 w-full md:w-80">
-            <div class="min-w-0 flex-1">
-                <h4 id="playerTrackTitle" class="text-sm font-bold text-white truncate">Selecciona un Remix</h4>
-                <p id="playerTrackArtist" class="text-xs text-slate-400 truncate">VIPREMIXESTOOLS</p>
+    <footer id="bottomPlayer" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-brand-border shadow-[0_-4px_20px_rgba(15,23,42,0.06)] px-3 lg:px-6 py-2.5 z-50">
+        <div class="flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2">
+            <!-- Info del track -->
+            <div class="flex items-center gap-3 min-w-0 flex-1 md:flex-none md:w-64 lg:w-72">
+                <div class="vp-cover"><i class="fa-solid fa-compact-disc"></i></div>
+                <div class="min-w-0 flex-1">
+                    <h4 id="playerTrackTitle" class="vp-title text-sm font-bold truncate">Selecciona un Remix</h4>
+                    <p id="playerTrackArtist" class="text-xs text-slate-400 truncate">VIPREMIXESTOOLS</p>
+                    <p class="vp-time"><span id="currentTimeLabel">0:00</span> / <span id="durationLabel">0:00</span></p>
+                </div>
             </div>
-            <button onclick="toggleFavoriteCurrent()" class="text-slate-400 hover:text-brand-crimson text-lg p-1 transition"><i id="playerFavIcon" class="fa-regular fa-heart"></i></button>
-        </div>
 
-        <div class="flex flex-col items-center w-full md:max-w-md">
-            <div class="flex items-center space-x-6 mb-1.5">
-                <button onclick="prevTrack()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-backward-step"></i></button>
-                <button id="playPauseBtn" onclick="togglePlayPause()" class="w-10 h-10 rounded-full bg-brand-crimson hover:bg-red-600 text-white flex items-center justify-center shadow-lg transition transform hover:scale-105">
+            <!-- Controles -->
+            <div class="flex items-center gap-3 shrink-0">
+                <button onclick="prevTrack()" class="text-slate-400 hover:text-brand-crimson transition p-1" title="Anterior"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="playPauseBtn" onclick="togglePlayPause()" class="vp-play" title="Reproducir / pausar">
                     <i class="fa-solid fa-play text-sm ml-0.5"></i>
                 </button>
-                <button onclick="nextTrack()" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-forward-step"></i></button>
-            </div>
-            
-            <div id="waveformVisualizer" class="flex items-center space-x-1 h-8 px-4 py-1 rounded-xl bg-black/40 border border-brand-border/60">
-                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                <button onclick="nextTrack()" class="text-slate-400 hover:text-brand-crimson transition p-1" title="Siguiente"><i class="fa-solid fa-forward-step"></i></button>
             </div>
 
-            <div class="flex items-center justify-between w-full text-[10px] text-slate-400 mt-1 px-1">
-                <span id="currentTimeLabel">0:00</span>
-                <input type="range" id="seekProgressBar" value="0" max="100" step="0.1" class="w-full mx-3 accent-brand-crimson h-1 bg-brand-border rounded-lg cursor-pointer">
-                <span id="durationLabel">0:00</span>
+            <!-- Doble onda: vista general + zoom -->
+            <div id="waveformVisualizer" class="order-last basis-full md:order-none md:basis-0 md:flex-1 min-w-0 flex flex-col gap-1">
+                <div class="vp-wf vp-wf-ov"><canvas id="wfOverview"></canvas></div>
+                <div class="vp-wf vp-wf-zm"><canvas id="wfZoom"></canvas></div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="flex items-center gap-3 shrink-0 md:ml-0">
+                <button onclick="toggleFavoriteCurrent()" class="text-slate-400 hover:text-brand-crimson text-xl p-1 transition" title="Favorito"><i id="playerFavIcon" class="fa-regular fa-heart"></i></button>
+                <div class="hidden xl:flex items-center gap-2">
+                    <i class="fa-solid fa-volume-high text-slate-400 text-sm"></i>
+                    <input type="range" id="volumeRange" min="0" max="1" step="0.05" value="0.8" oninput="changeVolume(this.value)" class="w-20 accent-brand-crimson h-1 bg-brand-border rounded-lg cursor-pointer">
+                </div>
+                <button onclick="downloadCurrent()" class="vp-dl" title="Descargar"><i class="fa-solid fa-download"></i><span class="hidden sm:inline">Descargar</span></button>
             </div>
         </div>
-
-        <div class="hidden lg:flex items-center space-x-3 w-80 justify-end">
-            <i class="fa-solid fa-volume-high text-slate-400 text-sm"></i>
-            <input type="range" id="volumeRange" min="0" max="1" step="0.05" value="0.8" oninput="changeVolume(this.value)" class="w-24 accent-brand-crimson h-1 bg-brand-border rounded-lg cursor-pointer">
-        </div>
+        <input type="range" id="seekProgressBar" value="0" max="100" step="0.1" class="hidden" tabindex="-1" aria-hidden="true">
     </footer>
 
     <!-- MODAL: PAYWALL -->
@@ -760,9 +806,14 @@
                         <option value="Reggaeton">Reggaeton</option><option value="Bachata">Bachata</option><option value="Guaracha">Guaracha</option><option value="Dembow">Dembow</option><option value="Salsa">Salsa</option><option value="Merengue">Merengue</option><option value="Cumbia">Cumbia</option><option value="Electro">Electro</option><option value="Trap">Trap</option>
                     </select>
                 </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="bulkTabBtn-audio" onclick="bulkSetMode('audio')" class="rounded-xl px-3 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-music mr-1.5"></i>Audio (MP3 / WAV)</button>
+                    <button type="button" id="bulkTabBtn-video" onclick="bulkSetMode('video')" class="rounded-xl px-3 py-2.5 text-sm font-bold transition"><i class="fa-solid fa-film mr-1.5"></i>Video</button>
+                </div>
+                <div id="bulkAudioSection" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Audio (.mp3 / .wav)</label>
-                    <input type="file" id="bulkAudioFiles" multiple accept="audio/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
+                    <input type="file" id="bulkAudioFiles" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
                 </div>
                 <div class="border border-brand-border rounded-xl p-3 bg-brand-cardBg">
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5"><i class="fa-solid fa-folder-open mr-1"></i> O sube una carpeta completa (subcarpetas = géneros)</label>
@@ -770,12 +821,20 @@
                     <p class="text-[11px] text-slate-400 mt-2">Ejemplo: <b>Lote/Reggaeton/…</b>, <b>Lote/Bachata/…</b>. Cada canción toma el género de su subcarpeta. Antes de subir podrás revisarlo y corregirlo.</p>
                 </div>
                 <p class="text-[11px] text-slate-400 -mt-2">Sin límite de archivos. En lotes grandes la tonalidad se detecta durante la subida: deja esta pestaña abierta hasta que termine.</p>
-                <div class="border border-brand-border rounded-xl p-3 bg-brand-cardBg">
+                </div>
+                <div id="bulkVideoSection" class="hidden space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Archivos de Video (.mp4 / .mov / .m4v / .webm)</label>
+                        <input type="file" id="bulkVideoFiles" multiple accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-crimson file:text-white hover:file:bg-red-600 cursor-pointer">
+                        <p class="text-[11px] text-slate-400 mt-2">Solo videos: no necesitas subir audio. Cada video genera su preview de 30 s automáticamente al publicarse.</p>
+                    </div>
+                    <div class="border border-brand-border rounded-xl p-3 bg-brand-cardBg">
                     <label class="block text-xs font-semibold text-slate-300 mb-1.5"><i class="fa-solid fa-film mr-1"></i> Previews de video (clips de 30 s)</label>
                     <input type="file" id="previewFiles" multiple accept="video/mp4,.mp4" class="w-full text-xs mb-2">
                     <p class="text-[11px] text-slate-400 mb-2">Los videos nuevos generan su preview automáticamente al subirlos. Esta sección es solo para videos que ya estaban publicados: cada clip debe llamarse igual que el video completo.</p>
                     <button type="button" id="previewUploadBtn" onclick="uploadVideoPreviews()" class="w-full bg-brand-crimson text-white font-bold py-2.5 rounded-xl text-xs">Subir previews</button>
                     <p id="previewStatus" class="text-[11px] mt-2 text-slate-300 hidden"></p>
+                </div>
                 </div>
                 <datalist id="djKnownList"></datalist>
                 <div id="bulkReview" class="hidden space-y-2 max-h-48 overflow-y-auto pr-1"></div>
@@ -787,7 +846,7 @@
                     <button id="uploadStopBtn" type="button" onclick="stopBulkUpload()" class="hidden mt-2 text-xs font-bold text-rose-600 border border-rose-200 rounded-lg px-3 py-1.5 hover:bg-rose-50">Detener lote</button>
                 </div>
                 <button id="uploadSubmitBtn" onclick="processBulkUpload()" class="w-full bg-gradient-to-r from-brand-crimson to-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-bolt"></i> Procesar y Publicar Lote
+                    <i class="fa-solid fa-bolt"></i> Procesar y Publicar Audios
                 </button>
                 <button id="uploadCloseBtn" onclick="closeBulkModal()" class="sticky bottom-0 z-10 w-full bg-brand-cardBg border border-brand-border text-white font-bold py-2.5 rounded-xl transition-all text-sm hidden shadow-lg">
                     Terminado / Cerrar
@@ -1562,7 +1621,7 @@ function filterByDj(name) {
             localStorage.removeItem('vip_current_user');
             updateAuthHeader();
             if (typeof djAnalyzeRefreshUI === 'function') djAnalyzeRefreshUI();
-            if (typeof djShowTab === 'function' && typeof djTab !== 'undefined' && djTab === 'keys') djShowTab('batch');
+            if (typeof djShowTab === 'function' && typeof djTab !== 'undefined' && ['keys','genres','delete'].includes(djTab)) djShowTab('batch');
             resetFilters();
             alert("Has cerrado sesión correctamente.");
         }
@@ -1643,7 +1702,7 @@ async function loadSession() {
     }
     updateAuthHeader(); renderPortalsSidebar(); renderTracksTable();
     if (typeof djAnalyzeRefreshUI === 'function') djAnalyzeRefreshUI();
-    if (!isAdmin && typeof djShowTab === 'function' && typeof djTab !== 'undefined' && djTab === 'keys') djShowTab('batch');
+    if (!isAdmin && typeof djShowTab === 'function' && typeof djTab !== 'undefined' && ['keys','genres','delete'].includes(djTab)) djShowTab('batch');
     if (typeof renderPaypalButtons === 'function' && !membershipsViewContainer.classList.contains('hidden')) renderPaypalButtons();
 }
 
@@ -2250,6 +2309,34 @@ function detectRating(f, tag) {
 }
 let bulkItems = [];
 let bulkSourceFiles = [];
+// ====== Subida masiva: Audio y Video funcionan por separado ======
+let bulkMode = 'audio';
+function bulkPickFiles(files, mode) {
+    const extOf = f => ((f.name.match(/\.([^.]+)$/) || [])[1] || '').toLowerCase();
+    const ok = files.filter(f => { const e = extOf(f); return !!e && (e in AUDIO_MIME) && !f.name.startsWith('._') && (mode === 'video' ? VIDEO_EXTS.includes(e) : !VIDEO_EXTS.includes(e)); });
+    const skipped = files.length - ok.length;
+    if (skipped) alert(mode === 'video'
+        ? `${skipped} archivo(s) que no son video se omitieron. Los audios se suben desde la pestaña Audio.`
+        : `${skipped} archivo(s) que no son audio se omitieron. Los videos se suben desde la pestaña Video.`);
+    return ok;
+}
+function bulkSetMode(mode) {
+    const submit = document.getElementById('uploadSubmitBtn');
+    if (submit && submit.classList.contains('hidden')) return; // hay una subida en curso
+    bulkMode = mode === 'video' ? 'video' : 'audio';
+    bulkSourceFiles = []; bulkItems = []; bulkReviewRun++;
+    ['bulkAudioFiles', 'bulkFolderFiles', 'bulkVideoFiles'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const box = document.getElementById('bulkReview'); if (box) { box.classList.add('hidden'); box.innerHTML = ''; }
+    const isVid = bulkMode === 'video';
+    document.getElementById('bulkAudioSection').classList.toggle('hidden', isVid);
+    document.getElementById('bulkVideoSection').classList.toggle('hidden', !isVid);
+    ['audio', 'video'].forEach(m => {
+        const b = document.getElementById('bulkTabBtn-' + m); if (!b) return;
+        b.className = 'rounded-xl px-3 py-2.5 text-sm font-bold transition ' + (m === bulkMode ? 'bg-brand-crimson text-white shadow' : 'bg-white border border-brand-border text-slate-600 hover:bg-slate-50');
+    });
+    if (submit) submit.innerHTML = isVid ? '<i class="fa-solid fa-bolt"></i> Procesar y Publicar Videos' : '<i class="fa-solid fa-bolt"></i> Procesar y Publicar Audios';
+}
+
 function genreFromPath(f) {
     const path = (f && f.webkitRelativePath) || '';
     if (!path) return null;
@@ -2507,18 +2594,21 @@ async function buildBulkReview() {
 
 window.addEventListener('DOMContentLoaded', () => {
     bulkAudioFiles.addEventListener('change', () => {
-        bulkSourceFiles = Array.from(bulkAudioFiles.files || []);
+        bulkSourceFiles = bulkPickFiles(Array.from(bulkAudioFiles.files || []), 'audio');
         const fo = document.getElementById('bulkFolderFiles'); if (fo) fo.value = '';
         buildBulkReview();
     });
     const folderInput = document.getElementById('bulkFolderFiles');
     if (folderInput) folderInput.addEventListener('change', () => {
-        const ok = new Set(Object.keys(AUDIO_MIME));
+        const ok = new Set(Object.keys(AUDIO_MIME).filter(x => !VIDEO_EXTS.includes(x)));
         bulkSourceFiles = Array.from(folderInput.files || []).filter(f => { const e = (f.name.match(/\.([^.]+)$/) || [])[1]; return !!e && ok.has(e.toLowerCase()) && !f.name.startsWith('._'); });
         bulkAudioFiles.value = '';
         buildBulkReview();
     });
     bulkGenreTarget.addEventListener('change', () => { if (bulkItems.some(x => !x.genre)) renderBulkReview(); });
+    const vidInput = document.getElementById('bulkVideoFiles');
+    if (vidInput) vidInput.addEventListener('change', () => { bulkSourceFiles = bulkPickFiles(Array.from(vidInput.files || []), 'video'); buildBulkReview(); });
+    bulkSetMode('audio');
 });
 
 let bulkCancel = false;
@@ -2592,14 +2682,15 @@ async function processBulkUpload() {
     if (!isAdmin) { alert('Acceso denegado.'); return; }
     const portal = bulkPortalTarget.value, genre = bulkGenreTarget.value;
     const allFiles = bulkSourceFiles.slice();
-    const allowedExt = new Set(Object.keys(AUDIO_MIME));
-    if (!allFiles.length) { alert('Selecciona al menos un archivo de audio.'); return; }
+    const isVidMode = bulkMode === 'video';
+    const allowedExt = new Set(Object.keys(AUDIO_MIME).filter(x => isVidMode ? VIDEO_EXTS.includes(x) : !VIDEO_EXTS.includes(x)));
+    if (!allFiles.length) { alert(isVidMode ? 'Selecciona al menos un video.' : 'Selecciona al menos un archivo de audio.'); return; }
     const isValid = f => {
         const ext = (f.name.match(/\.([^.]+)$/) || [])[1];
         return !!ext && allowedExt.has(ext.toLowerCase()) && !(f.type && !f.type.startsWith('audio/') && !f.type.startsWith('video/'));
     };
     let files = allFiles.filter(isValid), skipped = allFiles.length - files.length;
-    if (!files.length) { alert('Ningún archivo tiene un formato admitido. Usa MP3, WAV, M4A, AAC, FLAC, OGG o MP4.'); return; }
+    if (!files.length) { alert(isVidMode ? 'Ningún archivo tiene un formato de video admitido. Usa MP4, MOV, M4V o WEBM.' : 'Ningún archivo tiene un formato de audio admitido. Usa MP3, WAV, M4A, AAC, FLAC u OGG.'); return; }
     if (skipped && !confirm(`${skipped} archivo(s) con formato no admitido se omitirán. ¿Continuar con los ${files.length} restantes?`)) return;
     if (files.length > 50 && !confirm(`Se subirán ${files.length} archivos uno por uno. Mantén esta pestaña abierta; puedes detener el lote cuando quieras. ¿Continuar?`)) return;
     if (!sb) { alert('La conexión con la base de datos no está configurada.'); return; }
@@ -2632,7 +2723,7 @@ async function processBulkUpload() {
             const f = files[i], title = f.name.replace(/\.[^/.]+$/, ''), ext = (f.name.match(/\.([^.]+)$/) || [])[1].toLowerCase();
             const it = itemMap.get(f) || {};
             const counts = `✔ ${completed} · ✖ ${failed}`;
-            uploadStatusText.textContent = `Subiendo ${i + 1} de ${total}: ${title}${it.musicalKey ? ` · ${it.musicalKey} (${it.camelotKey})` : ' · key pendiente de analizar'} (${counts})`;
+            uploadStatusText.textContent = `Subiendo ${i + 1} de ${total}: ${title}${it.musicalKey ? ` · ${it.musicalKey} (${it.camelotKey})` : (isVidMode ? '' : ' · key pendiente de analizar')} (${counts})`;
             let path = null, pvPath = null, pvBlob = null;
             try {
                 if (VIDEO_EXTS.includes(ext)) {
@@ -2818,7 +2909,7 @@ function djPopulateSelectors(){
  const key=document.getElementById('djKeyValue'); if(key)key.innerHTML='<option value="">Selecciona tonalidad…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
  const compatible=document.getElementById('djCompatibleKey'); if(compatible&&!compatible.options.length)compatible.innerHTML='<option value="">Elige una tonalidad de referencia…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k} · ${DJ_CAMELOT[k]}</option>`).join('');
  const kt=document.getElementById('djTabBtn-keys');if(kt)kt.classList.toggle('hidden',!isAdmin);
- const gt=document.getElementById('djTabBtn-genres');if(gt)gt.classList.toggle('hidden',!isAdmin);djAnalyzeRefreshUI();const pc=document.getElementById('djPendingCount');if(pc){const n=allRemixes.filter(t=>!t.musicalKey).length;pc.textContent=n?`${n} canciones sin tonalidad`:'Todo el catálogo tiene tonalidad';}
+ const gt=document.getElementById('djTabBtn-genres');if(gt)gt.classList.toggle('hidden',!isAdmin);const dt=document.getElementById('djTabBtn-delete');if(dt)dt.classList.toggle('hidden',!isAdmin);djAnalyzeRefreshUI();const pc=document.getElementById('djPendingCount');if(pc){const n=allRemixes.filter(t=>!t.musicalKey).length;pc.textContent=n?`${n} canciones sin tonalidad`:'Todo el catálogo tiene tonalidad';}
  const analyze=document.getElementById('djAnalyzeCatalogBtn'); if(analyze){analyze.disabled=!isAdmin;analyze.classList.toggle('opacity-40',!isAdmin);analyze.title=isAdmin?'Analiza canciones antiguas sin tonalidad':'Solo el administrador puede ejecutar el análisis del catálogo';}
  const save=document.getElementById('djSaveKeyBtn'); if(save){save.disabled=!isAdmin;save.classList.toggle('opacity-40',!isAdmin);save.title=isAdmin?'Guardar tonalidad':'Solo el administrador puede editar tonalidades';}
 }
@@ -3137,8 +3228,8 @@ async function djCreatePlaylist(){
 // ===== LOTES POR GÉNERO / TONALIDAD / BPM =====
 let djTab='batch';
 function djShowTab(name){
- if(name==='keys'&&!isAdmin)name='batch';djTab=name;djAnalyzeRefreshUI();
- ['batch','playlists','keys'].forEach(n=>{
+ if(['keys','genres','delete'].includes(name)&&!isAdmin)name='batch';djTab=name;if(name==='delete'&&typeof djDelInit==='function')setTimeout(djDelInit,0);djAnalyzeRefreshUI();
+ ['batch','playlists','keys','genres','delete'].forEach(n=>{
   const p=document.getElementById('djTab-'+n),b=document.getElementById('djTabBtn-'+n);if(!p||!b)return;
   p.classList.toggle('hidden',n!==name);
   b.className=(b.classList.contains('hidden')?'hidden ':'')+'rounded-xl px-4 py-2.5 text-sm font-bold transition '+(n===name?'bg-brand-crimson text-white shadow':'bg-white border border-brand-border text-slate-600 hover:bg-slate-50');
@@ -3267,6 +3358,261 @@ async function djBatchSave(){
  }catch(e){st.textContent='No se pudo guardar la playlist: '+(e.message||e);}
 }
 (function(){const f=document.getElementById('bottomPlayer');if(!f)return;const set=()=>{const h=f.offsetHeight;document.documentElement.style.setProperty('--player-h',h+'px');document.body.style.paddingBottom=(h+16)+'px';};set();if(window.ResizeObserver)new ResizeObserver(set).observe(f);window.addEventListener('resize',set);})();
+
+// ===== Eliminar canciones en lote (solo admin) =====
+let djDelMatches = [], djDelSel = new Set(), djDelRunning = false, djDelCancel = false, djDelTimer = null;
+const DJ_DEL_SHOW = 500;
+function djDelInit() {
+ const g = document.getElementById('djDelGenre'); if (!g) return;
+ const cur = g.value;
+ const genres = Array.from(new Set(allRemixes.map(t => t.genre).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+ g.innerHTML = '<option value="">Todos los géneros</option>' + genres.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('');
+ g.value = genres.includes(cur) ? cur : '';
+ djDelSearch();
+}
+function djDelSearchDebounced() { clearTimeout(djDelTimer); djDelTimer = setTimeout(djDelSearch, 250); }
+function djDelSearch() {
+ const box = document.getElementById('djDelResults'); if (!box) return;
+ const g = djV('djDelGenre'), v = djV('djDelVersion'), q = djV('djDelText'), from = djV('djDelFrom'), to = djV('djDelTo');
+ const words = normalizeText(q).split(' ').filter(Boolean);
+ if (!g && !v && !words.length && !from && !to) {
+  djDelMatches = []; djDelSel = new Set(); box.innerHTML = '';
+  document.getElementById('djDelInfo').textContent = 'Usa los filtros para encontrar las canciones que quieres eliminar.';
+  djDelCount(); return;
+ }
+ djDelMatches = allRemixes.filter(t => {
+  if (g && t.genre !== g) return false;
+  if (from && (!t.date || t.date < from)) return false;
+  if (to && (!t.date || t.date > to)) return false;
+  if (v) { const r = parseTrackInfo(t).rating; if (v === 'Dirty' && r !== 'Dirty') return false; if (v === 'Clean' && r !== 'Clean') return false; if (v === 'none' && r) return false; }
+  if (words.length) { const hay = t._searchText || normalizeText(t.title); if (!words.every(w => hay.includes(w))) return false; }
+  return true;
+ }).sort((a, b) => String(b.date).localeCompare(String(a.date)) || a.title.localeCompare(b.title));
+ const ids = new Set(djDelMatches.map(t => String(t.id)));
+ djDelSel = new Set([...djDelSel].filter(id => ids.has(id)));
+ box.innerHTML = djDelMatches.slice(0, DJ_DEL_SHOW).map(t => {
+  const info = parseTrackInfo(t), name = (info.artist ? info.artist + ' - ' : '') + info.song;
+  return `<label class="flex items-center gap-2 px-3 py-1.5 text-xs border-b border-brand-border hover:bg-slate-50 cursor-pointer"><input type="checkbox" data-id="${escapeHtml(t.id)}" ${djDelSel.has(String(t.id)) ? 'checked' : ''} class="accent-blue-600"><span class="min-w-0 flex-1 truncate" title="${escapeHtml(t.title)}">${escapeHtml(name || t.title)}</span><span class="text-slate-400 shrink-0">${escapeHtml(t.genre || '—')}</span><span class="text-slate-400 shrink-0 w-20 text-right">${escapeHtml(t.date || '')}</span></label>`;
+ }).join('');
+ box.onchange = e => { const c = e.target; if (!c || !c.dataset || c.dataset.id === undefined) return; c.checked ? djDelSel.add(String(c.dataset.id)) : djDelSel.delete(String(c.dataset.id)); djDelCount(); };
+ djDelCount();
+}
+function djDelCount() {
+ const btn = document.getElementById('djDelRunBtn'), info = document.getElementById('djDelInfo'); if (!btn) return;
+ const n = djDelSel.size;
+ btn.innerHTML = `<i class="fa-solid fa-trash mr-1"></i> Eliminar seleccionadas (${n})`;
+ btn.disabled = !n || djDelRunning; btn.classList.toggle('opacity-40', btn.disabled);
+ if (djDelMatches.length || document.getElementById('djDelResults').innerHTML) {
+  let msg = djDelMatches.length ? `${djDelMatches.length} canción(es) encontradas` : 'No hay canciones con esos filtros.';
+  if (djDelMatches.length > DJ_DEL_SHOW) msg += ` · mostrando las primeras ${DJ_DEL_SHOW} (las acciones de seleccionar aplican a todas las encontradas)`;
+  info.textContent = msg + ` · ${n} seleccionada(s)`;
+ }
+}
+function djDelSelectAll(on) {
+ djDelSel = on ? new Set(djDelMatches.map(t => String(t.id))) : new Set();
+ document.querySelectorAll('#djDelResults input[type="checkbox"]').forEach(c => c.checked = on);
+ djDelCount();
+}
+function djDelStop() { djDelCancel = true; }
+async function djDelRun() {
+ if (!isAdmin) { alert('Solo el administrador puede eliminar canciones.'); return; }
+ if (djDelRunning) return;
+ const list = djDelMatches.filter(t => djDelSel.has(String(t.id)));
+ if (!list.length) { alert('Selecciona al menos una canción.'); return; }
+ const withFiles = ((document.querySelector('input[name="djDelMode"]:checked') || {}).value) === 'files';
+ const txt = withFiles
+  ? `Vas a eliminar ${list.length} canciones del catálogo Y borrar sus archivos del almacenamiento. Esta acción no se puede deshacer.`
+  : `Vas a quitar ${list.length} canciones del catálogo de la web. Los archivos se conservan en el almacenamiento.`;
+ const word = prompt(txt + '\n\nEscribe ELIMINAR para confirmar:');
+ if (word === null || word.trim().toUpperCase() !== 'ELIMINAR') { document.getElementById('djDelStatus').textContent = 'Cancelado: no se eliminó nada.'; return; }
+ djDelRunning = true; djDelCancel = false; djDelCount();
+ const st = document.getElementById('djDelStatus'), bar = document.getElementById('djDelBar'), stop = document.getElementById('djDelStopBtn');
+ stop.classList.remove('hidden'); bar.style.width = '0%';
+ let ok = 0, fail = 0, fileOk = 0, fileFail = 0, processed = 0; const errors = [];
+ try {
+  await requireSession();
+  if (list.some(t => t.id === currentPlayingId)) { audioPlayer.pause(); isPlaying = false; currentPlayingId = null; currentPlayingIndex = null; updatePlayPauseUI(); }
+  const CH = 10;
+  for (let i = 0; i < list.length && !djDelCancel; i += CH) {
+   const chunk = list.slice(i, i + CH), ids = chunk.map(t => t.id);
+   try { await sb.from('playlist_tracks').delete().in('track_id', ids); } catch (_) {}
+   const { data, error } = await sb.from('tracks').delete().in('id', ids).select('id');
+   if (error) { fail += chunk.length; if (errors.length < 5) errors.push(error.message); }
+   else {
+    const gone = new Set((data || []).map(r => String(r.id)));
+    const removed = chunk.filter(t => gone.has(String(t.id)));
+    ok += removed.length; fail += chunk.length - removed.length;
+    if (withFiles) {
+     await Promise.all(removed.map(async t => {
+      if (!t.path) return;
+      try {
+       if (isB2(t.path)) await audioApi({ action: 'delete', path: t.path });
+       else { const { error: e2 } = await sb.storage.from(BUCKET).remove([t.path]); if (e2) throw e2; }
+       fileOk++;
+      } catch (e) { fileFail++; if (errors.length < 5) errors.push(`${t.title}: ${e.message || e}`); }
+     }));
+    }
+   }
+   processed += chunk.length;
+   bar.style.width = Math.round(processed / list.length * 100) + '%';
+   st.textContent = `Eliminando ${processed} de ${list.length} · ${ok} correctas · ${fail} con error`;
+  }
+ } catch (e) { errors.push(e.message || String(e)); }
+ finally {
+  djDelRunning = false; stop.classList.add('hidden');
+  await loadTracks(); djDelSel = new Set(); djDelInit();
+  st.textContent = `${djDelCancel ? 'Detenido' : 'Listo'}: ${ok} canción(es) quitadas del catálogo` +
+   (withFiles ? `, ${fileOk} archivo(s) borrados${fileFail ? `, ${fileFail} archivo(s) no se pudieron borrar` : ''}` : '') +
+   (fail ? ` · ${fail} con error` : '') + '.' + (errors.length ? ' Detalle: ' + errors.join(' | ') : '');
+ }
+}
+
+// ===== Reproductor con doble onda (vista general + zoom) =====
+function downloadCurrent() {
+ const i = allRemixes.findIndex(r => r.id === currentPlayingId);
+ if (i < 0) return;
+ handleDownloadClick(i);
+}
+(function () {
+ const ov = document.getElementById('wfOverview'), zm = document.getElementById('wfZoom'), foot = document.getElementById('bottomPlayer');
+ if (!ov || !zm || !foot) return;
+ const PPS = 50, ZOOM_SECS = 10, MAX_BYTES = 60 * 1024 * 1024;
+ const C_LOW = [30, 64, 175], C_MID = [59, 130, 246], C_HIGH = [56, 189, 248];
+ const dpr = Math.min(window.devicePixelRatio || 1, 2);
+ let data = null, status = 'idle', loadedId = null, token = 0, raf = 0, actx = null, ovCache = null, ovCacheW = 0, ovCacheH = 0;
+
+ function fit(c) {
+  const r = c.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  return [w, h];
+ }
+
+ function analyze(buf) {
+  const sr = buf.sampleRate, n = buf.length, spc = sr / PPS;
+  const cols = Math.max(1, Math.ceil(buf.duration * PPS));
+  const amp = new Float32Array(cols), rgb = new Uint8Array(cols * 3);
+  const d0 = buf.getChannelData(0), d1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
+  const aL = 1 - Math.exp(-2 * Math.PI * 200 / sr), aH = 1 - Math.exp(-2 * Math.PI * 2500 / sr);
+  let l1 = 0, l2 = 0, max = 1e-6;
+  for (let c = 0; c < cols; c++) {
+   const s = Math.floor(c * spc), e = Math.min(n, Math.floor((c + 1) * spc));
+   let pk = 0, el = 0, em = 0, eh = 0;
+   for (let i = s; i < e; i++) {
+    const x = d1 ? (d0[i] + d1[i]) * 0.5 : d0[i];
+    l1 += aL * (x - l1); l2 += aH * (x - l2);
+    const ax = Math.abs(x); if (ax > pk) pk = ax;
+    el += Math.abs(l1); em += Math.abs(l2 - l1); eh += Math.abs(x - l2);
+   }
+   const k = Math.max(1, e - s);
+   amp[c] = pk; if (pk > max) max = pk;
+   let wl = el / k, wm = (em / k) * 2.2, wh = (eh / k) * 5;
+   wl = Math.pow(wl, 0.8); wm = Math.pow(wm, 0.8); wh = Math.pow(wh, 0.8);
+   const sum = wl + wm + wh || 1; wl /= sum; wm /= sum; wh /= sum;
+   for (let j = 0; j < 3; j++) rgb[c * 3 + j] = Math.round(wl * C_LOW[j] + wm * C_MID[j] + wh * C_HIGH[j]);
+  }
+  for (let c = 0; c < cols; c++) amp[c] = Math.pow(amp[c] / max, 0.85);
+  return { cols, amp, rgb, dur: buf.duration };
+ }
+
+ function buildOverview(W, H) {
+  ovCache = document.createElement('canvas'); ovCache.width = W; ovCache.height = H; ovCacheW = W; ovCacheH = H;
+  const g = ovCache.getContext('2d'), mid = H / 2;
+  for (let x = 0; x < W; x++) {
+   const a = Math.floor(x * data.cols / W), b = Math.max(a + 1, Math.floor((x + 1) * data.cols / W));
+   let best = a, bv = -1;
+   for (let c = a; c < b && c < data.cols; c++) if (data.amp[c] > bv) { bv = data.amp[c]; best = c; }
+   const h = Math.max(1, bv * (H - 2));
+   g.fillStyle = `rgb(${data.rgb[best * 3]},${data.rgb[best * 3 + 1]},${data.rgb[best * 3 + 2]})`;
+   g.fillRect(x, mid - h / 2, 1, h);
+  }
+ }
+
+ function msg(g, W, H, text) {
+  g.fillStyle = '#94a3b8'; g.font = `${Math.round(11 * dpr)}px Inter, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, W / 2, H / 2);
+ }
+
+ function draw() {
+  const dur = audioPlayer.duration || (data ? data.dur : 0), cur = audioPlayer.currentTime || 0;
+  // --- Vista general ---
+  const [W1, H1] = fit(ov), g1 = ov.getContext('2d');
+  g1.clearRect(0, 0, W1, H1);
+  if (data) {
+   if (!ovCache || ovCacheW !== W1 || ovCacheH !== H1) buildOverview(W1, H1);
+   g1.drawImage(ovCache, 0, 0);
+   const px = dur ? Math.min(1, cur / dur) * W1 : 0;
+   g1.fillStyle = 'rgba(248,250,252,.62)'; g1.fillRect(px, 0, W1 - px, H1);
+   g1.fillStyle = '#0f172a'; g1.fillRect(Math.round(px), 0, Math.max(1, Math.round(dpr)), H1);
+  } else {
+   g1.fillStyle = '#cbd5e1'; g1.fillRect(0, H1 / 2 - 0.5 * dpr, W1, dpr);
+  }
+  // --- Zoom ---
+  const [W2, H2] = fit(zm), g2 = zm.getContext('2d');
+  g2.clearRect(0, 0, W2, H2);
+  if (data) {
+   const pps = W2 / ZOOM_SECS, colW = pps / PPS, cx = W2 / 2;
+   const c0 = Math.floor((cur - ZOOM_SECS / 2) * PPS), c1 = Math.ceil((cur + ZOOM_SECS / 2) * PPS);
+   const gap = colW > 2.5 * dpr ? Math.max(1, dpr * 0.6) : 0;
+   for (let c = Math.max(0, c0); c <= c1 && c < data.cols; c++) {
+    const x = cx + (c / PPS - cur) * pps, h = Math.max(1, data.amp[c] * (H2 - 4 * dpr));
+    g2.globalAlpha = x < cx ? 0.5 : 1;
+    g2.fillStyle = `rgb(${data.rgb[c * 3]},${data.rgb[c * 3 + 1]},${data.rgb[c * 3 + 2]})`;
+    g2.fillRect(x, H2 - h, Math.max(1, colW - gap), h);
+   }
+   g2.globalAlpha = 1;
+  } else {
+   msg(g2, W2, H2, status === 'loading' ? 'Cargando onda…' : status === 'na' ? 'Onda no disponible para este archivo' : status === 'err' ? 'No se pudo generar la onda' : 'Selecciona un remix para ver la onda');
+  }
+  g2.fillStyle = '#0f172a'; g2.fillRect(Math.round(W2 / 2 - dpr / 2), 0, Math.max(1, Math.round(dpr * 1.5)), H2);
+ }
+
+ async function loadFor(id) {
+  const t = allRemixes.find(r => r.id === id), my = ++token;
+  loadedId = id; data = null; ovCache = null; status = 'loading'; draw();
+  if (!t || (t.fileSize && t.fileSize > MAX_BYTES)) { status = 'na'; draw(); return; }
+  try {
+   const src = audioPlayer.currentSrc || audioPlayer.src; if (!src) throw new Error('sin fuente');
+   const r = await fetch(src); if (!r.ok) throw new Error('HTTP ' + r.status);
+   const ab = await r.arrayBuffer(); if (my !== token) return;
+   actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+   const buf = await actx.decodeAudioData(ab); if (my !== token) return;
+   data = analyze(buf); status = 'ok';
+  } catch (e) { if (my !== token) return; console.warn('Onda:', e); status = 'err'; }
+  draw();
+ }
+
+ // Buscar con la vista general
+ function seekOverview(e) {
+  const d = audioPlayer.duration; if (!d) return;
+  const r = ov.getBoundingClientRect();
+  audioPlayer.currentTime = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * d; draw();
+ }
+ ov.addEventListener('pointerdown', e => { ov.setPointerCapture(e.pointerId); seekOverview(e); ov._drag = true; });
+ ov.addEventListener('pointermove', e => { if (ov._drag) seekOverview(e); });
+ ov.addEventListener('pointerup', () => { ov._drag = false; });
+ ov.addEventListener('pointercancel', () => { ov._drag = false; });
+ // Arrastrar el zoom: desliza la onda como en un plato
+ let zx = 0, zt = 0, zdrag = false;
+ zm.addEventListener('pointerdown', e => { if (!audioPlayer.duration) return; zm.setPointerCapture(e.pointerId); zdrag = true; zx = e.clientX; zt = audioPlayer.currentTime; });
+ zm.addEventListener('pointermove', e => {
+  if (!zdrag) return;
+  const pxs = zm.getBoundingClientRect().width / ZOOM_SECS;
+  audioPlayer.currentTime = Math.min(audioPlayer.duration, Math.max(0, zt - (e.clientX - zx) / pxs)); draw();
+ });
+ zm.addEventListener('pointerup', () => { zdrag = false; });
+ zm.addEventListener('pointercancel', () => { zdrag = false; });
+
+ function loop() { draw(); raf = audioPlayer.paused ? 0 : requestAnimationFrame(loop); }
+ audioPlayer.addEventListener('loadstart', () => { if (currentPlayingId !== null && currentPlayingId !== loadedId) loadFor(currentPlayingId); });
+ audioPlayer.addEventListener('play', () => { foot.classList.add('vp-playing'); if (!raf) raf = requestAnimationFrame(loop); });
+ audioPlayer.addEventListener('playing', () => { if (!raf) raf = requestAnimationFrame(loop); });
+ audioPlayer.addEventListener('pause', () => { foot.classList.remove('vp-playing'); draw(); });
+ audioPlayer.addEventListener('ended', () => foot.classList.remove('vp-playing'));
+ ['seeked', 'durationchange'].forEach(ev => audioPlayer.addEventListener(ev, draw));
+ if (window.ResizeObserver) { const ro = new ResizeObserver(draw); ro.observe(ov); ro.observe(zm); } else window.addEventListener('resize', draw);
+ draw();
+})();
 </script>
 
 </body>
