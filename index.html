@@ -955,6 +955,21 @@
             return !!(currentUser && currentUser.membershipExpires && new Date(currentUser.membershipExpires) > new Date());
         }
 
+        // Verifica la membresía contra la base de datos en el momento de la acción.
+        // No confía en las variables locales (currentUser / isAdmin), que se pueden editar desde la consola.
+        async function verifyMembershipServer() {
+            try {
+                if (!sb) return false;
+                const { data: { session } } = await sb.auth.getSession();
+                if (!session) return false;
+                const { data, error } = await sb.from('profiles').select('membership_expires,is_admin').eq('id', session.user.id).maybeSingle();
+                if (error || !data) return false;
+                isAdmin = !!data.is_admin;
+                if (currentUser) currentUser.membershipExpires = data.membership_expires;
+                return isAdmin || !!(data.membership_expires && new Date(data.membership_expires) > new Date());
+            } catch (_) { return false; }
+        }
+
         function renderAdminDashboard() {
             const box = document.querySelector('#adminDashboardView > div:last-child');
             const rows = portalsList.map(p => `<li class="flex justify-between"><span>${p}</span><span class="font-bold text-white">${allRemixes.filter(r => r.portal === p).length}</span></li>`).join('');
@@ -1783,6 +1798,7 @@ async function loadSession() {
     }
     updateAuthHeader(); renderPortalsSidebar(); renderTracksTable();
     if (typeof djAnalyzeRefreshUI === 'function') djAnalyzeRefreshUI();
+    try { if (typeof djBatchCount === 'function' && document.getElementById('djBatchDlBtn')) djBatchCount(); } catch (_) {}
     if (!isAdmin && typeof djShowTab === 'function' && typeof djTab !== 'undefined' && ['keys','genres','delete'].includes(djTab)) djShowTab('batch');
     if (typeof renderPaypalButtons === 'function' && !membershipsViewContainer.classList.contains('hidden')) renderPaypalButtons();
 }
@@ -2157,6 +2173,10 @@ async function audioApi(body) {
     return j;
 }
 async function signedUrl(key, seconds, options) {
+    if (options && options.download && !(await verifyMembershipServer())) {
+        openPaywallModal();
+        throw new Error('Necesitas una membresía activa para descargar.');
+    }
     if (isB2(key)) {
         const dl = options && options.download;
         const j = await audioApi({ action: dl ? 'download' : 'play', path: key, filename: dl || undefined });
@@ -2258,7 +2278,7 @@ async function uploadVideoPreviews() {
 async function handleDownloadClick(i) {
     const t = allRemixes[i];
     if (!currentUser) { openLoginModal(); return; }
-    if (!hasMembership()) { openPaywallModal(); return; }
+    if (!(await verifyMembershipServer())) { openPaywallModal(); return; }
     try {
         const url = await signedUrl(t.path, 120, { download: `${t.title}${t.artist ? ' - ' + t.artist : ''}.${t.ext}` });
         const a = document.createElement('a'); a.href = url; document.body.appendChild(a); a.click(); a.remove();
@@ -3375,12 +3395,12 @@ function djBatchSearch(){
  infoEl.textContent=msg;
  djBatchCount();
 }
-function djBatchCount(){document.getElementById('djBatchDlBtn').innerHTML=`<i class="fa-solid fa-download mr-1"></i> Descargar lote (${djBatchSel.size})`;}
+function djBatchCount(){document.getElementById('djBatchDlBtn').innerHTML=`<i class="fa-solid ${hasMembership()?'fa-download':'fa-lock'} mr-1"></i> Descargar lote (${djBatchSel.size})`;}
 function djBatchToggle(id,on){on?djBatchSel.add(id):djBatchSel.delete(id);djBatchCount();}
 function djBatchToggleGroup(key,on){document.querySelectorAll(`#djBatchResults input[data-key="${key}"]`).forEach(c=>{c.checked=on;djBatchToggle(c.dataset.id,on);});}
 function djBatchToggleAll(on){document.querySelectorAll('#djBatchResults input').forEach(c=>c.checked=on);djBatchSel=on?new Set(djBatchRows.map(t=>t.id)):new Set();djBatchCount();}
 async function djBatchDownload(){
- if(!currentUser){openLoginModal();return;}if(!hasMembership()){openPaywallModal();return;}
+ if(!currentUser){openLoginModal();return;}if(!(await verifyMembershipServer())){openPaywallModal();return;}
  const list=djBatchRows.filter(t=>djBatchSel.has(t.id)),st=document.getElementById('djBatchStatus'),btn=document.getElementById('djBatchDlBtn');
  if(!list.length){alert('Selecciona al menos una canción.');return;}
  if(list.length>15&&!confirm(`Se descargarán ${list.length} canciones una por una. ¿Continuar?`))return;
