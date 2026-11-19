@@ -369,16 +369,18 @@
                     <div class="overflow-x-hidden">
                         <table class="w-full table-fixed text-left border-collapse">
                             <thead>
-                                <tr class="border-b border-brand-border text-slate-500 text-xs uppercase tracking-wider bg-slate-50">
+                                <tr class="border-b border-brand-border text-slate-500 text-xs uppercase tracking-wider font-semibold bg-slate-50">
+                                    <th class="py-4 pl-6 pr-2 w-[84px] hidden md:table-cell">Date</th>
+                                    <th class="py-4 px-2 w-[64px] text-center">Play</th>
                                     <th class="py-4 px-3">Song Title</th>
-                                    <th class="py-4 px-3 w-[16%] hidden sm:table-cell">Artist</th>
-                                    <th class="py-4 px-3 w-[16%] hidden md:table-cell">Version</th>
-                                    <th class="py-4 px-3 w-[14%] hidden lg:table-cell">DJ / Remixer</th>
-                                    <th class="py-4 px-3 w-[6%] hidden md:table-cell">BPM</th>
-                                    <th class="py-4 px-2 w-[76px] text-center"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
-                                    <th class="py-4 px-3 w-[10%] hidden lg:table-cell">Genre</th>
-                                    <th class="py-4 px-2 text-right w-[104px] sm:w-[132px]">Download</th>
-                                    </tr>
+                                    <th class="py-4 px-3 w-[20%] hidden sm:table-cell">Artist</th>
+                                    <th class="py-4 px-3 w-[17%] text-center hidden md:table-cell">Version</th>
+                                    <th class="py-4 px-3 w-[13%] text-center hidden lg:table-cell">Remixer</th>
+                                    <th class="py-4 px-3 w-[64px] text-center hidden md:table-cell">BPM</th>
+                                    <th class="py-4 px-2 w-[84px] text-center hidden md:table-cell"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
+                                    <th class="py-4 px-3 w-[11%] text-center hidden lg:table-cell">Genre</th>
+                                    <th class="py-4 px-3 pr-5 w-[96px] sm:w-[120px] text-center">Download</th>
+                                </tr>
                             </thead>
                             <tbody id="tracksTableBody" class="divide-y divide-brand-border text-sm"></tbody>
                         </table>
@@ -807,7 +809,15 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Género por defecto (si no se detecta)</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Si no se detecta el género (carpeta, etiqueta, álbum o nombre)</label>
+                    <select id="bulkNoGenreMode" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
+                        <option value="reject">Rechazar: no subir la canción</option>
+                        <option value="latino">Enviar a Latino</option>
+                        <option value="default">Usar el género por defecto de abajo</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Género por defecto (solo si eliges "usar el género por defecto")</label>
                     <select id="bulkGenreTarget" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-crimson">
                         <option value="Reggaeton">Reggaeton</option><option value="Bachata">Bachata</option><option value="Guaracha">Guaracha</option><option value="Dembow">Dembow</option><option value="Salsa">Salsa</option><option value="Merengue">Merengue</option><option value="Cumbia">Cumbia</option><option value="Electro">Electro</option><option value="Trap">Trap</option>
                     </select>
@@ -871,7 +881,7 @@
         ];
 
         const genresList = [
-            "Bachata", "Cubatón", "Cumbia", "Dancehall", "Dembow",
+            "Latino", "Bachata", "Cubatón", "Cumbia", "Dancehall", "Dembow",
             "Reggaeton", "Electro", "Guaracha", "Merengue", "Típico",
             "Moombahton", "Hip Hop", "Reggae", "Techno", "Transición",
             "SEGWAY", "Trap", "Rock", "Salsa", "Afro House", "Tech House",
@@ -1128,18 +1138,27 @@ function splitDjs(raw) {
     return String(raw || '').split(/\s*(?:&|\/|\+|,|;|\bx\b|\by\b|\band\b|\bvs\.?\s|\bfeat\.?\s|\bft\.?\s)\s*/i)
         .map(n => stripGenreWords(cleanDjName(n))).filter(n => n && !isGenericDj(n));
 }
-function extractRemix(rest) {
-    let m = rest.match(/\b(remix(?:ed)?|edit(?:ed)?|flip|rework(?:ed)?|bootleg|refix|mashup|blend)\s+by\s+(.+)$/i);
+// ¿Parece el nombre de un creador (con o sin "DJ")? Máx. 4 palabras y sin palabras sueltas de versión/género.
+function looksLikeCreatorName(name) {
+    const toks = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!toks.length || toks.length > 4) return false;
+    if (isGenericDj(name) || genreOnlyName(name)) return false;
+    if (toks.some(t => /^\d+$/.test(t) || /^(feat|ft|featuring|with|vs|by)\.?$/i.test(t))) return false;
+    return /[A-Za-zÀ-ÿ]/.test(name);
+}
+function extractRemix(rest, loose) {
+    rest = String(rest || '').replace(/\s+/g, ' ').trim();
+    let m = rest.match(/\b(remix(?:ed)?|edit(?:ed)?|flip|rework(?:ed)?|bootleg|refix|mashup|blend|intro|outro|extended(?:\s+mix)?|quick\s*hit|transition|mix(?:ed)?)\s+by\s+(.+)$/i);
     if (m && !isGenericDj(m[2])) return { name: m[2], version: titleCaseWords(m[1].replace(/ed$/i, '')) };
     m = rest.match(new RegExp('^(.+?)\\s+((?:' + DJ_MOD + '\\s+)*)(' + DJ_KIND_STRONG + ')$', 'i'));
     if (m) {
-        const name = m[1].trim();
+        const name = m[1].trim().replace(/['’]s$/i, '');
         if (!isGenericDj(name) && !genreOnlyName(name)) return { name, version: titleCaseWords((m[2] + m[3]).trim()) };
     }
     m = rest.match(new RegExp('^(.+?)\\s+((?:' + DJ_MOD + '\\s+)*)(' + DJ_KIND_WEAK + ')$', 'i'));
     if (m) {
-        const name = m[1].trim();
-        if (!isGenericDj(name) && !genreOnlyName(name) && (/^(dj|mc)\s/i.test(name) || DJ_CANON.has(djKey(name))))
+        const name = m[1].trim().replace(/['’]s$/i, '');
+        if (!isGenericDj(name) && !genreOnlyName(name) && (/^(dj|mc)\s/i.test(name) || DJ_CANON.has(djKey(name)) || (loose && looksLikeCreatorName(name))))
             return { name, version: titleCaseWords((m[2] + m[3]).trim()) };
     }
     return null;
@@ -1165,7 +1184,7 @@ function computeTrackInfo(t, useRegistry) {
         if (r) { if (!rating) rating = r; rest = g.replace(/\b(dirty|explicit|clean|censored)\b/ig, ' ').replace(/\s+/g, ' ').replace(/^[\s,\/&+\-]+|[\s,\/&+\-]+$/g, ''); }
         rest = rest.replace(/[\(\)\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
         if (!rest) continue;
-        const ex = extractRemix(rest);
+        const ex = extractRemix(rest, true);
         if (ex) { addDj(ex.name, 'título'); version.push(ex.version); }
         else if (/^(dj|mc)\s+\S+/i.test(rest) && rest.length <= 40 && !isGenericDj(rest)) addDj(rest, 'título');
         else {
@@ -1185,6 +1204,11 @@ function computeTrackInfo(t, useRegistry) {
     if (!djs.length && parts.length > 2) {
         const last = parts[parts.length - 1];
         if (/^(dj|mc)\s+\S+/i.test(last) && !isGenericDj(last)) { addDj(last, 'título'); parts.pop(); }
+    }
+    // "Artista - Canción - Nombre Intro" / "... - Nombre Remix": el último tramo es el creador aunque no diga DJ
+    if (!djs.length && parts.length > 2) {
+        const ex = extractRemix(parts[parts.length - 1], true);
+        if (ex) { addDj(ex.name, 'título'); version.push(ex.version); parts.pop(); }
     }
     // DJ ya conocido en el catálogo (aparece como remixer en 2 o más canciones)
     if (useRegistry && !djs.length && DJ_REGISTRY.length) {
@@ -1262,6 +1286,13 @@ function filterByDj(name) {
             renderTracksTable();
         }
 
+        function fmtShortDate(d) {
+            const m = String(d || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (!m) return escapeHtml(d || '');
+            const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return Number(m[3]) + ' ' + (M[Number(m[2]) - 1] || '');
+        }
+
         function renderTracksTable() {
             renderRatingFilter();
             const tbody = document.getElementById('tracksTableBody');
@@ -1306,7 +1337,7 @@ function filterByDj(name) {
             if(filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="py-12 text-center text-slate-400">
+                        <td colspan="10" class="py-12 text-center text-slate-400">
                             <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
                             <p class="text-sm font-semibold">No hay remixes subidos con este filtro.</p>
                             <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
@@ -1325,32 +1356,40 @@ function filterByDj(name) {
                 const ratingHtml = info.rating ? `<span class="${info.rating === 'Dirty' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'} font-bold px-2.5 py-0.5 rounded-full text-[11px] inline-block">${info.rating}</span>` : '';
                 const versionHtml = info.version ? `<div class="text-xs text-slate-500 ${info.rating ? 'mt-1' : ''}">${escapeHtml(info.version)}</div>` : '';
 
+                const verPills = [];
+                if (info.rating) verPills.push(`<span class="${info.rating === 'Dirty' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'} border font-semibold px-2.5 py-1 rounded-full text-[11px] leading-none whitespace-nowrap">${info.rating}</span>`);
+                if (info.version) verPills.push(`<span class="bg-white border border-brand-border text-slate-700 font-medium px-3 py-1.5 rounded-lg text-xs leading-tight shadow-sm">${escapeHtml(info.version)}</span>`);
+                const versionCell = verPills.length ? `<div class="flex flex-wrap items-center justify-center gap-1.5">${verPills.join('')}</div>` : '<span class="text-slate-300">—</span>';
+                const remixerCell = (info.remixers && info.remixers.length)
+                    ? info.remixers.map(n => `<button type="button" data-dj="${escapeHtml(n)}" onclick="filterByDj(this.dataset.dj)" title="Ver todos los remixes de ${escapeHtml(n)}" class="block mx-auto max-w-full truncate font-semibold text-slate-800 hover:text-brand-crimson transition">${escapeHtml(n)}</button>`).join('')
+                    : '<span class="text-slate-300">—</span>';
+                const genreCell = track.genre ? `<span class="bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-xs inline-block whitespace-nowrap">${escapeHtml(track.genre)}</span>` : '<span class="text-slate-300">—</span>';
+
                 html += `
-                    <tr class="transition group ${isCurrent ? 'bg-blue-50' : ''}">
-                        <td class="py-3 px-3">
-                            <div class="flex items-center gap-2.5">
-                                <button onclick="playTrack(${realIndex})" aria-label="Reproducir" class="w-9 h-9 rounded-full bg-brand-crimson hover:bg-red-600 flex items-center justify-center transition shrink-0 shadow-sm">
-                                    <i class="fa-solid ${isCurrent && isPlaying ? 'fa-pause' : 'fa-play'} text-xs"></i>
-                                </button>
-                                <div class="min-w-0">
-                                    <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${escapeHtml(info.song)}</div>
-                                    ${info.artist ? `<div class="sm:hidden text-xs text-slate-500 truncate">${escapeHtml(info.artist)}</div>` : ''}
-                                    ${info.remixer ? `<div class="lg:hidden text-[11px] text-brand-crimson truncate"><i class="fa-solid fa-headphones text-[9px]"></i> ${escapeHtml(info.remixer)}</div>` : ''}
-                                    <div class="text-[11px] text-slate-400 truncate">${escapeHtml(track.date || '')}${track.genre ? ' · ' + escapeHtml(track.genre) : ''}</div>
-                                </div>
-                            </div>
+                    <tr class="transition group ${isCurrent ? 'bg-blue-50' : 'hover:bg-slate-50'}">
+                        <td class="py-3 pl-6 pr-2 text-sm text-slate-400 whitespace-nowrap hidden md:table-cell">${fmtShortDate(track.date)}</td>
+                        <td class="py-3 px-2 text-center">
+                            <button onclick="playTrack(${realIndex})" aria-label="Reproducir" class="w-9 h-9 rounded-full bg-brand-crimson hover:bg-red-600 inline-flex items-center justify-center transition shadow-sm">
+                                <i class="fa-solid ${isCurrent && isPlaying ? 'fa-pause' : 'fa-play'} text-xs ${isCurrent && isPlaying ? '' : 'ml-0.5'}"></i>
+                            </button>
                         </td>
-                        <td class="py-3 px-3 text-slate-600 hidden sm:table-cell break-words">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</td>
-                        <td class="py-3 px-3 hidden md:table-cell break-words">${ratingHtml || versionHtml ? ratingHtml + versionHtml : '<span class="text-slate-300">—</span>'}</td>
-                        <td class="py-3 px-3 text-sm text-slate-600 hidden lg:table-cell break-words">${djPillsHtml(info)}</td>
-                        <td class="py-3 px-3 text-sm text-slate-500 hidden md:table-cell">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
-                        <td class="py-3 px-2 text-center">${keyPillHtml(track)}</td>
-                        <td class="py-3 px-3 hidden lg:table-cell"><span class="bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-xs inline-block">${escapeHtml(track.genre)}</span></td>
-                        <td class="py-3 px-2 text-right">
-                            <div class="flex items-center justify-end gap-0.5">
-                                <button onclick="toggleFavorite(${realIndex})" aria-label="Favorito" class="p-2 rounded-full hover:bg-slate-100 transition"><i class="${favClass} text-sm"></i></button>
+                        <td class="py-3 px-3 min-w-0">
+                            <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${escapeHtml(info.song)}</div>
+                            <div class="md:hidden text-[11px] text-slate-400 truncate">${fmtShortDate(track.date)}${track.genre ? ' · ' + escapeHtml(track.genre) : ''}</div>
+                            ${info.artist ? `<div class="sm:hidden text-xs text-slate-500 truncate">${escapeHtml(info.artist)}</div>` : ''}
+                            ${info.remixer ? `<div class="lg:hidden text-[11px] text-brand-crimson truncate"><i class="fa-solid fa-headphones text-[9px]"></i> ${escapeHtml(info.remixer)}</div>` : ''}
+                        </td>
+                        <td class="py-3 px-3 text-slate-600 hidden sm:table-cell"><div class="truncate" title="${escapeHtml(info.artist)}">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</div></td>
+                        <td class="py-3 px-3 text-center hidden md:table-cell">${versionCell}</td>
+                        <td class="py-3 px-3 text-sm text-center hidden lg:table-cell">${remixerCell}</td>
+                        <td class="py-3 px-3 text-sm text-slate-500 text-center hidden md:table-cell">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
+                        <td class="py-3 px-2 text-center hidden md:table-cell">${keyPillHtml(track)}</td>
+                        <td class="py-3 px-3 text-center hidden lg:table-cell">${genreCell}</td>
+                        <td class="py-3 px-3 pr-5">
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="toggleFavorite(${realIndex})" aria-label="Favorito" class="p-1.5 rounded-full hover:bg-slate-100 transition ${track.isFavorite ? '' : 'sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'}"><i class="${favClass} text-sm"></i></button>
                                 <button onclick="handleDownloadClick(${realIndex})" title="Descargar" aria-label="Descargar" class="w-9 h-9 rounded-full text-slate-600 hover:bg-blue-50 hover:text-brand-crimson transition flex items-center justify-center">
-                                    <i class="fa-solid ${hasMembership() ? 'fa-download' : 'fa-lock'}"></i>
+                                    <i class="fa-solid ${hasMembership() ? 'fa-download' : 'fa-lock'} text-lg"></i>
                                 </button>
                                 ${isAdmin ? `
                                     <button onclick="deleteTrack(${realIndex})" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-full transition" title="Eliminar Remix"><i class="fa-solid fa-trash text-xs"></i></button>
@@ -2337,7 +2376,8 @@ const GENRE_KEYWORDS = [
     ['Trap', /\btrap\b/],
     ['Rock', /\brock\b/],
     ['Salsa', /\bsalsa\b/],
-    ['House', /\bhouse\b/]
+    ['House', /\bhouse\b/],
+    ['Latino', /\blatinos?\b|\blatinas?\b/]
 ];
 function matchGenre(text) {
     if (!text) return null;
@@ -2364,8 +2404,8 @@ async function readId3(file) {
     const size = ((head[6] & 0x7f) << 21) | ((head[7] & 0x7f) << 14) | ((head[8] & 0x7f) << 7) | (head[9] & 0x7f);
     const buf = new Uint8Array(await file.slice(10, 10 + Math.min(size, 6 * 1024 * 1024)).arrayBuffer());
     const out = {}, idLen = ver === 2 ? 3 : 4, hdrLen = ver === 2 ? 6 : 10;
-    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist', TP4: 'remixer', TP2: 'albumArtist', TKE: 'key' }
-                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist', TPE4: 'remixer', TPE2: 'albumArtist', TKEY: 'key' };
+    const map = ver === 2 ? { TCO: 'genre', TBP: 'bpm', TT2: 'title', TP1: 'artist', TP4: 'remixer', TP2: 'albumArtist', TAL: 'album', TKE: 'key' }
+                          : { TCON: 'genre', TBPM: 'bpm', TIT2: 'title', TPE1: 'artist', TPE4: 'remixer', TPE2: 'albumArtist', TALB: 'album', TKEY: 'key' };
     let pos = 0;
     while (pos + hdrLen <= buf.length) {
         const id = String.fromCharCode(...buf.slice(pos, pos + idLen));
@@ -2474,7 +2514,10 @@ function genreFromPath(f) {
     const aliases = new Map([
         ['transition', 'Transición'], ['transicion', 'Transición'], ['segue', 'Transición'],
         ['segway', 'SEGWAY'], ['amapiano', 'Amapiano'], ['latin house', 'Latin House'], ['open show', 'Open Show'], ['regueton', 'Reggaeton'],
-        ['hiphop', 'Hip Hop'], ['moombah', 'Moombahton']
+        ['hiphop', 'Hip Hop'], ['moombah', 'Moombahton'],
+        ['latin', 'Latino'], ['latinos', 'Latino'], ['latina', 'Latino'], ['latinas', 'Latino'],
+        ['cubaton', 'Cubatón'], ['tipico', 'Típico'], ['reggaeton', 'Reggaeton'], ['mashup', 'Mashup'], ['mash up', 'Mashup'],
+        ['afrohouse', 'Afro House'], ['techhouse', 'Tech House'], ['latinhouse', 'Latin House'], ['openshow', 'Open Show']
     ]);
     const folders = path.split('/').slice(0, -1).reverse();
     // Mashup y Open Show tienen prioridad: si CUALQUIER carpeta o subcarpeta de la ruta
@@ -2508,7 +2551,7 @@ const BULK_RENDER_MAX = 150, BULK_PREANALYZE_MAX = 100;
 const yieldUi = () => new Promise(r => setTimeout(r, 0));
 function renderBulkReview() {
     const box = document.getElementById('bulkReview');
-    const opts = g => Array.from(bulkGenreTarget.options).map(o => `<option value="${escapeHtml(o.value)}"${o.value === g ? ' selected' : ''}>${escapeHtml(o.value)}</option>`).join('');
+    const opts = g => (g ? '' : '<option value="" selected>— Sin género (se rechaza) —</option>') + Array.from(bulkGenreTarget.options).map(o => `<option value="${escapeHtml(o.value)}"${o.value === g ? ' selected' : ''}>${escapeHtml(o.value)}</option>`).join('');
     const sinDetectar = bulkItems.filter(x => !x.genre).length;
     const keysPending = bulkItems.filter(x => x.keyStatus === 'analyzing').length;
     const keysFound = bulkItems.filter(x => x.musicalKey).length;
@@ -2520,10 +2563,10 @@ function renderBulkReview() {
     const exTitles = new Set(allRemixes.map(t => normalizeText(t.title))), exSizes = new Set(allRemixes.filter(t => t.fileSize).map(t => t.fileSize));
     const isDup = it => { const base = it.file.name.replace(/\.[^/.]+$/, ''); return exTitles.has(normalizeText(base)) || exTitles.has(normalizeText(bulkFinalTitle(base, it))) || (it.file.size && exSizes.has(it.file.size)); };
     const nDup = bulkItems.filter(isDup).length;
-    const porGenero = {}; bulkItems.forEach(x => { const g = x.genre || ('Sin detectar → ' + bulkGenreTarget.value); porGenero[g] = (porGenero[g] || 0) + 1; });
+    const porGenero = {}; bulkItems.forEach(x => { const g = x.genre || (bulkFallbackGenre() ? 'Sin detectar → ' + bulkFallbackGenre() : 'Sin género → se rechazan'); porGenero[g] = (porGenero[g] || 0) + 1; });
     const resumenGeneros = Object.entries(porGenero).sort((a, b) => b[1] - a[1]).map(([g, n]) => `<span class="inline-block bg-brand-panelBg border border-brand-border rounded-full px-2 py-0.5 mr-1 mb-1 text-white">${escapeHtml(g)}: <b>${n}</b></span>`).join('');
     const shown = bulkItems.slice(0, BULK_RENDER_MAX);
-    box.innerHTML = `<div class="text-xs text-slate-400">${resumenGeneros}</div><p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + ' sin género detectado; se usará el género por defecto.' : 'Géneros revisados.'} ${big ? 'Tonalidad: solo si viene en el nombre o la etiqueta; el resto se analiza después desde el panel DJ.' : `Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}.`} DJs detectados: ${djsFound}/${bulkItems.length}.${nDup ? ` <b class="text-red-500">${nDup} ya existen en la web y se rechazarán al subir.</b>` : ''} Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
+    box.innerHTML = `<div class="text-xs text-slate-400">${resumenGeneros}</div><p class="text-xs text-slate-400">${bulkItems.length} archivo(s). ${sinDetectar ? sinDetectar + (bulkFallbackGenre() ? ' sin género detectado; se enviarán a ' + bulkFallbackGenre() + '.' : ' sin género detectado; NO se subirán (elige un género en la lista si quieres subirlas).') : 'Géneros revisados.'} ${big ? 'Tonalidad: solo si viene en el nombre o la etiqueta; el resto se analiza después desde el panel DJ.' : `Tonalidades detectadas: ${keysFound}/${bulkItems.length}${keysPending ? ` · ${keysPending} en análisis` : ''}.`} DJs detectados: ${djsFound}/${bulkItems.length}.${nDup ? ` <b class="text-red-500">${nDup} ya existen en la web y se rechazarán al subir.</b>` : ''} Dirty: ${nDirty} · Clean: ${nClean} · Sin definir: ${nUndef}.</p>` +
         shown.map((it, i) => `<div class="flex flex-wrap items-center gap-2 text-xs bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2">
             <span class="truncate flex-1 min-w-32 text-slate-200" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name.replace(/\.[^/.]+$/, ''))}</span>
             ${isDup(it) ? '<span class="bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded-full text-[10px] shrink-0">Ya existe</span>' : ''}
@@ -2533,7 +2576,7 @@ function renderBulkReview() {
             ${djBadge(it)}
             <input list="djKnownList" value="${escapeHtml(it.remixer || '')}" onchange="setBulkRemixer(${i}, this.value)" placeholder="DJ / Remixer" aria-label="DJ o artista que hizo el remix" class="w-36 bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">
             <span class="w-24 text-center ${it.musicalKey ? 'text-emerald-400' : it.keyStatus === 'analyzing' ? 'text-amber-400' : 'text-slate-500'}">${it.musicalKey ? `${escapeHtml(it.musicalKey)} · ${escapeHtml(it.camelotKey)}` : it.keyStatus === 'analyzing' ? 'Analizando key…' : it.keyStatus === 'failed' ? 'No detectada' : 'Pendiente'}</span>
-            <select aria-label="Género" onchange="setBulkGenre(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">${opts(it.genre || bulkGenreTarget.value)}</select>
+            <select aria-label="Género" onchange="setBulkGenre(${i}, this.value)" class="bg-brand-panelBg border border-brand-border rounded-lg px-2 py-1 text-white">${opts(it.genre || bulkFallbackGenre())}</select>
         </div>`).join('') +
         (bulkItems.length > shown.length ? `<p class="text-xs text-slate-400 px-1">Mostrando los primeros ${shown.length} de ${bulkItems.length}. El resto se procesa igual con lo detectado automáticamente.</p>` : '');
 }
@@ -2551,6 +2594,10 @@ function detectBulkDj(f, tag) {
     if (tag.title) { info = parseTrackInfo({ title: tag.title }); if (info.remixer) return { remixer: info.remixer, source: 'título de la etiqueta' }; }
     if (tag.albumArtist && DJ_CANON.has(djKey(tag.albumArtist))) return { remixer: DJ_CANON.get(djKey(tag.albumArtist)), source: 'etiqueta (DJ conocido)' };
     return { remixer: '', source: '' };
+}
+function bulkFallbackGenre() {
+    const m = (document.getElementById('bulkNoGenreMode') || {}).value || 'reject';
+    return m === 'latino' ? 'Latino' : m === 'default' ? bulkGenreTarget.value : '';
 }
 function setBulkGenre(i, g) {
     bulkItems[i].genre = g; bulkItems[i].source = 'manual';
@@ -2704,6 +2751,7 @@ async function buildBulkReview() {
         let genre = genreFromPath(f), source = genre ? 'carpeta' : '';
         if (!genre) { genre = matchGenre(tag.genre); source = genre ? 'etiqueta' : ''; }
         if (!genre) { genre = matchGenre([f.name, tag.title, tag.artist].join(' ')); source = genre ? 'nombre' : ''; }
+        if (!genre) { genre = matchGenre(tag.album); source = genre ? 'etiqueta' : ''; }
         const rt = isVid ? { rating: '', source: '', conflict: '' } : detectRating(f, tag);
         const dj = detectBulkDj(f, tag);
         const item = { file: f, genre, source, rating: rt.rating, ratingSource: rt.source, ratingConflict: rt.conflict, remixer: dj.remixer, remixerSource: dj.source, bpm: tag.bpm || null, musicalKey: '', camelotKey: '', duration: null, isVideo: isVid, keyStatus: isVid ? 'skipped' : (big ? 'pending' : 'analyzing') };
@@ -2738,6 +2786,7 @@ window.addEventListener('DOMContentLoaded', () => {
         buildBulkReview();
     });
     bulkGenreTarget.addEventListener('change', () => { if (bulkItems.some(x => !x.genre)) renderBulkReview(); });
+    const ngm = document.getElementById('bulkNoGenreMode'); if (ngm) ngm.addEventListener('change', () => { if (bulkItems.length) renderBulkReview(); });
     const vidInput = document.getElementById('bulkVideoFiles');
     if (vidInput) vidInput.addEventListener('change', () => { bulkSourceFiles = bulkPickFiles(Array.from(vidInput.files || []), 'video'); buildBulkReview(); });
     bulkSetMode('audio');
@@ -2777,7 +2826,7 @@ async function processBulkUpload() {
     if (files.length > 50 && !confirm(`Se subirán ${files.length} archivos uno por uno. Mantén esta pestaña abierta; puedes detener el lote cuando quieras. ¿Continuar?`)) return;
     if (!sb) { alert('La conexión con la base de datos no está configurada.'); return; }
     let total = files.length; const itemMap = new Map(bulkItems.map(x => [x.file, x])), sleep = ms => new Promise(r => setTimeout(r, ms));
-    const dupNames = []; let hasSizeCol = false;
+    const dupNames = [], noGenreNames = []; let hasSizeCol = false;
     const stopBtn = document.getElementById('uploadStopBtn');
     bulkCancel = false;
     if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = 'Detener lote'; stopBtn.classList.remove('hidden'); }
@@ -2800,7 +2849,13 @@ async function processBulkUpload() {
             if (keys.some(k => k && seen.has(k)) || (hasSizeCol && f.size && seenSizes.has(f.size))) { dupNames.push(f.name); return false; }
             keys.forEach(k => seen.add(k)); if (hasSizeCol && f.size) seenSizes.add(f.size); return true;
         });
+        // Canciones sin género detectado: se rechazan (o se envían a Latino / al género por defecto según lo elegido)
+        const fb = bulkFallbackGenre();
+        if (!fb) {
+            files = files.filter(f => { const x = itemMap.get(f); if (x && x.genre) return true; noGenreNames.push(f.name); return false; });
+        }
         total = files.length;
+        if (!total) { uploadStatusText.textContent = `No se subió nada: ${noGenreNames.length} canción(es) sin género detectado. Ponles una subcarpeta con el género o elígelo en la lista.`; return; }
         for (let i = 0; i < total && !bulkCancel; i++) {
             const f = files[i], title = f.name.replace(/\.[^/.]+$/, ''), ext = (f.name.match(/\.([^.]+)$/) || [])[1].toLowerCase();
             const it = itemMap.get(f) || {};
@@ -2824,7 +2879,7 @@ async function processBulkUpload() {
                 }
                 const finalTitle = bulkFinalTitle(title, it);
                 const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
-                const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal: (VIDEO_EXTS.includes(ext) ? 'VIDEOS' : portal), genre: it.genre || genre, bpm, storage_path: path, ext,
+                const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal: (VIDEO_EXTS.includes(ext) ? 'VIDEOS' : portal), genre: it.genre || bulkFallbackGenre(), bpm, storage_path: path, ext,
                     musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
                     key_analysis_status: it.musicalKey ? 'analyzed' : 'pending', key_analyzed_at: it.musicalKey ? new Date().toISOString() : null });
                 if (ins.error) throw new Error(ins.error.message);
@@ -2840,6 +2895,7 @@ async function processBulkUpload() {
         if (typeof djPopulateSelectors === 'function') djPopulateSelectors();
         const cancelled = bulkCancel ? ` Lote detenido: quedaron ${total - completed - failed} sin subir.` : '';
         uploadStatusText.textContent = (failed ? `Subida terminada: ${completed} correcto(s), ${failed} fallido(s). Último error: ${lastError}. Fallidos: ${failedNames.slice(0, 5).join(', ')}${failedNames.length > 5 ? ` y ${failedNames.length - 5} más (ver consola)` : ''}.` : (bulkCancel ? `${completed} archivo(s) publicados.` : '¡Completado y publicado con éxito!')) + cancelled + (hasSizeCol ? '' : ' Aviso: para detectar repetidos también por tamaño, corre en Supabase: alter table tracks add column if not exists file_size bigint;') + (dupNames.length ? ` Rechazados por ya existir: ${dupNames.length}${dupNames.length <= 5 ? ' (' + dupNames.join(', ') + ')' : ' (ver consola)'}.` : '');
+        if (noGenreNames.length) { uploadStatusText.textContent += ` Rechazadas por no tener género: ${noGenreNames.length} (${noGenreNames.slice(0, 5).join(', ')}${noGenreNames.length > 5 ? ' y más, ver consola' : ''}).`; console.warn('Rechazadas por no tener género:', noGenreNames); }
         if (dupNames.length) console.warn('Rechazados por repetidos:', dupNames);
         if (failedNames.length) console.warn('Archivos fallidos:', failedNames);
     } catch (e) {
