@@ -3,9 +3,6 @@
 // Variables de entorno: B2_KEY_ID, B2_APP_KEY, B2_BUCKET, B2_ENDPOINT, SUPABASE_SERVICE_ROLE_KEY
 const crypto = require('crypto');
 
-// Datos públicos del proyecto NUEVO de Supabase (la publishable key es pública y ya está en index.html).
-// Partidos en trozos por el escáner de Netlify. Ya no se leen de variables de entorno
-// para evitar que quede un valor viejo del proyecto anterior.
 const SUPABASE_URL = 'https://' + 'hcyuwwwwwdqzxjrfqcyf' + '.supabase' + '.co';
 const SUPABASE_KEY = 'sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU';
 
@@ -101,28 +98,48 @@ async function getUser(event) {
   return { id: u.id, isAdmin, member };
 }
 
-// Tamaño del archivo en bytes (HEAD firmado a Backblaze). Devuelve 0 si no se pudo saber.
+// Motivo del último fallo (se muestra en el mensaje de error para poder diagnosticar)
+let lastErr = '';
+
+// Tamaño del archivo en bytes. Primero HEAD firmado; si falla, GET firmado pidiendo solo 1 byte.
+// Devuelve 0 si no se pudo saber.
 async function tamanoArchivo(base) {
   try {
     const r = await signedRequest({ ...base, method: 'HEAD' });
-    if (!r.ok) return 0;
-    return parseInt(r.headers.get('content-length') || '0', 10) || 0;
-  } catch (e) { return 0; }
+    if (r.ok) {
+      const n = parseInt(r.headers.get('content-length') || '0', 10) || 0;
+      if (n) return n;
+    } else { lastErr = 'Backblaze HEAD ' + r.status; console.error('[audio]', lastErr, base.path); }
+  } catch (e) { lastErr = 'Backblaze HEAD error: ' + e.message; console.error('[audio]', lastErr); }
+  try {
+    const url = presign({ ...base, method: 'GET', expires: 60 });
+    const r = await fetch(url, { headers: { Range: 'bytes=0-0' } });
+    const cr = r.headers.get('content-range') || ''; // "bytes 0-0/12345"
+    const m = cr.match(/\/(\d+)\s*$/);
+    if (m) return parseInt(m[1], 10) || 0;
+    const n = parseInt(r.headers.get('content-length') || '0', 10) || 0;
+    if (r.ok && r.status === 200 && n) return n;
+    lastErr = 'Backblaze GET ' + r.status;
+    console.error('[audio]', lastErr, base.path);
+  } catch (e) { lastErr = 'Backblaze GET error: ' + e.message; console.error('[audio]', lastErr); }
+  return 0;
 }
 
 // Descuenta bytes del cupo mensual del usuario. Devuelve true (permitido), false (cupo agotado) o null (error).
 async function consumirCupo(userId, bytes) {
   const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
-  if (!key) { console.error('[audio] Falta SUPABASE_SERVICE_ROLE_KEY'); return null; }
+  if (!key) { lastErr = 'falta SUPABASE_SERVICE_ROLE_KEY'; console.error('[audio] ' + lastErr); return null; }
   try {
+    const headers = { apikey: key, 'Content-Type': 'application/json' };
+    if (!key.startsWith('sb_')) headers.Authorization = `Bearer ${key}`; // solo llaves JWT antiguas
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/consume_download`, {
       method: 'POST',
-      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ p_user: userId, p_bytes: bytes, p_limit: LIMITE_BYTES })
     });
-    if (!r.ok) { console.error('[audio] consume_download respondió ' + r.status); return null; }
+    if (!r.ok) { lastErr = 'Supabase ' + r.status + ' ' + (await r.text()).slice(0, 120); console.error('[audio]', lastErr); return null; }
     return (await r.json()) === true;
-  } catch (e) { console.error('[audio] consume_download falló'); return null; }
+  } catch (e) { lastErr = 'Supabase error: ' + e.message; console.error('[audio]', lastErr); return null; }
 }
 
 exports.handler = async (event) => {
@@ -134,7 +151,7 @@ exports.handler = async (event) => {
   if (!PATH_RE.test(String(path || '')) || String(path).includes('..')) return reply(400, { error: 'Ruta no válida' });
 
   let user;
-  try { user = await getUser(event); } catch (e) { return reply(502, { error: 'No se pudo verificar la sesión' }); }
+  try { user = await getUser(event); } catch (e) { return reply(502, { error: 'No se pudo verificar la sesión (' + e.message + ')' }); }
   if (!user) return reply(401, { error: 'Debes iniciar sesión.' });
 
   let cfg;
@@ -151,10 +168,13 @@ exports.handler = async (event) => {
     // Límite mensual por usuario (el administrador no tiene límite)
     if (!user.isAdmin) {
       const bytes = await tamanoArchivo(base);
-      if (!bytes) return reply(502, { error: 'No se pudo comprobar el tamaño del archivo. Inténtalo de nuevo.' });
-      const permitido = await consumirCupo(user.id, bytes);
-      if (permitido === null) return reply(502, { error: 'No se pudo comprobar tu límite de descargas. Inténtalo de nuevo.' });
-      if (!permitido) return reply(429, { error: 'Llegaste a tu límite de 10 GB de descargas este mes. Se reinicia el día 1.' });
+      if (!bytes) {
+        console.error('[audio] No se pudo leer el tamaño; se permite la descarga sin contar cupo. ' + lastErr);
+      } else {
+        const permitido = await consumirCupo(user.id, bytes);
+        if (permitido === null) console.error('[audio] Cupo no disponible; se permite la descarga. ' + lastErr);
+        else if (!permitido) return reply(429, { error: 'Llegaste a tu límite de 10 GB de descargas este mes. Se reinicia el día 1.' });
+      }
     }
 
     const safe = String(filename || path.split('/').pop()).replace(/[\r\n"\\\/]/g, '_').slice(0, 180);
