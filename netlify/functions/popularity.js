@@ -1,6 +1,8 @@
 // netlify/functions/popularity.js
 // Busca en Deezer (API pública, sin clave) la popularidad y la fecha de lanzamiento
 // de la canción ORIGINAL de cada remix, usando el artista y el título que tiene tu catálogo.
+// La fecha es la MÁS ANTIGUA entre las versiones que coinciden (sencillo, álbum, recopilatorio),
+// para que un relanzamiento reciente de una canción vieja no entre al Top de 2025+.
 // POST { items: [{ id, artist, song }] }  (máx. 10 por llamada)
 // -> { results: [{ id, status: 'ok'|'nomatch'|'retry', rank, release_date, deezer_id, matched }] }
 
@@ -14,6 +16,7 @@ CANDIDATES.push([FALLBACK_URL, FALLBACK_KEY]);
 
 const DEEZER = 'https://api.deezer.com';
 const MAX_ITEMS = 10;
+const MAX_DATE_CHECKS = 3;     // versiones distintas (álbumes) que se consultan para hallar la fecha más antigua
 const TIME_BUDGET_MS = 8000;   // Netlify corta las funciones a ~10 s
 const GAP_MS = 120;            // Deezer permite ~50 peticiones cada 5 s
 
@@ -43,12 +46,12 @@ function dice(a, b) {
 }
 const BAD_VARIANT = /\b(karaoke|tribute|cover|instrumental|live|en vivo|remix|acoustic|sped up|slowed|nightcore|8d)\b/i;
 
-// Elige el mejor resultado de Deezer para (artist, song); null si ninguno es fiable.
-function pickBest(results, artist, song) {
+// Devuelve TODOS los resultados fiables de Deezer para (artist, song), de mejor a peor: [{ r, score }].
+function rankMatches(results, artist, song) {
   const wantTitle = tokens(cleanTitle(song));
   const wantArtist = tokens(artist);
   const wantsVariant = BAD_VARIANT.test(song);
-  let best = null;
+  const out = [];
   for (const r of results || []) {
     if (!r || !r.id) continue;
     const titleSim = dice(wantTitle, tokens(cleanTitle(r.title)));
@@ -61,10 +64,15 @@ function pickBest(results, artist, song) {
     const ok = wantArtist.length ? (titleSim >= 0.75 && artistSim >= 0.5) : titleSim >= 0.9;
     if (!ok) continue;
     const penalty = (!wantsVariant && BAD_VARIANT.test(r.title || '')) ? 0.15 : 0;
-    const score = titleSim * 0.6 + artistSim * 0.4 - penalty;
-    if (!best || score > best.score || (score === best.score && (r.rank || 0) > (best.r.rank || 0))) best = { r, score };
+    out.push({ r, score: titleSim * 0.6 + artistSim * 0.4 - penalty });
   }
-  return best ? best.r : null;
+  out.sort((a, b) => (b.score - a.score) || ((b.r.rank || 0) - (a.r.rank || 0)));
+  return out;
+}
+// Mejor resultado (compatibilidad con la versión anterior); null si ninguno es fiable.
+function pickBest(results, artist, song) {
+  const m = rankMatches(results, artist, song);
+  return m.length ? m[0].r : null;
 }
 
 async function deezer(path) {
@@ -74,6 +82,8 @@ async function deezer(path) {
   if (data && data.error) throw new Error('Deezer: ' + (data.error.message || data.error.type || 'error'));
   return data;
 }
+
+const validDate = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '') && !String(d).startsWith('0000');
 
 async function lookup(item) {
   const song = String(item.song || '').trim();
@@ -89,18 +99,40 @@ async function lookup(item) {
   } else {
     queries.push(`track:"${cleanSong.replace(/"/g, '')}"`);
   }
-  let hit = null;
+  let matches = [];
   for (const q of queries) {
-    const data = await deezer('/search?limit=10&q=' + encodeURIComponent(q));
-    hit = pickBest(data.data, artist, song);
+    const data = await deezer('/search?limit=25&q=' + encodeURIComponent(q));
+    matches = rankMatches(data.data, artist, song);
     await sleep(GAP_MS);
-    if (hit) break;
+    if (matches.length) break;
   }
-  if (!hit) return { ...base, status: 'nomatch' };
-  let release = '';
-  try { const t = await deezer('/track/' + hit.id); release = t.release_date || ''; await sleep(GAP_MS); } catch (_) { /* la fecha es opcional */ }
+  if (!matches.length) return { ...base, status: 'nomatch' };
+  const hit = matches[0].r;
+
+  // Popularidad: la mayor entre las versiones que coinciden (los relanzamientos suelen tener menos).
+  const rank = Math.max(...matches.map(m => Number(m.r.rank) || 0));
+
+  // Fecha: la más antigua entre varias versiones (álbumes distintos) de la misma canción.
+  const seenAlbums = new Set(); const toCheck = [];
+  for (const m of matches) {
+    const alb = (m.r.album && m.r.album.id) || ('t' + m.r.id);
+    if (seenAlbums.has(alb)) continue;
+    seenAlbums.add(alb); toCheck.push(m.r);
+    if (toCheck.length >= MAX_DATE_CHECKS) break;
+  }
+  const dates = [];
+  for (const r of toCheck) {
+    try {
+      const t = await deezer('/track/' + r.id);
+      const d = t.release_date || (t.album && t.album.release_date) || '';
+      if (validDate(d)) dates.push(d);
+      await sleep(GAP_MS);
+    } catch (_) { /* la fecha es opcional */ }
+  }
+  dates.sort();
+  const release = dates.length ? dates[0] : null;
   const matched = `${(hit.artist && hit.artist.name) || ''} - ${hit.title || ''}`.replace(/^ - /, '');
-  return { ...base, status: 'ok', rank: Number(hit.rank) || 0, release_date: /^\d{4}-\d{2}-\d{2}$/.test(release) ? release : null, deezer_id: hit.id, matched };
+  return { ...base, status: 'ok', rank, release_date: release, deezer_id: hit.id, matched };
 }
 
 async function validSession(token) {
@@ -135,4 +167,4 @@ exports.handler = async (event) => {
   return json(200, { results });
 };
 
-exports.__test = { norm, tokens, cleanTitle, mainArtist, dice, pickBest, lookup };
+exports.__test = { norm, tokens, cleanTitle, mainArtist, dice, pickBest, rankMatches, lookup };
