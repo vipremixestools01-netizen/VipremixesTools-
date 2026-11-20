@@ -239,7 +239,7 @@
             <nav class="hidden lg:flex items-center gap-9 text-sm font-medium text-slate-800">
                 <a href="#" onclick="event.preventDefault();resetFilters()" class="hover:text-brand-crimson transition">Catálogo</a>
                 <a href="#" onclick="event.preventDefault();filterNewReleases()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs text-brand-crimson"></i> Nuevos / Recientes</a>
-                <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top 50</a>
+                <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top</a>
                 <a href="#" onclick="event.preventDefault();showPlansView()" class="hover:text-brand-crimson transition">Membresías</a>
                 <a href="#" onclick="event.preventDefault();showDJStudioView()" class="hover:text-brand-crimson transition"><i class="fa-solid fa-sliders mr-1 text-brand-crimson"></i> DJ Studio</a>
             </nav>
@@ -252,7 +252,7 @@
     <nav class="lg:hidden flex items-center justify-around bg-white border-b border-brand-border text-xs font-semibold text-slate-700 py-2.5">
         <a href="#" onclick="event.preventDefault();resetFilters()">Catálogo</a>
         <a href="#" onclick="event.preventDefault();filterNewReleases()">Nuevos / Recientes</a>
-        <a href="#" onclick="event.preventDefault();filterTop50()">Top 50</a>
+        <a href="#" onclick="event.preventDefault();filterTop50()">Top</a>
         <a href="#" onclick="event.preventDefault();showPlansView()">Membresías</a>
         <a href="#" onclick="event.preventDefault();showDJStudioView()">DJ Studio</a>
     </nav>
@@ -451,7 +451,7 @@
                 <div id="djTab-batch" class="space-y-4">
                     <div id="djPopCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                            <div><h3 class="font-extrabold text-lg"><i class="fa-solid fa-fire text-brand-crimson mr-1.5"></i>Top 50 · Popularidad</h3><p class="text-xs text-slate-500">Busca cada canción original en Deezer (popularidad y fecha de lanzamiento) y, si no la encuentra, en iTunes (solo fecha) para armar el Top 50 del catálogo. Se hace solo al subir un lote.</p></div>
+                            <div><h3 class="font-extrabold text-lg"><i class="fa-solid fa-fire text-brand-crimson mr-1.5"></i>Top · Popularidad</h3><p class="text-xs text-slate-500">Busca cada canción original en Deezer (popularidad y fecha de lanzamiento) y, si no la encuentra, en iTunes (solo fecha) para armar el Top del catálogo. Se hace solo al subir un lote.</p></div>
                             <div class="flex flex-wrap gap-2">
                                 <button id="djPopBtn" type="button" onclick="djAnalyzePopularity({})" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-magnifying-glass mr-1"></i>Analizar pendientes</button>
                                 <button id="djPopAllBtn" type="button" onclick="djAnalyzePopularity({all:true})" class="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i>Actualizar popularidad</button>
@@ -459,7 +459,7 @@
                             </div>
                         </div>
                         <p id="djPopSummary" class="text-xs font-semibold text-slate-700 mt-3" role="status"></p>
-                        <p id="djPopNotice" class="text-xs text-slate-500 mt-1">Las canciones sin coincidencia en Deezer se buscan en iTunes (sin popularidad: van al final del Top 50 por fecha). Las que no aparecen en ninguna no entran al Top 50. «Actualizar popularidad» vuelve a consultar todo el catálogo.</p>
+                        <p id="djPopNotice" class="text-xs text-slate-500 mt-1">Las canciones sin coincidencia en Deezer se buscan en iTunes (sin popularidad: van al final del Top por fecha). Las que no aparecen en ninguna no entran al Top. «Actualizar popularidad» vuelve a consultar todo el catálogo.</p>
                     </div>
                     <div id="djVersionAnalyzeCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -1358,7 +1358,7 @@ function filterByDj(name) {
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
-            if (topOnly) filtered = filtered.filter(t => t.popStatus === 'ok' && t.popularity > 0 && t.releaseDate >= TOP_MIN_DATE).sort((a, b) => topScore(b) - topScore(a)).slice(0, 50);
+            if (topOnly) filtered = filtered.filter(t => t.popStatus === 'ok' && t.popularity > 0 && t.releaseDate >= TOP_MIN_DATE).sort((a, b) => topScore(b) - topScore(a)); // Top sin límite
             if (keySortDir) {
                 const dir = keySortDir === 'asc' ? 1 : -1;
                 // Las canciones sin key siempre quedan al final
@@ -1503,8 +1503,8 @@ function filterByDj(name) {
         function renderGenresSidebar(container) {
             const video = currentMode === 'video';
             const vids = allRemixes.filter(t => video ? isVideoTrack(t) : !isVideoTrack(t));
-            const btn = (g, label, n, icon) => `<button onclick="filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentGenreFilter === g ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
-            let html = video ? '' : `<button onclick="filterTop50()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${topOnly ? 'bg-brand-crimson text-white shadow-md' : 'text-brand-crimson bg-blue-50 hover:bg-blue-100'}"><span class="flex items-center gap-2"><i class="fa-solid fa-fire"></i><span>Top 50 · Más pegados</span></span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">50</span></button>`;
+            const btn = (g, label, n, icon) => `<button onclick="filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${(currentGenreFilter === g && !(topOnly && g === 'ALL')) ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
+            let html = video ? '' : `<button onclick="filterTop50()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${topOnly ? 'bg-brand-crimson text-white shadow-md' : 'text-brand-crimson bg-blue-50 hover:bg-blue-100'}"><span class="flex items-center gap-2"><i class="fa-solid fa-fire"></i><span>Top · Más pegados</span></span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${allRemixes.filter(t => t.popStatus === 'ok' && t.popularity > 0 && t.releaseDate >= TOP_MIN_DATE).length}</span></button>`;
             html += btn('ALL', video ? 'Todos los videos' : 'Todo el Catálogo', vids.length, video ? 'fa-film' : 'fa-globe');
             genresList.forEach(g => { html += btn(g, g, vids.filter(v => v.genre === g).length, video ? 'fa-circle-play' : 'fa-music'); });
             container.innerHTML = html;
@@ -1616,16 +1616,17 @@ function filterByDj(name) {
 
         function filterByDropdownGenre(genreName) {
             currentGenreFilter = genreName;
-            newOnly = false; // el Top 50 se mantiene: así se ve el Top de cada género
+            newOnly = false; if (genreName === 'ALL') topOnly = false; // con Top activo, elegir un género muestra el Top de ese género; «Todo el Catálogo» sale del Top
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
             document.getElementById('djStudioView').classList.add('hidden');
+            renderPortalsSidebar();
             renderTracksTable();
         }
 
-        // ===== TOP 50: popularidad (Deezer) + recencia de la canción original =====
-        const TOP_MIN_DATE = '2025-01-01'; // el Top 50 solo incluye canciones lanzadas desde esta fecha
+        // ===== TOP: popularidad (Deezer) + recencia de la canción original =====
+        const TOP_MIN_DATE = '2025-01-01'; // el Top solo incluye canciones lanzadas desde esta fecha
         function topScore(t) {
             const pop = Math.min(1, Math.log10(1 + (t.popularity || 0)) / 6);
             const ref = t.releaseDate || t.date || '';
@@ -2966,7 +2967,7 @@ async function processBulkUpload() {
         if (noGenreNames.length) { uploadStatusText.textContent += ` Rechazadas por no tener género: ${noGenreNames.length} (${noGenreNames.slice(0, 5).join(', ')}${noGenreNames.length > 5 ? ' y más, ver consola' : ''}).`; console.warn('Rechazadas por no tener género:', noGenreNames); }
         if (dupNames.length) console.warn('Rechazados por repetidos:', dupNames);
         if (failedNames.length) console.warn('Archivos fallidos:', failedNames);
-        if (completed && typeof djAnalyzePopularity === 'function') { try { await djAnalyzePopularity({ auto: true }); } catch (popErr) { console.warn('Top 50:', popErr); } }
+        if (completed && typeof djAnalyzePopularity === 'function') { try { await djAnalyzePopularity({ auto: true }); } catch (popErr) { console.warn('Top:', popErr); } }
     } catch (e) {
         console.error('Error general en la subida:', e);
         uploadStatusText.textContent = 'No se pudo completar la subida: ' + (e && e.message ? e.message : e);
@@ -3484,7 +3485,7 @@ async function djAnalyzePopularity(opts){
  if(djPopRunning)return;
  const sum=document.getElementById('djPopSummary'),notice=document.getElementById('djPopNotice'),btn=document.getElementById('djPopBtn'),btn2=document.getElementById('djPopAllBtn'),stop=document.getElementById('djPopStopBtn');
  const upStatus=typeof uploadStatusText!=='undefined'?uploadStatusText:null,upBase=opts.auto&&upStatus?upStatus.textContent:'';
- const say=v=>{if(sum)sum.textContent=v;if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top 50: '+v;};
+ const say=v=>{if(sum)sum.textContent=v;if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top: '+v;};
  const warn=v=>{if(notice)notice.textContent=v;};
  let list;
  if(opts.all)list=allRemixes.filter(t=>!isVideoTrack(t));
@@ -3534,7 +3535,7 @@ async function djAnalyzePopularity(opts){
    done+=chunk.length;progress();
   }
   // Segunda fuente: iTunes para los temas sin coincidencia en Deezer.
-  // iTunes no da popularidad: esos temas entran con popularidad 1 (quedan al final del Top 50, ordenados por fecha de lanzamiento).
+  // iTunes no da popularidad: esos temas entran con popularidad 1 (quedan al final del Top, ordenados por fecha de lanzamiento).
   const saveNo=async t=>{
    const p={popularity:null,release_date:null,deezer_id:null,pop_matched:null,pop_status:'nomatch'};
    const {error}=await sb.from('tracks').update(p).eq('id',t.id);
@@ -3573,7 +3574,7 @@ async function djAnalyzePopularity(opts){
   djPopRunning=false;[btn,btn2].forEach(b=>{if(b)b.disabled=false;});if(stop)stop.classList.add('hidden');
   renderTracksTable();renderPortalsSidebar();
   const msg=`${djPopStop?'Detenido':'Terminado'}: ${ok} con popularidad, ${no} sin coincidencia${retry?`, ${retry} quedan para reintentar`:''}${fail?`, ${fail} con error`:''}.`;
-  if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top 50 actualizado: '+msg;
+  if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top actualizado: '+msg;
   else if(sum)sum.textContent=msg;
   if(firstErr)warn('Primer error: '+firstErr);
  }
