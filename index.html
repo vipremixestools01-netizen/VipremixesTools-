@@ -3,18 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Modo noche automático: oscuro de 7 pm a 6 am (hora del dispositivo), de día queda igual -->
-    <script>
-    (function () {
-        function aplicarTemaNoche() {
-            var h = new Date().getHours();
-            var noche = (h >= 19 || h < 6);
-            document.documentElement.classList.toggle('night', noche);
-        }
-        aplicarTemaNoche();
-        setInterval(aplicarTemaNoche, 60000);
-    })();
-    </script>
     <title>VIPREMIXESTOOLS - Portal & Record Pool</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -185,50 +173,6 @@
         @media (min-width: 768px) { .vp-wf-ov { height: 60px; } }
         .vp-dl { background: #2563EB; color: #fff; border-radius: 9999px; padding: .6rem 1.1rem; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: .5rem; transition: background .15s; box-shadow: 0 4px 14px rgba(37,99,235,.25); }
         .vp-dl:hover { background: #1d4ed8; }
-    
-        /* ===== Modo noche automático (7 pm - 6 am). De día no se aplica nada de esto ===== */
-        html.night { color-scheme: dark; }
-        html.night body { background-color: #0b1220; color: #e2e8f0; }
-        html.night body .bg-brand-bg { background-color: #0b1220; }
-        html.night body .bg-white, html.night body .bg-brand-panelBg { background-color: #111a2e; }
-        html.night body .bg-brand-cardBg, html.night body .bg-slate-100, html.night body .bg-slate-50 { background-color: #172036; }
-        html.night body .bg-slate-200, html.night body .bg-brand-border { background-color: #1e293b; }
-        html.night body .bg-black\/20 { background-color: #0f172a; }
-        html.night body .bg-black\/30, html.night body .bg-black\/40,
-        html.night body .hover\:bg-black\/30:hover, html.night body .hover\:bg-black\/40:hover { background-color: #172036; }
-        html.night body .border-brand-border, html.night body .border-slate-100, html.night body .border-brand-border\/40 { border-color: #24304a; }
-        html.night body .divide-brand-border > :not([hidden]) ~ :not([hidden]) { border-color: #24304a; }
-        html.night body .text-white { color: #f1f5f9; }
-        html.night body .text-slate-200, html.night body .text-slate-800, html.night body .text-slate-700 { color: #e2e8f0; }
-        html.night body .text-slate-900 { color: #f8fafc; }
-        html.night body span.inline-block.text-slate-900 { color: #0f172a; } /* badges de key sobre color pastel: texto oscuro */
-        html.night body .text-slate-300 { color: #cbd5e1; }
-        html.night body .text-slate-400, html.night body .text-slate-600 { color: #94a3b8; }
-        html.night body .text-slate-500 { color: #8190aa; }
-        html.night body .text-brand-crimson { color: #60a5fa; }
-        html.night body .text-emerald-400 { color: #34d399; }
-        html.night body .text-sky-400 { color: #38bdf8; }
-        html.night body .text-amber-400 { color: #fbbf24; }
-        html.night body .hover\:text-white:hover, html.night body .hover\:text-brand-crimson:hover { color: #60a5fa; }
-        html.night body .hover\:text-slate-800:hover { color: #f8fafc; }
-        html.night body .hover\:bg-slate-50:hover, html.night body .hover\:bg-slate-100:hover { background-color: #1e293b; }
-        html.night body .hover\:bg-slate-200:hover, html.night body .hover\:bg-brand-border:hover { background-color: #26334f; }
-        html.night tbody#tracksTableBody tr:hover { background-color: #172036; }
-        html.night body .placeholder-slate-500::placeholder { color: #8190aa; }
-        html.night input, html.night select, html.night textarea { color-scheme: dark; }
-        html.night ::-webkit-scrollbar-track { background: #0b1220; }
-        html.night ::-webkit-scrollbar-thumb { background: #334155; }
-        html.night ::-webkit-scrollbar-thumb:hover { background: #2563EB; }
-        html.night #bottomPlayer { box-shadow: 0 -4px 20px rgba(0,0,0,.45); }
-        html.night .vp-title { color: #f1f5f9; }
-        html.night .vp-time { color: #8190aa; }
-        html.night .vp-wf { border-color: #24304a; }
-        html.night .bg-gradient-to-r.from-brand-cardBg, html.night .from-brand-cardBg { --tw-gradient-from: #172036; }
-        html.night .to-brand-panelBg { --tw-gradient-to: #111a2e; }
-        /* Botones y bloques con fondo azul siempre mantienen texto blanco */
-        html.night body .bg-brand-crimson, html.night body .bg-brand-crimson *,
-        html.night body .bg-blue-600, html.night body .bg-blue-800 { color: #fff; }
-        html.night #landingView, html.night #landingView * { color-scheme: dark; }
     </style>
 </head>
 <body class="bg-brand-bg text-slate-800 min-h-screen flex flex-col selection:bg-brand-crimson selection:text-white">
@@ -295,6 +239,7 @@
             <nav class="hidden lg:flex items-center gap-9 text-sm font-medium text-slate-800">
                 <a href="#" onclick="event.preventDefault();resetFilters()" class="hover:text-brand-crimson transition">Catálogo</a>
                 <a href="#" onclick="event.preventDefault();filterNewReleases()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs text-brand-crimson"></i> Nuevos / Recientes</a>
+                <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top 50</a>
                 <a href="#" onclick="event.preventDefault();showPlansView()" class="hover:text-brand-crimson transition">Membresías</a>
                 <a href="#" onclick="event.preventDefault();showDJStudioView()" class="hover:text-brand-crimson transition"><i class="fa-solid fa-sliders mr-1 text-brand-crimson"></i> DJ Studio</a>
             </nav>
@@ -307,6 +252,7 @@
     <nav class="lg:hidden flex items-center justify-around bg-white border-b border-brand-border text-xs font-semibold text-slate-700 py-2.5">
         <a href="#" onclick="event.preventDefault();resetFilters()">Catálogo</a>
         <a href="#" onclick="event.preventDefault();filterNewReleases()">Nuevos / Recientes</a>
+        <a href="#" onclick="event.preventDefault();filterTop50()">Top 50</a>
         <a href="#" onclick="event.preventDefault();showPlansView()">Membresías</a>
         <a href="#" onclick="event.preventDefault();showDJStudioView()">DJ Studio</a>
     </nav>
@@ -503,6 +449,18 @@
 
                 <!-- TAB 1: LOTES -->
                 <div id="djTab-batch" class="space-y-4">
+                    <div id="djPopCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                            <div><h3 class="font-extrabold text-lg"><i class="fa-solid fa-fire text-brand-crimson mr-1.5"></i>Top 50 · Popularidad</h3><p class="text-xs text-slate-500">Busca cada canción original en Deezer (popularidad y fecha de lanzamiento) para armar el Top 50 del catálogo. Se hace solo al subir un lote.</p></div>
+                            <div class="flex flex-wrap gap-2">
+                                <button id="djPopBtn" type="button" onclick="djAnalyzePopularity({})" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-magnifying-glass mr-1"></i>Analizar pendientes</button>
+                                <button id="djPopAllBtn" type="button" onclick="djAnalyzePopularity({all:true})" class="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i>Actualizar popularidad</button>
+                                <button id="djPopStopBtn" type="button" onclick="djPopStop=true;this.textContent='Deteniendo…'" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button>
+                            </div>
+                        </div>
+                        <p id="djPopSummary" class="text-xs font-semibold text-slate-700 mt-3" role="status"></p>
+                        <p id="djPopNotice" class="text-xs text-slate-500 mt-1">Las canciones sin coincidencia en Deezer no entran al Top 50. «Actualizar popularidad» vuelve a consultar todo el catálogo.</p>
+                    </div>
                     <div id="djVersionAnalyzeCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -971,6 +929,7 @@
         let isPlaying = false;
         let currentPlayingId = null;
         let newOnly = false;
+        let topOnly = false;
         let audioPlayer = new Audio();
         audioPlayer.preload = 'metadata';
         
@@ -1399,6 +1358,7 @@ function filterByDj(name) {
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+            if (topOnly) filtered = filtered.filter(t => t.popStatus === 'ok' && t.popularity > 0).sort((a, b) => topScore(b) - topScore(a)).slice(0, 50);
             if (keySortDir) {
                 const dir = keySortDir === 'asc' ? 1 : -1;
                 // Las canciones sin key siempre quedan al final
@@ -1412,7 +1372,7 @@ function filterByDj(name) {
             }
 
             // Si cambió algún filtro/búsqueda/modo, vuelve a la página 1; si solo cambió el play o un favorito, se queda.
-            const sig = [currentPortalFilter, currentGenreFilter, currentMonthFilter, currentRatingFilter, searchQuery, currentMode, newOnly, keySortDir].join('|');
+            const sig = [currentPortalFilter, currentGenreFilter, currentMonthFilter, currentRatingFilter, searchQuery, currentMode, newOnly, topOnly, keySortDir].join('|');
             if (sig !== tableSig) { tableSig = sig; tablePage = 1; }
             const pages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
             if (tablePage > pages) tablePage = pages;
@@ -1424,7 +1384,7 @@ function filterByDj(name) {
                     <tr>
                         <td colspan="10" class="py-12 text-center text-slate-400">
                             <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
-                            <p class="text-sm font-semibold">No hay remixes subidos con este filtro.</p>
+                            <p class="text-sm font-semibold">${topOnly ? 'Aún no hay datos de popularidad para el Top 50.' : 'No hay remixes subidos con este filtro.'}</p>
                             <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
                         </td>
                     </tr>
@@ -1433,7 +1393,7 @@ function filterByDj(name) {
             }
 
             let html = "";
-            filtered.forEach((track) => {
+            filtered.forEach((track, topPos) => {
                 const realIndex = indexById.get(track.id) ?? -1;
                 const isCurrent = currentPlayingIndex === realIndex;
                 const favClass = track.isFavorite ? "fa-solid text-brand-crimson" : "fa-regular text-slate-400";
@@ -1459,7 +1419,7 @@ function filterByDj(name) {
                             </button>
                         </td>
                         <td class="py-3 pl-5 pr-5 min-w-0">
-                            <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${escapeHtml(info.song)}</div>
+                            <div class="font-bold text-slate-900 truncate" title="${escapeHtml(info.song)}">${topOnly ? `<span class="inline-block bg-brand-crimson text-white text-[10px] font-extrabold rounded-md px-1.5 py-0.5 mr-1.5 align-middle">#${topPos + 1 + (tablePage - 1) * TABLE_PAGE_SIZE}</span>` : ''}${escapeHtml(info.song)}</div>
                             <div class="md:hidden text-[11px] text-slate-400 truncate">${fmtShortDate(track.date)}${track.genre ? ' · ' + escapeHtml(track.genre) : ''}</div>
                             ${info.artist ? `<div class="sm:hidden text-xs text-slate-500 truncate">${escapeHtml(info.artist)}</div>` : ''}
                             ${info.remixer ? `<div class="lg:hidden text-[11px] text-brand-crimson truncate"><i class="fa-solid fa-headphones text-[9px]"></i> ${escapeHtml(info.remixer)}</div>` : ''}
@@ -1544,7 +1504,8 @@ function filterByDj(name) {
             const video = currentMode === 'video';
             const vids = allRemixes.filter(t => video ? isVideoTrack(t) : !isVideoTrack(t));
             const btn = (g, label, n, icon) => `<button onclick="filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentGenreFilter === g ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
-            let html = btn('ALL', video ? 'Todos los videos' : 'Todo el Catálogo', vids.length, video ? 'fa-film' : 'fa-globe');
+            let html = video ? '' : `<button onclick="filterTop50()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${topOnly ? 'bg-brand-crimson text-white shadow-md' : 'text-brand-crimson bg-blue-50 hover:bg-blue-100'}"><span class="flex items-center gap-2"><i class="fa-solid fa-fire"></i><span>Top 50 · Más pegados</span></span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">50</span></button>`;
+            html += btn('ALL', video ? 'Todos los videos' : 'Todo el Catálogo', vids.length, video ? 'fa-film' : 'fa-globe');
             genresList.forEach(g => { html += btn(g, g, vids.filter(v => v.genre === g).length, video ? 'fa-circle-play' : 'fa-music'); });
             container.innerHTML = html;
         }
@@ -1644,7 +1605,7 @@ function filterByDj(name) {
 
         function filterByPortal(portalName) {
             currentPortalFilter = portalName;
-            newOnly = false;
+            newOnly = false; topOnly = false;
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
@@ -1655,7 +1616,7 @@ function filterByDj(name) {
 
         function filterByDropdownGenre(genreName) {
             currentGenreFilter = genreName;
-            newOnly = false;
+            newOnly = false; // el Top 50 se mantiene: así se ve el Top de cada género
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
@@ -1663,8 +1624,28 @@ function filterByDj(name) {
             renderTracksTable();
         }
 
+        // ===== TOP 50: popularidad (Deezer) + recencia de la canción original =====
+        function topScore(t) {
+            const pop = Math.min(1, Math.log10(1 + (t.popularity || 0)) / 6);
+            const ref = t.releaseDate || t.date || '';
+            const age = ref ? Math.max(0, (Date.now() - new Date(ref).getTime()) / 86400000) : 3650;
+            const rec = Math.pow(0.5, age / 365);   // vida media de 1 año
+            return pop * 0.65 + rec * 0.35;
+        }
+        function filterTop50() {
+            topOnly = true; newOnly = false;
+            currentPortalFilter = "ALL"; currentGenreFilter = "ALL"; currentMonthFilter = "ALL"; currentRatingFilter = "ALL";
+            const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = "ALL";
+            document.getElementById('mainViewContainer').classList.remove('hidden');
+            document.getElementById('membershipsViewContainer').classList.add('hidden');
+            document.getElementById('adminDashboardView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden');
+            renderPortalsSidebar();
+            renderTracksTable();
+        }
+
         function filterNewReleases() {
-            newOnly = true;
+            newOnly = true; topOnly = false;
             currentPortalFilter = "ALL";
             currentGenreFilter = "ALL";
             document.getElementById('genreSelectFilter').value = "ALL";
@@ -1874,7 +1855,7 @@ function toggleFavorite(i) {
     saveToLocalStorage(); renderTracksTable();
 }
 
-const TRACK_COLS = 'id,title,artist,remixer,portal,genre,bpm,created_at,storage_path,ext,file_size,musical_key,camelot_key,duration_seconds,key_analysis_status,rating,rating_status,cover_url,version';
+const TRACK_COLS = 'id,title,artist,remixer,portal,genre,bpm,created_at,storage_path,ext,file_size,musical_key,camelot_key,duration_seconds,key_analysis_status,rating,rating_status,cover_url,version,popularity,release_date,pop_status,pop_matched';
 async function fetchTrackPage(from, cols, withCount) {
     return sb.from('tracks').select(cols, withCount ? { count: 'exact' } : undefined)
         .order('created_at', { ascending: false }).order('id', { ascending: true }).range(from, from + 999);
@@ -1899,7 +1880,7 @@ async function loadTracks() {
     }
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
     allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', remixer: t.remixer || '', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
-        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), fileSize: Number(t.file_size) || 0, musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', catalogVersion: t.version || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
+        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), fileSize: Number(t.file_size) || 0, musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', popularity: Number(t.popularity) || 0, releaseDate: t.release_date || '', popStatus: t.pop_status || '', popMatched: t.pop_matched || '', catalogVersion: t.version || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
     // Índice de búsqueda precalculado: evita normalizar y analizar cada canción en cada tecla.
     allRemixes.forEach(track => {
         const info = parseTrackInfo(track);
@@ -2984,6 +2965,7 @@ async function processBulkUpload() {
         if (noGenreNames.length) { uploadStatusText.textContent += ` Rechazadas por no tener género: ${noGenreNames.length} (${noGenreNames.slice(0, 5).join(', ')}${noGenreNames.length > 5 ? ' y más, ver consola' : ''}).`; console.warn('Rechazadas por no tener género:', noGenreNames); }
         if (dupNames.length) console.warn('Rechazados por repetidos:', dupNames);
         if (failedNames.length) console.warn('Archivos fallidos:', failedNames);
+        if (completed && typeof djAnalyzePopularity === 'function') { try { await djAnalyzePopularity({ auto: true }); } catch (popErr) { console.warn('Top 50:', popErr); } }
     } catch (e) {
         console.error('Error general en la subida:', e);
         uploadStatusText.textContent = 'No se pudo completar la subida: ' + (e && e.message ? e.message : e);
@@ -3202,6 +3184,7 @@ async function djAnalyzeCatalogVersions(){
 }
 
 function djAnalyzeRefreshUI(){
+ const popCard=document.getElementById('djPopCard');if(popCard){popCard.classList.toggle('hidden',!isAdmin);if(isAdmin)djPopRefreshSummary();}
  const versionCard=document.getElementById('djVersionAnalyzeCard');if(versionCard)versionCard.classList.toggle('hidden',!isAdmin);
  const card=document.getElementById('djAnalyzeCard');if(!card)return;
  card.classList.toggle('hidden',!isAdmin);if(!isAdmin)return;
@@ -3483,6 +3466,81 @@ async function djCreatePlaylist(){
 }
 // ===== LOTES POR GÉNERO / TONALIDAD / BPM =====
 let djTab='batch';
+
+// ===== TOP 50: ANÁLISIS DE POPULARIDAD (Deezer vía Netlify popularity.js) =====
+const DJ_POP_SQL="alter table tracks add column if not exists popularity integer, add column if not exists release_date date, add column if not exists deezer_id bigint, add column if not exists pop_matched text, add column if not exists pop_status text;";
+let djPopRunning=false,djPopStop=false;
+function djPopPending(){return allRemixes.filter(t=>!isVideoTrack(t)&&t.popStatus!=='ok'&&t.popStatus!=='nomatch');}
+function djPopRefreshSummary(){
+ const el=document.getElementById('djPopSummary');if(!el||djPopRunning)return;
+ const aud=allRemixes.filter(t=>!isVideoTrack(t)),ok=aud.filter(t=>t.popStatus==='ok').length,no=aud.filter(t=>t.popStatus==='nomatch').length;
+ el.textContent=`Con popularidad: ${ok} · Sin coincidencia: ${no} · Pendientes: ${djPopPending().length} de ${aud.length}.`;
+}
+// opts.all: vuelve a consultar todo · opts.auto: se llama al terminar una subida (solo temas recientes, sin avisos)
+async function djAnalyzePopularity(opts){
+ opts=opts||{};
+ if(!isAdmin){if(!opts.auto)alert('Solo el administrador puede analizar la popularidad.');return;}
+ if(djPopRunning)return;
+ const sum=document.getElementById('djPopSummary'),notice=document.getElementById('djPopNotice'),btn=document.getElementById('djPopBtn'),btn2=document.getElementById('djPopAllBtn'),stop=document.getElementById('djPopStopBtn');
+ const upStatus=typeof uploadStatusText!=='undefined'?uploadStatusText:null,upBase=opts.auto&&upStatus?upStatus.textContent:'';
+ const say=v=>{if(sum)sum.textContent=v;if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top 50: '+v;};
+ const warn=v=>{if(notice)notice.textContent=v;};
+ let list;
+ if(opts.all)list=allRemixes.filter(t=>!isVideoTrack(t));
+ else{
+  list=djPopPending();
+  if(opts.auto){const lim=new Date(Date.now()-2*86400000).toISOString().slice(0,10);list=list.filter(t=>t.date>=lim).slice(0,300);}
+ }
+ if(!list.length){if(!opts.auto)say('No hay canciones pendientes.');return;}
+ const pre=await sb.from('tracks').select('popularity,release_date,pop_status,pop_matched,deezer_id').limit(1);
+ if(pre.error){
+  warn('Faltan las columnas en Supabase. Corre este SQL en el SQL Editor y vuelve a intentar: '+DJ_POP_SQL);
+  if(!opts.auto)alert('Antes de analizar, corre esto en Supabase (SQL Editor):\n\n'+DJ_POP_SQL);
+  else say('faltan columnas en Supabase (ver el panel DJ).');
+  return;
+ }
+ if(opts.all&&!confirm(`Se consultará Deezer para ${list.length} canciones (tarda unos minutos; deja la página abierta). ¿Continuar?`))return;
+ djPopRunning=true;djPopStop=false;
+ [btn,btn2].forEach(b=>{if(b)b.disabled=true;});if(stop){stop.classList.remove('hidden');stop.disabled=false;stop.textContent='Detener';}
+ let done=0,ok=0,no=0,retry=0,fail=0,firstErr='';
+ const progress=()=>say(`${done}/${list.length} · ${ok} con dato, ${no} sin coincidencia${retry?`, ${retry} por reintentar`:''}${fail?`, ${fail} con error`:''}`);
+ try{
+  const session=await requireSession();
+  for(let i=0;i<list.length&&!djPopStop;i+=10){
+   const chunk=list.slice(i,i+10);
+   const items=chunk.map(t=>{const info=parseTrackInfo(t);return{id:t.id,artist:info.artist||'',song:info.song||t.title};});
+   let results=[];
+   try{
+    const r=await fetch('/.netlify/functions/popularity',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({items})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||('Error '+r.status));
+    results=Array.isArray(j.results)?j.results:[];
+   }catch(e){fail+=chunk.length;done+=chunk.length;firstErr=firstErr||(e&&e.message)||String(e);progress();if(/Sesión|404|401/.test(firstErr))break;continue;}
+   const byId=new Map(results.map(x=>[x.id,x]));
+   for(const t of chunk){
+    const x=byId.get(t.id);
+    if(!x||x.status==='retry'){retry++;continue;}
+    const patch=x.status==='ok'
+     ?{popularity:x.rank||0,release_date:x.release_date||null,deezer_id:x.deezer_id||null,pop_matched:x.matched||null,pop_status:'ok'}
+     :{popularity:null,release_date:null,deezer_id:null,pop_matched:null,pop_status:'nomatch'};
+    const {error}=await sb.from('tracks').update(patch).eq('id',t.id);
+    if(error){fail++;firstErr=firstErr||error.message;continue;}
+    t.popStatus=patch.pop_status;t.popularity=patch.popularity||0;t.releaseDate=patch.release_date||'';t.popMatched=patch.pop_matched||'';
+    if(x.status==='ok')ok++;else no++;
+   }
+   done+=chunk.length;progress();
+  }
+ }catch(e){firstErr=(e&&e.message)||String(e);}
+ finally{
+  djPopRunning=false;[btn,btn2].forEach(b=>{if(b)b.disabled=false;});if(stop)stop.classList.add('hidden');
+  renderTracksTable();renderPortalsSidebar();
+  const msg=`${djPopStop?'Detenido':'Terminado'}: ${ok} con popularidad, ${no} sin coincidencia${retry?`, ${retry} quedan para reintentar`:''}${fail?`, ${fail} con error`:''}.`;
+  if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top 50 actualizado: '+msg;
+  else if(sum)sum.textContent=msg;
+  if(firstErr)warn('Primer error: '+firstErr);
+ }
+}
+
 function djShowTab(name){
  if(['keys','genres','delete'].includes(name)&&!isAdmin)name='batch';djTab=name;if(name==='delete'&&typeof djDelInit==='function')setTimeout(djDelInit,0);djAnalyzeRefreshUI();
  ['batch','playlists','keys','genres','delete'].forEach(n=>{
