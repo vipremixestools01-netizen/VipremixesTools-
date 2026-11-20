@@ -548,6 +548,19 @@
                     <p id="djGenreNotice" class="text-xs text-slate-500 mt-3" role="status">Solo el administrador puede ejecutar esta herramienta.</p>
                     <div id="djGenreSummary" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3"></div>
                     <div id="djGenrePreview" class="mt-4 max-h-96 overflow-y-auto space-y-1 text-xs"></div>
+
+                    <!-- Búsqueda inteligente en Internet de los pendientes de Latino -->
+                    <div class="mt-6 pt-5 border-t border-slate-100">
+                        <h4 class="font-extrabold text-sm mb-1"><i class="fa-solid fa-globe mr-1.5"></i>Buscar en Internet los pendientes de Latino</h4>
+                        <p class="text-xs text-slate-500 mb-3">Toma las canciones que hoy están en el género Latino, busca su género real en iTunes, Deezer y MusicBrainz, y propone el género de tu lista donde debe ir. Tú revisas la vista previa y marcas cuáles guardar. Internet clasifica la canción original, no el remix, así que revisa las de confianza baja.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button id="djWebGenreScanBtn" onclick="djWebGenreScan()" class="bg-slate-800 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-magnifying-glass-location mr-1"></i>Buscar géneros en Internet</button>
+                            <button id="djWebGenreStopBtn" onclick="djWebGenreStop()" disabled class="bg-slate-200 text-slate-700 rounded-lg px-4 py-2.5 text-xs font-bold opacity-40">Detener</button>
+                            <button id="djWebGenreApplyBtn" onclick="djWebGenreApply()" disabled class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold opacity-40">Guardar seleccionados</button>
+                        </div>
+                        <p id="djWebGenreNotice" class="text-xs text-slate-500 mt-3" role="status">Listo para buscar. Las canciones se consultan una por una; puedes detener y guardar lo ya encontrado.</p>
+                        <div id="djWebGenreList" class="mt-3 max-h-96 overflow-y-auto space-y-1 text-xs"></div>
+                    </div>
                 </div>
 
                                 <!-- TAB: ELIMINAR EN LOTE (solo admin) -->
@@ -3807,6 +3820,109 @@ function downloadCurrent() {
  if (window.ResizeObserver) { const ro = new ResizeObserver(draw); ro.observe(ov); } else window.addEventListener('resize', draw);
  draw();
 })();
+</script>
+
+<script>
+// ===== Panel DJ: género inteligente (búsqueda en Internet de los pendientes de Latino) =====
+let djWebGenreRows = [], djWebGenreBusy = false, djWebGenreStopFlag = false;
+const DJ_WEB_GENRE_CACHE = new Map();
+
+function djWebCleanSong(s) {
+ return String(s || '').replace(/\b(intro|outro|verse|chorus|break|acapella|acapela|starter|extended|dirty|clean|quick hit)\b/ig, ' ')
+  .replace(/\s+/g, ' ').replace(/^[\s&\-–]+|[\s&\-–]+$/g, '').trim();
+}
+function djWebGenreStop() { djWebGenreStopFlag = true; }
+function djWebGenreSetButtons() {
+ const scan = document.getElementById('djWebGenreScanBtn'), stop = document.getElementById('djWebGenreStopBtn'), apply = document.getElementById('djWebGenreApplyBtn');
+ const nSel = djWebGenreRows.filter(r => r.selected).length;
+ scan.disabled = djWebGenreBusy; scan.classList.toggle('opacity-40', djWebGenreBusy);
+ stop.disabled = !djWebGenreBusy; stop.classList.toggle('opacity-40', !djWebGenreBusy);
+ apply.disabled = djWebGenreBusy || !nSel; apply.classList.toggle('opacity-40', apply.disabled);
+ apply.textContent = nSel ? `Guardar seleccionados (${nSel})` : 'Guardar seleccionados';
+}
+async function djWebGenreLookup(artist, title) {
+ const key = normalizeText(artist + '|' + title);
+ if (DJ_WEB_GENRE_CACHE.has(key)) return DJ_WEB_GENRE_CACHE.get(key);
+ const session = await requireSession();
+ const r = await fetch('/.netlify/functions/genre', { method: 'POST',
+  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+  body: JSON.stringify({ artist, title }) });
+ const j = await r.json().catch(() => ({}));
+ if (!r.ok) { const e = new Error(j.error || ('Error ' + r.status)); e.status = r.status; throw e; }
+ DJ_WEB_GENRE_CACHE.set(key, j);
+ return j;
+}
+function djWebGenreRender() {
+ const box = document.getElementById('djWebGenreList');
+ const badge = { alta: 'bg-emerald-100 text-emerald-700', media: 'bg-amber-100 text-amber-700', baja: 'bg-rose-100 text-rose-700' };
+ box.innerHTML = djWebGenreRows.map((x, i) => `<label class="flex flex-wrap items-center gap-2 border-b border-slate-100 py-2 cursor-pointer">
+  <input type="checkbox" ${x.selected ? 'checked' : ''} onchange="djWebGenreToggle(${i}, this.checked)">
+  <span class="min-w-0 flex-1 truncate">${escapeHtml(x.track.title)}</span>
+  <span class="text-slate-400">Latino →</span><b class="text-brand-crimson">${escapeHtml(x.genre)}</b>
+  <span class="rounded-full px-2 py-0.5 font-bold ${badge[x.confidence] || ''}">${escapeHtml(x.confidence)}</span>
+  <span class="w-full text-[11px] text-slate-400 truncate">${escapeHtml(x.evidence.join(' · '))}</span></label>`).join('');
+}
+function djWebGenreToggle(i, on) { if (djWebGenreRows[i]) djWebGenreRows[i].selected = !!on; djWebGenreSetButtons(); }
+
+async function djWebGenreScan() {
+ if (!isAdmin) { alert('Solo el administrador puede organizar los géneros.'); return; }
+ if (djWebGenreBusy) return;
+ const notice = document.getElementById('djWebGenreNotice');
+ const pending = allRemixes.filter(t => !isVideoTrack(t) && String(t.genre || '').trim().toLowerCase() === 'latino');
+ if (!pending.length) { notice.textContent = 'No hay canciones pendientes en el género Latino.'; return; }
+ djWebGenreBusy = true; djWebGenreStopFlag = false; djWebGenreRows = []; djWebGenreRender(); djWebGenreSetButtons();
+ let unresolved = 0, skipped = 0, errors = 0, consecutiveErrors = 0, done = 0, lastErr = '';
+ try {
+  for (const t of pending) {
+   if (djWebGenreStopFlag) break;
+   const info = parseTrackInfo(t), artist = String(info.artist || '').trim(), song = djWebCleanSong(info.song);
+   done++;
+   if (!artist || !song) { skipped++; }
+   else {
+    try {
+     const cached = DJ_WEB_GENRE_CACHE.has(normalizeText(artist + '|' + song));
+     const res = await djWebGenreLookup(artist, song);
+     consecutiveErrors = 0;
+     if (res.genre) djWebGenreRows.push({ track: t, genre: res.genre, confidence: res.confidence || 'baja', evidence: res.evidence || [], selected: res.confidence !== 'baja' });
+     else unresolved++;
+     if (!cached) await new Promise(r => setTimeout(r, 1300)); // respeta el límite de MusicBrainz (1 consulta por segundo)
+    } catch (e) {
+     errors++; consecutiveErrors++; lastErr = e.message || String(e);
+     if (consecutiveErrors >= 3 || e.status === 401 || e.status === 403) { djWebGenreStopFlag = true; }
+    }
+   }
+   if (done % 5 === 0 || done === pending.length) { djWebGenreRender(); djWebGenreSetButtons(); }
+   notice.textContent = `Buscando ${done} de ${pending.length} · ${djWebGenreRows.length} con propuesta · ${unresolved} sin resultado · ${skipped} sin artista/título claros${errors ? ' · ' + errors + ' errores' : ''}`;
+  }
+  djWebGenreRender();
+  notice.textContent = `${djWebGenreStopFlag ? 'Búsqueda detenida' : 'Búsqueda terminada'}: ${done} de ${pending.length} revisadas · ${djWebGenreRows.length} con propuesta · ${unresolved} sin resultado (siguen en Latino) · ${skipped} sin artista/título claros.`
+   + (errors ? ` Hubo ${errors} errores${lastErr ? ' (último: ' + lastErr + ')' : ''}. Si es "Error 404", falta desplegar genre.js en Netlify.` : '');
+ } finally { djWebGenreBusy = false; djWebGenreSetButtons(); }
+}
+
+async function djWebGenreApply() {
+ if (!isAdmin) { alert('Solo el administrador puede organizar los géneros.'); return; }
+ const chosen = djWebGenreRows.filter(r => r.selected);
+ if (djWebGenreBusy || !chosen.length) return;
+ if (!confirm(`Se cambiará el género de ${chosen.length} canciones (de Latino al género propuesto). No se modifican archivos, títulos ni otros datos. ¿Continuar?`)) return;
+ djWebGenreBusy = true; djWebGenreSetButtons();
+ const notice = document.getElementById('djWebGenreNotice');
+ let ok = 0, fail = 0; const errs = [];
+ try {
+  await requireSession();
+  for (let i = 0; i < chosen.length; i++) {
+   const x = chosen[i];
+   const { error } = await sb.from('tracks').update({ genre: x.genre }).eq('id', x.track.id);
+   if (error) { fail++; if (errs.length < 5) errs.push(`${x.track.title}: ${error.message}`); }
+   else { x.track.genre = x.genre; x.done = true; ok++; }
+   if ((i + 1) % 25 === 0 || i === chosen.length - 1) notice.textContent = `Guardando: ${i + 1}/${chosen.length} · ${ok} correctos · ${fail} errores`;
+  }
+  djWebGenreRows = djWebGenreRows.filter(r => !r.done);
+  djWebGenreRender(); renderTracksTable(); updateSummaryCounts(); renderPortalsSidebar(); djBatchSearch();
+  notice.textContent = `Proceso terminado: ${ok} géneros actualizados y ${fail} errores.${errs.length ? ' Primeros errores: ' + errs.join(' | ') : ''}`;
+ } catch (e) { notice.textContent = 'No se pudo completar: ' + (e.message || e); }
+ finally { djWebGenreBusy = false; djWebGenreSetButtons(); }
+}
 </script>
 
 </body>
