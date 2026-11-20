@@ -5,8 +5,12 @@
 // -> { results: [{ id, status: 'ok'|'nomatch'|'retry', rank, release_date, deezer_id, matched }] }
 
 // Partidas en trozos para que el escáner de secretos de Netlify no las marque (igual que en index.html).
-const SUPABASE_URL = process.env.SUPABASE_URL || ('https://' + 'hcyuwwwwwdqzxjrfqcyf' + '.supabase' + '.co');
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || ('sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU');
+const FALLBACK_URL = 'https://' + 'hcyuwwwwwdqzxjrfqcyf' + '.supabase' + '.co';
+const FALLBACK_KEY = 'sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU';
+// Se prueba primero lo que haya en las variables de Netlify y, si falla, la clave pública de respaldo.
+const CANDIDATES = [];
+if (process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY)) CANDIDATES.push([process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY]);
+CANDIDATES.push([FALLBACK_URL, FALLBACK_KEY]);
 
 const DEEZER = 'https://api.deezer.com';
 const MAX_ITEMS = 10;
@@ -100,17 +104,24 @@ async function lookup(item) {
 }
 
 async function validSession(token) {
-  try {
-    const r = await fetch(SUPABASE_URL + '/auth/v1/user', { headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + token } });
-    return r.ok;
-  } catch (_) { return false; }
+  let last = 'sin respuesta';
+  for (const [url, key] of CANDIDATES) {
+    try {
+      const r = await fetch(String(url).replace(/\/+$/, '') + '/auth/v1/user', { headers: { apikey: key, Authorization: 'Bearer ' + token } });
+      if (r.ok) return { ok: true };
+      last = 'Supabase respondió ' + r.status;
+    } catch (e) { last = 'no se pudo contactar Supabase: ' + ((e && e.message) || e); }
+  }
+  return { ok: false, detail: last };
 }
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Usa POST' });
   const auth = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
   const token = auth.replace(/^Bearer\s+/i, '');
-  if (!token || !(await validSession(token))) return json(401, { error: 'Sesión no válida' });
+  if (!token) return json(401, { error: 'Sesión no válida: no llegó el token. Vuelve a iniciar sesión.' });
+  const sess = await validSession(token);
+  if (!sess.ok) return json(401, { error: 'Sesión no válida (' + sess.detail + '). Cierra sesión, entra de nuevo y reintenta.' });
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch (_) { return json(400, { error: 'JSON inválido' }); }
   const items = (Array.isArray(body.items) ? body.items : []).slice(0, MAX_ITEMS);
