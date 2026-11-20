@@ -452,7 +452,8 @@
                     <div id="djPopCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                             <div><h3 class="font-extrabold text-lg"><i class="fa-solid fa-fire text-brand-crimson mr-1.5"></i>Top · Popularidad</h3><p class="text-xs text-slate-500">Busca cada canción original en Deezer (popularidad y fecha de lanzamiento) para armar el Top 50 del catálogo. Se hace solo al subir un lote.</p></div>
-                            <div class="flex flex-wrap gap-2">
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <select id="djPopGenre" onchange="djPopRefreshSummary()" class="border border-brand-border rounded-lg px-3 py-2.5 text-xs font-bold bg-white text-slate-700"><option value="">Todos los géneros</option></select>
                                 <button id="djPopBtn" type="button" onclick="djAnalyzePopularity({})" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-magnifying-glass mr-1"></i>Analizar pendientes</button>
                                 <button id="djPopAllBtn" type="button" onclick="djAnalyzePopularity({all:true})" class="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i>Actualizar popularidad</button>
                                 <button id="djPopStopBtn" type="button" onclick="djPopStop=true;this.textContent='Deteniendo…'" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button>
@@ -1503,11 +1504,25 @@ function filterByDj(name) {
         function renderGenresSidebar(container) {
             const video = currentMode === 'video';
             const vids = allRemixes.filter(t => video ? isVideoTrack(t) : !isVideoTrack(t));
-            const btn = (g, label, n, icon) => `<button onclick="filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentGenreFilter === g ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
+            const btn = (g, label, n, icon) => `<button onclick="${g === 'ALL' ? 'showFullCatalog()' : 'filterByGenreSidebar(' + JSON.stringify(g).replace(/"/g, '&quot;') + ')'}" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${(g === 'ALL' ? (!topOnly && currentGenreFilter === 'ALL') : currentGenreFilter === g) ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
             let html = video ? '' : `<button onclick="filterTop50()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${topOnly ? 'bg-brand-crimson text-white shadow-md' : 'text-brand-crimson bg-blue-50 hover:bg-blue-100'}"><span class="flex items-center gap-2"><i class="fa-solid fa-fire"></i><span>Top · Más pegados</span></span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${allRemixes.filter(isTopEligible).length}</span></button>`;
             html += btn('ALL', video ? 'Todos los videos' : 'Todo el Catálogo', vids.length, video ? 'fa-film' : 'fa-globe');
-            genresList.forEach(g => { html += btn(g, g, vids.filter(v => v.genre === g).length, video ? 'fa-circle-play' : 'fa-music'); });
+            // Con el Top activo, cada género muestra cuántas canciones del Top tiene; el catálogo siempre cuenta todo
+            const genrePool = (topOnly && !video) ? vids.filter(isTopEligible) : vids;
+            genresList.forEach(g => { html += btn(g, g, genrePool.filter(v => v.genre === g).length, video ? 'fa-circle-play' : 'fa-music'); });
             container.innerHTML = html;
+        }
+        // Botón «Todo el Catálogo»: sale del Top y muestra todas las canciones, sin género
+        function showFullCatalog() {
+            topOnly = false; newOnly = false;
+            currentGenreFilter = 'ALL';
+            const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = 'ALL';
+            document.getElementById('mainViewContainer').classList.remove('hidden');
+            document.getElementById('membershipsViewContainer').classList.add('hidden');
+            document.getElementById('adminDashboardView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden');
+            renderPortalsSidebar();
+            renderTracksTable();
         }
         function filterByGenreSidebar(g) {
             const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = g;
@@ -3475,11 +3490,15 @@ let djTab='batch';
 // ===== TOP 50: ANÁLISIS DE POPULARIDAD (Deezer vía Netlify popularity.js) =====
 const DJ_POP_SQL="alter table tracks add column if not exists popularity integer, add column if not exists release_date date, add column if not exists deezer_id bigint, add column if not exists pop_matched text, add column if not exists pop_status text;";
 let djPopRunning=false,djPopStop=false;
-function djPopPending(){return allRemixes.filter(t=>!isVideoTrack(t)&&t.popStatus!=='ok'&&t.popStatus!=='nomatch');}
+function djPopGenre(){const g=document.getElementById('djPopGenre');return g?g.value:'';}
+function djPopFillGenres(){const g=document.getElementById('djPopGenre');if(g&&g.options.length<=1)genresList.forEach(x=>{const o=document.createElement('option');o.value=x;o.textContent=x;g.appendChild(o);});}
+// ignoreGenre: la subida de un lote analiza siempre sus temas nuevos, sin importar el género elegido
+function djPopPending(ignoreGenre){const gen=ignoreGenre?'':djPopGenre();return allRemixes.filter(t=>!isVideoTrack(t)&&(!gen||t.genre===gen)&&t.popStatus!=='ok'&&t.popStatus!=='nomatch');}
 function djPopRefreshSummary(){
  const el=document.getElementById('djPopSummary');if(!el||djPopRunning)return;
- const aud=allRemixes.filter(t=>!isVideoTrack(t)),ok=aud.filter(t=>t.popStatus==='ok').length,no=aud.filter(t=>t.popStatus==='nomatch').length;
- el.textContent=`Con popularidad: ${ok} · Sin coincidencia: ${no} · Pendientes: ${djPopPending().length} de ${aud.length}.`;
+ djPopFillGenres();const gen=djPopGenre();
+ const aud=allRemixes.filter(t=>!isVideoTrack(t)&&(!gen||t.genre===gen)),ok=aud.filter(t=>t.popStatus==='ok').length,no=aud.filter(t=>t.popStatus==='nomatch').length;
+ el.textContent=`${gen?'Género: '+gen+' · ':''}Con popularidad: ${ok} · Sin coincidencia: ${no} · Pendientes: ${djPopPending().length} de ${aud.length}.`;
 }
 // opts.all: vuelve a consultar todo · opts.auto: se llama al terminar una subida (solo temas recientes, sin avisos)
 async function djAnalyzePopularity(opts){
@@ -3491,12 +3510,13 @@ async function djAnalyzePopularity(opts){
  const say=v=>{if(sum)sum.textContent=v;if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top 50: '+v;};
  const warn=v=>{if(notice)notice.textContent=v;};
  let list;
- if(opts.all)list=allRemixes.filter(t=>!isVideoTrack(t));
+ const genSel=opts.auto?'':djPopGenre();
+ if(opts.all)list=allRemixes.filter(t=>!isVideoTrack(t)&&(!genSel||t.genre===genSel));
  else{
-  list=djPopPending();
+  list=djPopPending(!!opts.auto);
   if(opts.auto){const lim=new Date(Date.now()-2*86400000).toISOString().slice(0,10);list=list.filter(t=>t.date>=lim).slice(0,300);}
  }
- if(!list.length){if(!opts.auto)say('No hay canciones pendientes.');return;}
+ if(!list.length){if(!opts.auto)say(genSel?'No hay canciones pendientes en '+genSel+'.':'No hay canciones pendientes.');return;}
  const pre=await sb.from('tracks').select('popularity,release_date,pop_status,pop_matched,deezer_id').limit(1);
  if(pre.error){
   warn('Faltan las columnas en Supabase. Corre este SQL en el SQL Editor y vuelve a intentar: '+DJ_POP_SQL);
@@ -3504,7 +3524,7 @@ async function djAnalyzePopularity(opts){
   else say('faltan columnas en Supabase (ver el panel DJ).');
   return;
  }
- if(opts.all&&!confirm(`Se consultará Deezer para ${list.length} canciones (tarda unos minutos; deja la página abierta). ¿Continuar?`))return;
+ if(opts.all&&!confirm(`Se consultará Deezer para ${list.length} canciones${genSel?' de '+genSel:''} (tarda unos minutos; deja la página abierta). ¿Continuar?`))return;
  djPopRunning=true;djPopStop=false;
  [btn,btn2].forEach(b=>{if(b)b.disabled=true;});if(stop){stop.classList.remove('hidden');stop.disabled=false;stop.textContent='Detener';}
  let done=0,ok=0,no=0,retry=0,fail=0,firstErr='';
