@@ -239,7 +239,7 @@
             <nav class="hidden lg:flex items-center gap-9 text-sm font-medium text-slate-800">
                 <a href="#" onclick="event.preventDefault();resetFilters()" class="hover:text-brand-crimson transition">Catálogo</a>
                 <a href="#" onclick="event.preventDefault();filterNewReleases()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs text-brand-crimson"></i> Nuevos / Recientes</a>
-                <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top</a>
+                <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top 50</a>
                 <a href="#" onclick="event.preventDefault();showPlansView()" class="hover:text-brand-crimson transition">Membresías</a>
                 <a href="#" onclick="event.preventDefault();showDJStudioView()" class="hover:text-brand-crimson transition"><i class="fa-solid fa-sliders mr-1 text-brand-crimson"></i> DJ Studio</a>
             </nav>
@@ -252,7 +252,7 @@
     <nav class="lg:hidden flex items-center justify-around bg-white border-b border-brand-border text-xs font-semibold text-slate-700 py-2.5">
         <a href="#" onclick="event.preventDefault();resetFilters()">Catálogo</a>
         <a href="#" onclick="event.preventDefault();filterNewReleases()">Nuevos / Recientes</a>
-        <a href="#" onclick="event.preventDefault();filterTop50()">Top</a>
+        <a href="#" onclick="event.preventDefault();filterTop50()">Top 50</a>
         <a href="#" onclick="event.preventDefault();showPlansView()">Membresías</a>
         <a href="#" onclick="event.preventDefault();showDJStudioView()">DJ Studio</a>
     </nav>
@@ -451,15 +451,15 @@
                 <div id="djTab-batch" class="space-y-4">
                     <div id="djPopCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                            <div><h3 class="font-extrabold text-lg"><i class="fa-solid fa-fire text-brand-crimson mr-1.5"></i>Top · Popularidad</h3><p class="text-xs text-slate-500">Busca cada canción original en Deezer (popularidad y fecha de lanzamiento) y, si no la encuentra, en iTunes (solo fecha) para armar el Top del catálogo. Se hace solo al subir un lote.</p></div>
+                            <div><h3 class="font-extrabold text-lg"><i class="fa-solid fa-fire text-brand-crimson mr-1.5"></i>Top 50 · Lanzamientos 2025+</h3><p class="text-xs text-slate-500">Busca cada canción original en Deezer por nombre de canción y artista, y solo si coincide con el remix de la web toma su fecha de lanzamiento para armar el Top 50 con los lanzamientos de 2025 en adelante, del más reciente al más antiguo. Se hace solo al subir un lote.</p></div>
                             <div class="flex flex-wrap gap-2">
                                 <button id="djPopBtn" type="button" onclick="djAnalyzePopularity({})" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-magnifying-glass mr-1"></i>Analizar pendientes</button>
-                                <button id="djPopAllBtn" type="button" onclick="djAnalyzePopularity({all:true})" class="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i>Actualizar popularidad</button>
+                                <button id="djPopAllBtn" type="button" onclick="djAnalyzePopularity({all:true})" class="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i>Actualizar fechas</button>
                                 <button id="djPopStopBtn" type="button" onclick="djPopStop=true;this.textContent='Deteniendo…'" class="hidden bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-4 py-2.5 text-xs font-bold">Detener</button>
                             </div>
                         </div>
                         <p id="djPopSummary" class="text-xs font-semibold text-slate-700 mt-3" role="status"></p>
-                        <p id="djPopNotice" class="text-xs text-slate-500 mt-1">Las canciones sin coincidencia en Deezer se buscan en iTunes (sin popularidad: van al final del Top por fecha). Las que no aparecen en ninguna no entran al Top. «Actualizar popularidad» vuelve a consultar todo el catálogo.</p>
+                        <p id="djPopNotice" class="text-xs text-slate-500 mt-1">Solo entran al Top 50 las canciones lanzadas desde 2025 (se ordenan por fecha de lanzamiento; la popularidad solo desempata). Las que no aparecen en Deezer, o cuyo nombre y artista no coinciden con el remix, no entran. «Actualizar fechas» vuelve a consultar todo el catálogo.</p>
                     </div>
                     <div id="djVersionAnalyzeCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -1358,7 +1358,7 @@ function filterByDj(name) {
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
-            if (topOnly) filtered = filtered.filter(t => t.popStatus === 'ok' && t.popularity > 0 && t.releaseDate >= TOP_MIN_DATE).sort((a, b) => topScore(b) - topScore(a)); // Top sin límite
+            if (topOnly) filtered = filtered.filter(t => t.releaseDate && t.releaseDate >= TOP_MIN_DATE && topMatches(t)).sort(topCompare).slice(0, 50);
             if (keySortDir) {
                 const dir = keySortDir === 'asc' ? 1 : -1;
                 // Las canciones sin key siempre quedan al final
@@ -1384,7 +1384,7 @@ function filterByDj(name) {
                     <tr>
                         <td colspan="10" class="py-12 text-center text-slate-400">
                             <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
-                            <p class="text-sm font-semibold">${topOnly ? 'Aún no hay canciones de 2025 en adelante con popularidad. Corre «Actualizar popularidad» en el panel DJ.' : 'No hay remixes subidos con este filtro.'}</p>
+                            <p class="text-sm font-semibold">${topOnly ? 'Aún no hay canciones lanzadas de 2025 en adelante. Corre «Analizar pendientes» en el panel DJ.' : 'No hay remixes subidos con este filtro.'}</p>
                             <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
                         </td>
                     </tr>
@@ -1503,8 +1503,8 @@ function filterByDj(name) {
         function renderGenresSidebar(container) {
             const video = currentMode === 'video';
             const vids = allRemixes.filter(t => video ? isVideoTrack(t) : !isVideoTrack(t));
-            const btn = (g, label, n, icon) => `<button onclick="filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${(currentGenreFilter === g && !(topOnly && g === 'ALL')) ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
-            let html = video ? '' : `<button onclick="filterTop50()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${topOnly ? 'bg-brand-crimson text-white shadow-md' : 'text-brand-crimson bg-blue-50 hover:bg-blue-100'}"><span class="flex items-center gap-2"><i class="fa-solid fa-fire"></i><span>Top · Más pegados</span></span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${allRemixes.filter(t => t.popStatus === 'ok' && t.popularity > 0 && t.releaseDate >= TOP_MIN_DATE).length}</span></button>`;
+            const btn = (g, label, n, icon) => `<button onclick="filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${currentGenreFilter === g ? 'bg-brand-crimson text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}"><span class="truncate"><i class="fa-solid ${icon} mr-2"></i>${escapeHtml(label)}</span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">${n}</span></button>`;
+            let html = video ? '' : `<button onclick="filterTop50()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${topOnly ? 'bg-brand-crimson text-white shadow-md' : 'text-brand-crimson bg-blue-50 hover:bg-blue-100'}"><span class="flex items-center gap-2"><i class="fa-solid fa-fire"></i><span>Top 50 · Más pegados</span></span><span class="bg-black/30 px-2 py-0.5 rounded-full text-[10px] shrink-0">50</span></button>`;
             html += btn('ALL', video ? 'Todos los videos' : 'Todo el Catálogo', vids.length, video ? 'fa-film' : 'fa-globe');
             genresList.forEach(g => { html += btn(g, g, vids.filter(v => v.genre === g).length, video ? 'fa-circle-play' : 'fa-music'); });
             container.innerHTML = html;
@@ -1616,23 +1616,39 @@ function filterByDj(name) {
 
         function filterByDropdownGenre(genreName) {
             currentGenreFilter = genreName;
-            newOnly = false; if (genreName === 'ALL') topOnly = false; // con Top activo, elegir un género muestra el Top de ese género; «Todo el Catálogo» sale del Top
+            newOnly = false; // el Top 50 se mantiene: así se ve el Top de cada género
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
             document.getElementById('djStudioView').classList.add('hidden');
-            renderPortalsSidebar();
             renderTracksTable();
         }
 
-        // ===== TOP: popularidad (Deezer) + recencia de la canción original =====
-        const TOP_MIN_DATE = '2025-01-01'; // el Top solo incluye canciones lanzadas desde esta fecha
-        function topScore(t) {
-            const pop = Math.min(1, Math.log10(1 + (t.popularity || 0)) / 6);
-            const ref = t.releaseDate || t.date || '';
-            const age = ref ? Math.max(0, (Date.now() - new Date(ref).getTime()) / 86400000) : 3650;
-            const rec = Math.pow(0.5, age / 365);   // vida media de 1 año
-            return pop * 0.65 + rec * 0.35;
+        // ===== TOP 50: canciones originales lanzadas desde 2025, ordenadas por fecha de lanzamiento =====
+        const TOP_MIN_DATE = '2025-01-01'; // el Top 50 solo incluye canciones lanzadas desde esta fecha
+        // ¿La canción encontrada en Deezer/iTunes ("matched", p. ej. "Artista - Canción") es la misma que el remix de la web?
+        // Exige que estén TODAS las palabras del nombre de la canción y al menos una palabra del artista.
+        const TOP_STOP = new Set(['the','and','feat','ft','featuring','with','remix','edit','mix','version','extended','intro','outro','clean','dirty','dj','bpm','official','audio','video','radio','original','de','la','el','los','las','y','con','del','en','un','una']);
+        function topTokens(str) {
+            return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[\(\[][^\)\]]*[\)\]]/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim().split(' ')
+                .filter(w => w && !TOP_STOP.has(w) && (w.length > 1 || /\d/.test(w)));
+        }
+        function topMatches(t, matched) {
+            const found = new Set(topTokens(matched !== undefined ? matched : t.popMatched));
+            if (!found.size) return false;
+            const info = parseTrackInfo(t);
+            const song = topTokens(info.song || t.title), artist = topTokens(info.artist);
+            if (!song.length || !song.every(w => found.has(w))) return false;
+            return !artist.length || artist.some(w => found.has(w));
+        }
+        // Más reciente primero; si la fecha es igual, desempata por popularidad (Deezer) y luego por fecha de subida.
+        function topCompare(a, b) {
+            const d = (b.releaseDate || '').localeCompare(a.releaseDate || '');
+            if (d) return d;
+            const p = (b.popularity || 0) - (a.popularity || 0);
+            if (p) return p;
+            return (b.date || '').localeCompare(a.date || '');
         }
         function filterTop50() {
             topOnly = true; newOnly = false;
@@ -2967,7 +2983,7 @@ async function processBulkUpload() {
         if (noGenreNames.length) { uploadStatusText.textContent += ` Rechazadas por no tener género: ${noGenreNames.length} (${noGenreNames.slice(0, 5).join(', ')}${noGenreNames.length > 5 ? ' y más, ver consola' : ''}).`; console.warn('Rechazadas por no tener género:', noGenreNames); }
         if (dupNames.length) console.warn('Rechazados por repetidos:', dupNames);
         if (failedNames.length) console.warn('Archivos fallidos:', failedNames);
-        if (completed && typeof djAnalyzePopularity === 'function') { try { await djAnalyzePopularity({ auto: true }); } catch (popErr) { console.warn('Top:', popErr); } }
+        if (completed && typeof djAnalyzePopularity === 'function') { try { await djAnalyzePopularity({ auto: true }); } catch (popErr) { console.warn('Top 50:', popErr); } }
     } catch (e) {
         console.error('Error general en la subida:', e);
         uploadStatusText.textContent = 'No se pudo completar la subida: ' + (e && e.message ? e.message : e);
@@ -3476,7 +3492,7 @@ function djPopPending(){return allRemixes.filter(t=>!isVideoTrack(t)&&t.popStatu
 function djPopRefreshSummary(){
  const el=document.getElementById('djPopSummary');if(!el||djPopRunning)return;
  const aud=allRemixes.filter(t=>!isVideoTrack(t)),ok=aud.filter(t=>t.popStatus==='ok').length,no=aud.filter(t=>t.popStatus==='nomatch').length;
- el.textContent=`Con popularidad: ${ok} · Sin coincidencia: ${no} · Pendientes: ${djPopPending().length} de ${aud.length}.`;
+ el.textContent=`Con fecha: ${ok} · Sin coincidencia: ${no} · Pendientes: ${djPopPending().length} de ${aud.length}.`;
 }
 // opts.all: vuelve a consultar todo · opts.auto: se llama al terminar una subida (solo temas recientes, sin avisos)
 async function djAnalyzePopularity(opts){
@@ -3485,7 +3501,7 @@ async function djAnalyzePopularity(opts){
  if(djPopRunning)return;
  const sum=document.getElementById('djPopSummary'),notice=document.getElementById('djPopNotice'),btn=document.getElementById('djPopBtn'),btn2=document.getElementById('djPopAllBtn'),stop=document.getElementById('djPopStopBtn');
  const upStatus=typeof uploadStatusText!=='undefined'?uploadStatusText:null,upBase=opts.auto&&upStatus?upStatus.textContent:'';
- const say=v=>{if(sum)sum.textContent=v;if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top: '+v;};
+ const say=v=>{if(sum)sum.textContent=v;if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top 50: '+v;};
  const warn=v=>{if(notice)notice.textContent=v;};
  let list;
  if(opts.all)list=allRemixes.filter(t=>!isVideoTrack(t));
@@ -3493,6 +3509,7 @@ async function djAnalyzePopularity(opts){
   list=djPopPending();
   if(opts.auto){const lim=new Date(Date.now()-2*86400000).toISOString().slice(0,10);list=list.filter(t=>t.date>=lim).slice(0,300);}
  }
+ list.sort((a,b)=>(b.date||'').localeCompare(a.date||'')); // lo subido más recientemente primero: es lo más probable que sea de 2025+
  if(!list.length){if(!opts.auto)say('No hay canciones pendientes.');return;}
  const pre=await sb.from('tracks').select('popularity,release_date,pop_status,pop_matched,deezer_id').limit(1);
  if(pre.error){
@@ -3505,7 +3522,6 @@ async function djAnalyzePopularity(opts){
  djPopRunning=true;djPopStop=false;
  [btn,btn2].forEach(b=>{if(b)b.disabled=true;});if(stop){stop.classList.remove('hidden');stop.disabled=false;stop.textContent='Detener';}
  let done=0,ok=0,no=0,retry=0,fail=0,firstErr='';
- const nmList=[];
  const progress=()=>say(`${done}/${list.length} · ${ok} con dato, ${no} sin coincidencia${retry?`, ${retry} por reintentar`:''}${fail?`, ${fail} con error`:''}`);
  try{
   const session=await requireSession();
@@ -3523,8 +3539,7 @@ async function djAnalyzePopularity(opts){
    for(const t of chunk){
     const x=byId.get(t.id);
     if(!x||x.status==='retry'){retry++;continue;}
-    if(x.status!=='ok'){nmList.push(t);continue;} // sin coincidencia en Deezer: se prueba en iTunes
-    const patch=x.status==='ok'
+    const patch=(x.status==='ok'&&topMatches(t,x.matched||''))
      ?{popularity:x.rank||0,release_date:x.release_date||null,deezer_id:x.deezer_id||null,pop_matched:x.matched||null,pop_status:'ok'}
      :{popularity:null,release_date:null,deezer_id:null,pop_matched:null,pop_status:'nomatch'};
     const {error}=await sb.from('tracks').update(patch).eq('id',t.id);
@@ -3534,47 +3549,12 @@ async function djAnalyzePopularity(opts){
    }
    done+=chunk.length;progress();
   }
-  // Segunda fuente: iTunes para los temas sin coincidencia en Deezer.
-  // iTunes no da popularidad: esos temas entran con popularidad 1 (quedan al final del Top, ordenados por fecha de lanzamiento).
-  const saveNo=async t=>{
-   const p={popularity:null,release_date:null,deezer_id:null,pop_matched:null,pop_status:'nomatch'};
-   const {error}=await sb.from('tracks').update(p).eq('id',t.id);
-   if(error){fail++;firstErr=firstErr||error.message;return;}
-   t.popStatus='nomatch';t.popularity=0;t.releaseDate='';t.popMatched='';no++;
-  };
-  let itOff=false,itDone=0;
-  for(let i=0;i<nmList.length;i+=4){
-   const chunk=nmList.slice(i,i+4);
-   if(djPopStop){retry+=chunk.length;continue;}
-   if(itOff){for(const t of chunk)await saveNo(t);continue;}
-   say(`iTunes: ${itDone}/${nmList.length} sin coincidencia en Deezer · ${ok} con dato, ${no} sin coincidencia`);
-   const items=chunk.map(t=>{const info=parseTrackInfo(t);return{id:t.id,artist:info.artist||'',song:info.song||t.title};});
-   let results=[];
-   try{
-    const r=await fetch('/.netlify/functions/itunes',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({items})});
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(j.error||('Error '+r.status));
-    results=Array.isArray(j.results)?j.results:[];
-   }catch(e){itOff=true;warn('iTunes no disponible: '+((e&&e.message)||e));for(const t of chunk)await saveNo(t);continue;}
-   const byId=new Map(results.map(x=>[x.id,x]));
-   for(const t of chunk){
-    const x=byId.get(t.id);
-    if(!x||x.status==='retry'){retry++;continue;}
-    if(x.status==='ok'&&x.release_date){
-     const patch={popularity:1,release_date:x.release_date,deezer_id:null,pop_matched:'iTunes: '+(x.matched||''),pop_status:'ok'};
-     const {error}=await sb.from('tracks').update(patch).eq('id',t.id);
-     if(error){fail++;firstErr=firstErr||error.message;continue;}
-     t.popStatus='ok';t.popularity=1;t.releaseDate=patch.release_date;t.popMatched=patch.pop_matched;ok++;
-    }else await saveNo(t);
-   }
-   itDone+=chunk.length;
-  }
  }catch(e){firstErr=(e&&e.message)||String(e);}
  finally{
   djPopRunning=false;[btn,btn2].forEach(b=>{if(b)b.disabled=false;});if(stop)stop.classList.add('hidden');
   renderTracksTable();renderPortalsSidebar();
-  const msg=`${djPopStop?'Detenido':'Terminado'}: ${ok} con popularidad, ${no} sin coincidencia${retry?`, ${retry} quedan para reintentar`:''}${fail?`, ${fail} con error`:''}.`;
-  if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top actualizado: '+msg;
+  const msg=`${djPopStop?'Detenido':'Terminado'}: ${ok} con fecha, ${no} sin coincidencia${retry?`, ${retry} quedan para reintentar`:''}${fail?`, ${fail} con error`:''}.`;
+  if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top 50 actualizado: '+msg;
   else if(sum)sum.textContent=msg;
   if(firstErr)warn('Primer error: '+firstErr);
  }
