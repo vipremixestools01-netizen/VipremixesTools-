@@ -105,6 +105,7 @@
         tbody#tracksTableBody tr:hover { background-color: #f8fafc; }
         input:focus, select:focus { box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
         :focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        [data-nav].nav-active { color: #2563eb; font-weight: 800; box-shadow: inset 0 -3px 0 #2563eb; }
 
         /* ===== Hero: CDJ + humo + texto animado ===== */
         .hero-bg { position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
@@ -237,10 +238,10 @@
         </div>
         <div class="flex flex-1 items-center justify-end lg:justify-between px-4 lg:px-10 gap-4">
             <nav class="hidden lg:flex items-center gap-9 text-sm font-medium text-slate-800">
-                <a href="#" onclick="event.preventDefault();resetFilters()" class="hover:text-brand-crimson transition">Catálogo</a>
-                <a href="#" onclick="event.preventDefault();filterNewReleases()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs text-brand-crimson"></i> Nuevos / Recientes</a>
-                <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top</a>
-                <a href="#" onclick="event.preventDefault();showPlansView()" class="hover:text-brand-crimson transition">Membresías</a>
+                <a href="#" data-nav="catalog" onclick="event.preventDefault();resetFilters()" class="hover:text-brand-crimson transition">Catálogo</a>
+                <a href="#" data-nav="new" onclick="event.preventDefault();filterNewReleases()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs text-brand-crimson"></i> Nuevos / Recientes</a>
+                <a href="#" data-nav="top" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top</a>
+                <a href="#" data-nav="plans" onclick="event.preventDefault();showPlansView()" class="hover:text-brand-crimson transition">Membresías</a>
                 <a href="#" onclick="event.preventDefault();showDJStudioView()" class="hover:text-brand-crimson transition"><i class="fa-solid fa-sliders mr-1 text-brand-crimson"></i> DJ Studio</a>
             </nav>
             <div id="authHeaderContainer" class="flex items-center gap-3">
@@ -250,10 +251,10 @@
         </div>
     </header>
     <nav class="lg:hidden flex items-center justify-around bg-white border-b border-brand-border text-xs font-semibold text-slate-700 py-2.5">
-        <a href="#" onclick="event.preventDefault();resetFilters()">Catálogo</a>
-        <a href="#" onclick="event.preventDefault();filterNewReleases()">Nuevos / Recientes</a>
-        <a href="#" onclick="event.preventDefault();filterTop50()">Top</a>
-        <a href="#" onclick="event.preventDefault();showPlansView()">Membresías</a>
+        <a href="#" data-nav="catalog" onclick="event.preventDefault();resetFilters()">Catálogo</a>
+        <a href="#" data-nav="new" onclick="event.preventDefault();filterNewReleases()">Nuevos / Recientes</a>
+        <a href="#" data-nav="top" onclick="event.preventDefault();filterTop50()">Top</a>
+        <a href="#" data-nav="plans" onclick="event.preventDefault();showPlansView()">Membresías</a>
         <a href="#" onclick="event.preventDefault();showDJStudioView()">DJ Studio</a>
     </nav>
 
@@ -451,7 +452,7 @@
                 <div id="djTab-batch" class="space-y-4">
                     <div id="djPopCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                            <div><h3 class="font-extrabold text-lg"><i class="fa-solid fa-fire text-brand-crimson mr-1.5"></i>Top · Lanzamientos 2025+</h3><p class="text-xs text-slate-500">Busca cada canción original en Deezer por nombre de canción y artista, y solo si coincide con el remix de la web toma su fecha de lanzamiento para armar el Top con los lanzamientos de 2025 en adelante, del más reciente al más antiguo. Se hace solo al subir un lote.</p></div>
+                            <div><h3 class="font-extrabold text-lg"><i class="fa-solid fa-fire text-brand-crimson mr-1.5"></i>Top · Lanzamientos 2025+</h3><p class="text-xs text-slate-500">Busca cada canción original en Deezer por artista, nombre de canción y género (no por popularidad). Si coinciden artista, canción y género con el remix de la web, toma su fecha de lanzamiento y arma el Top con los lanzamientos de 2025 en adelante, del más reciente al más antiguo, sin límite de canciones. Se hace solo al terminar de subir un lote.</p></div>
                             <div class="flex flex-wrap gap-2">
                                 <button id="djPopBtn" type="button" onclick="djAnalyzePopularity({})" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-magnifying-glass mr-1"></i>Analizar pendientes</button>
                                 <button id="djPopAllBtn" type="button" onclick="djAnalyzePopularity({all:true})" class="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-2.5 text-xs font-bold"><i class="fa-solid fa-rotate mr-1"></i>Actualizar fechas</button>
@@ -459,7 +460,7 @@
                             </div>
                         </div>
                         <p id="djPopSummary" class="text-xs font-semibold text-slate-700 mt-3" role="status"></p>
-                        <p id="djPopNotice" class="text-xs text-slate-500 mt-1">Solo entran al Top las canciones lanzadas desde 2025 (se ordenan por fecha de lanzamiento; la popularidad solo desempata). Las que no aparecen en Deezer, o cuyo nombre y artista no coinciden con el remix, no entran. «Actualizar fechas» vuelve a consultar todo el catálogo.</p>
+                        <p id="djPopNotice" class="text-xs text-slate-500 mt-1">Solo entran al Top las canciones lanzadas desde 2025 en adelante (sin fecha límite, así entran las nuevas según vayan saliendo), ordenadas por fecha de lanzamiento (la popularidad no cuenta). Las que no aparecen en Deezer, o cuyo nombre y artista no coinciden con el remix, no entran. «Analizar pendientes» revisa las que faltan y «Actualizar fechas» vuelve a consultar todo el catálogo.</p>
                     </div>
                     <div id="djVersionAnalyzeCard" class="hidden bg-white border border-brand-border rounded-2xl p-5 shadow-sm">
                         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -1358,7 +1359,7 @@ function filterByDj(name) {
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
-            if (topOnly) filtered = filtered.filter(t => t.releaseDate && t.releaseDate >= TOP_MIN_DATE && topMatches(t)).sort(topCompare);
+            if (topOnly) filtered = filtered.filter(t => inTopRange(t.releaseDate) && topMatches(t)).sort(topCompare);
             if (keySortDir) {
                 const dir = keySortDir === 'asc' ? 1 : -1;
                 // Las canciones sin key siempre quedan al final
@@ -1374,10 +1375,12 @@ function filterByDj(name) {
             // Si cambió algún filtro/búsqueda/modo, vuelve a la página 1; si solo cambió el play o un favorito, se queda.
             const sig = [currentPortalFilter, currentGenreFilter, currentMonthFilter, currentRatingFilter, searchQuery, currentMode, newOnly, topOnly, keySortDir].join('|');
             if (sig !== tableSig) { tableSig = sig; tablePage = 1; }
-            const pages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
+            // En el Top se muestran TODAS las canciones (ilimitado); el catálogo normal sigue paginado.
+            const pageSize = topOnly ? Infinity : TABLE_PAGE_SIZE;
+            const pages = topOnly ? 1 : Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
             if (tablePage > pages) tablePage = pages;
             renderPager(filtered.length, pages);
-            if (filtered.length > TABLE_PAGE_SIZE) filtered = filtered.slice((tablePage - 1) * TABLE_PAGE_SIZE, tablePage * TABLE_PAGE_SIZE);
+            if (!topOnly && filtered.length > TABLE_PAGE_SIZE) filtered = filtered.slice((tablePage - 1) * TABLE_PAGE_SIZE, tablePage * TABLE_PAGE_SIZE);
 
             if(filtered.length === 0) {
                 tbody.innerHTML = `
@@ -1456,7 +1459,7 @@ function filterByDj(name) {
         }
         function renderPager(total, pages) {
             const box = document.getElementById('tracksPager'); if (!box) return;
-            if (total <= TABLE_PAGE_SIZE) { box.innerHTML = total ? `<span class="text-xs text-slate-400">${total} resultado${total === 1 ? '' : 's'}</span>` : ''; return; }
+            if (topOnly || total <= TABLE_PAGE_SIZE) { box.innerHTML = total ? `<span class="text-xs text-slate-400">${total} resultado${total === 1 ? '' : 's'}</span>` : ''; return; }
             const set = new Set([1, pages, tablePage - 1, tablePage, tablePage + 1, tablePage - 2, tablePage + 2]);
             const nums = [...set].filter(n => n >= 1 && n <= pages).sort((a, b) => a - b);
             const b = (label, n, active, dis) => `<button type="button" ${dis ? 'disabled' : `onclick="goToPage(${n})"`} class="min-w-[36px] h-9 px-3 rounded-lg text-xs font-bold transition ${active ? 'bg-brand-crimson text-white' : 'bg-white border border-brand-border text-slate-600 hover:bg-blue-50'} ${dis ? 'opacity-40 cursor-not-allowed' : ''}">${label}</button>`;
@@ -1606,6 +1609,7 @@ function filterByDj(name) {
         function filterByPortal(portalName) {
             currentPortalFilter = portalName;
             newOnly = false; topOnly = false;
+            setNavActive('catalog');
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
@@ -1616,7 +1620,7 @@ function filterByDj(name) {
 
         function filterByDropdownGenre(genreName) {
             currentGenreFilter = genreName;
-            newOnly = false; // el Top se mantiene: así se ve el Top de cada género
+            // el Top y Nuevos se mantienen si están activos: así se ve el Top de cada género
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
@@ -1626,6 +1630,8 @@ function filterByDj(name) {
 
         // ===== TOP 50: canciones originales lanzadas desde 2025, ordenadas por fecha de lanzamiento =====
         const TOP_MIN_DATE = '2025-01-01'; // el Top solo incluye canciones lanzadas desde esta fecha
+        // Sin fecha máxima: las canciones nuevas (incluso con fecha de lanzamiento próxima) entran al Top según vayan saliendo.
+        const inTopRange = d => !!d && d >= TOP_MIN_DATE;
         // ¿La canción encontrada en Deezer/iTunes ("matched", p. ej. "Artista - Canción") es la misma que el remix de la web?
         // Exige que estén TODAS las palabras del nombre de la canción y al menos una palabra del artista.
         const TOP_STOP = new Set(['the','and','feat','ft','featuring','with','remix','edit','mix','version','extended','intro','outro','clean','dirty','dj','bpm','official','audio','video','radio','original','de','la','el','los','las','y','con','del','en','un','una']);
@@ -1634,24 +1640,71 @@ function filterByDj(name) {
                 .replace(/[\(\[][^\)\]]*[\)\]]/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim().split(' ')
                 .filter(w => w && !TOP_STOP.has(w) && (w.length > 1 || /\d/.test(w)));
         }
-        function topMatches(t, matched) {
+        // Género: tu género del catálogo contra el que devuelve Deezer (si el servidor lo manda). Solo se usa para confirmar o rechazar, nunca para inventar.
+        const TOP_GENRE_ALIASES = {
+            'reggaeton':['reggaeton','reggaetón','urbano','urbano latino','latin urban','latin','latino','trap latino'],
+            'cubaton':['cubaton','cubatón','reggaeton','urbano','latin','latino'],
+            'dembow':['dembow','reggaeton','urbano','latin','latino','dominicano'],
+            'bachata':['bachata','latin','latino','tropical'],
+            'salsa':['salsa','latin','latino','tropical'],
+            'merengue':['merengue','latin','latino','tropical'],
+            'tipico':['tipico','típico','merengue','latin','latino','tropical'],
+            'cumbia':['cumbia','latin','latino','tropical'],
+            'latino':['latin','latino','latina','pop latino','urbano','reggaeton','tropical'],
+            'guaracha':['guaracha','electro','dance','latin','latino','electronic'],
+            'moombahton':['moombahton','dance','electro','electronic','latin','reggaeton'],
+            'dancehall':['dancehall','reggae','reggae/dancehall','latin','urbano'],
+            'reggae':['reggae','dancehall','reggae/dancehall'],
+            'hip hop':['hip hop','hip-hop','rap','rap/hip hop','r&b','trap'],
+            'trap':['trap','rap','hip hop','hip-hop','rap/hip hop','urbano','latin'],
+            'rock':['rock','alternative','pop'],
+            'electro':['electro','electronic','dance','edm','electronica','electrónica'],
+            'house':['house','dance','electro','electronic','edm'],
+            'tech house':['tech house','house','techno','dance','electronic','electro'],
+            'afro house':['afro house','house','afro','dance','electronic'],
+            'latin house':['latin house','house','latin','latino','dance','electronic'],
+            'amapiano':['amapiano','afro','house','dance','electronic'],
+            'techno':['techno','electronic','dance','electro']
+        };
+        const topGenreKey = g => String(g || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        // true/false si se puede comparar; null si no hay dato de género para comparar (no se rechaza por falta de dato).
+        function topGenreOk(t, deezerGenre) {
+            const dg = topGenreKey(deezerGenre);
+            const mine = topGenreKey(t.genre);
+            if (!dg || !mine) return null;
+            // Géneros que no son de música (formato del DJ) no se comparan.
+            if (['mashup','segway','transicion','open show'].includes(mine)) return null;
+            const ok = (TOP_GENRE_ALIASES[mine] || [mine]).map(topGenreKey);
+            return ok.some(a => dg === a || dg.includes(a) || a.includes(dg));
+        }
+        function topMatches(t, matched, deezerGenre) {
             const found = new Set(topTokens(matched !== undefined ? matched : t.popMatched));
             if (!found.size) return false;
             const info = parseTrackInfo(t);
             const song = topTokens(info.song || t.title), artist = topTokens(info.artist);
             if (!song.length || !song.every(w => found.has(w))) return false;
-            return !artist.length || artist.some(w => found.has(w));
+            // El título encontrado (lo que va después del " - ") no puede traer palabras de más: así "Song Live Acoustic Pt 2" no cuenta como la misma canción.
+            // Los artistas invitados van antes del " - ", por eso no se penalizan.
+            const titlePart = String(matched !== undefined ? matched : t.popMatched).split(' - ').slice(-1)[0];
+            const extra = topTokens(titlePart).filter(w => !song.includes(w));
+            if (extra.length > 2) return false;
+            // El artista es obligatorio: hay muchas canciones con el mismo nombre, así que sin artista no se acepta ninguna coincidencia.
+            if (!artist.length) return false;
+            if (!artist.some(w => found.has(w))) return false;
+            // Género: si hay dato de Deezer y no es compatible con el género del catálogo, no es la misma canción.
+            const dgen = deezerGenre !== undefined ? deezerGenre : t.popGenre;
+            return topGenreOk(t, dgen) !== false;
         }
-        // Más reciente primero; si la fecha es igual, desempata por popularidad (Deezer) y luego por fecha de subida.
+        // Más reciente primero. La popularidad NO cuenta: si la fecha es igual, desempata por fecha de subida y luego por nombre.
         function topCompare(a, b) {
             const d = (b.releaseDate || '').localeCompare(a.releaseDate || '');
             if (d) return d;
-            const p = (b.popularity || 0) - (a.popularity || 0);
-            if (p) return p;
-            return (b.date || '').localeCompare(a.date || '');
+            const u = (b.date || '').localeCompare(a.date || '');
+            if (u) return u;
+            return String(a.title || '').localeCompare(String(b.title || ''));
         }
         function filterTop50() {
-            topOnly = true; newOnly = false;
+            topOnly = true; newOnly = false; setNavActive('top');
             currentPortalFilter = "ALL"; currentGenreFilter = "ALL"; currentMonthFilter = "ALL"; currentRatingFilter = "ALL";
             const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = "ALL";
             document.getElementById('mainViewContainer').classList.remove('hidden');
@@ -1663,7 +1716,7 @@ function filterByDj(name) {
         }
 
         function filterNewReleases() {
-            newOnly = true; topOnly = false;
+            newOnly = true; topOnly = false; setNavActive('new');
             currentPortalFilter = "ALL";
             currentGenreFilter = "ALL";
             document.getElementById('genreSelectFilter').value = "ALL";
@@ -1676,6 +1729,7 @@ function filterByDj(name) {
         }
 
         function showPlansView() {
+            setNavActive('plans');
             document.getElementById('mainViewContainer').classList.add('hidden');
             document.getElementById('membershipsViewContainer').classList.remove('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
@@ -1690,7 +1744,18 @@ function filterByDj(name) {
             document.getElementById('adminDashboardView').classList.remove('hidden');
         }
 
+
+        // ===== Botones del menú: solo uno activo a la vez =====
+        function setNavActive(key) {
+            document.querySelectorAll('[data-nav]').forEach(a => {
+                const on = a.dataset.nav === key;
+                a.classList.toggle('nav-active', on);
+                a.setAttribute('aria-current', on ? 'page' : 'false');
+            });
+        }
+
         function resetFilters() {
+            newOnly = false; topOnly = false;
             currentPortalFilter = "ALL";
             currentGenreFilter = "ALL";
             currentMonthFilter = "ALL";
@@ -2917,7 +2982,7 @@ async function processBulkUpload() {
     uploadProgressBar.style.width = '0%';
     uploadProgressContainer.classList.remove('hidden'); uploadSubmitBtn.classList.add('hidden');
     uploadCloseBtn.classList.add('hidden');
-    window.addEventListener('beforeunload', bulkBeforeUnload);
+    window.addEventListener('beforeunload', bulkBeforeUnload); window.__bulkStartedAt = Date.now(); // para que el Top analice exactamente lo subido en este lote
     let failed = 0, lastError = '', completed = 0;
     const failedNames = [];
     try {
@@ -3507,7 +3572,11 @@ async function djAnalyzePopularity(opts){
  if(opts.all)list=allRemixes.filter(t=>!isVideoTrack(t));
  else{
   list=djPopPending();
-  if(opts.auto){const lim=new Date(Date.now()-2*86400000).toISOString().slice(0,10);list=list.filter(t=>t.date>=lim).slice(0,300);}
+  if(opts.auto){
+   // Tras subir un lote: se analizan todas las canciones nuevas pendientes (sin tope), buscando por nombre de canción y artista.
+   const since=window.__bulkStartedAt?new Date(window.__bulkStartedAt-3600000).toISOString().slice(0,10):new Date(Date.now()-2*86400000).toISOString().slice(0,10);
+   list=list.filter(t=>t.date>=since);
+  }
  }
  list.sort((a,b)=>(b.date||'').localeCompare(a.date||'')); // lo subido más recientemente primero: es lo más probable que sea de 2025+
  if(!list.length){if(!opts.auto)say('No hay canciones pendientes.');return;}
@@ -3527,7 +3596,7 @@ async function djAnalyzePopularity(opts){
   const session=await requireSession();
   for(let i=0;i<list.length&&!djPopStop;i+=10){
    const chunk=list.slice(i,i+10);
-   const items=chunk.map(t=>{const info=parseTrackInfo(t);return{id:t.id,artist:info.artist||'',song:info.song||t.title};});
+   const items=chunk.map(t=>{const info=parseTrackInfo(t);return{id:t.id,artist:info.artist||'',song:info.song||t.title,genre:t.genre||''};});
    let results=[];
    try{
     const r=await fetch('/.netlify/functions/popularity',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({items})});
@@ -3539,12 +3608,12 @@ async function djAnalyzePopularity(opts){
    for(const t of chunk){
     const x=byId.get(t.id);
     if(!x||x.status==='retry'){retry++;continue;}
-    const patch=(x.status==='ok'&&topMatches(t,x.matched||''))
+    const patch=(x.status==='ok'&&inTopRange(x.release_date)&&topMatches(t,x.matched||'',x.genre||x.deezer_genre||''))
      ?{popularity:x.rank||0,release_date:x.release_date||null,deezer_id:x.deezer_id||null,pop_matched:x.matched||null,pop_status:'ok'}
      :{popularity:null,release_date:null,deezer_id:null,pop_matched:null,pop_status:'nomatch'};
     const {error}=await sb.from('tracks').update(patch).eq('id',t.id);
     if(error){fail++;firstErr=firstErr||error.message;continue;}
-    t.popStatus=patch.pop_status;t.popularity=patch.popularity||0;t.releaseDate=patch.release_date||'';t.popMatched=patch.pop_matched||'';
+    t.popGenre=x.genre||x.deezer_genre||'';t.popStatus=patch.pop_status;t.popularity=patch.popularity||0;t.releaseDate=patch.release_date||'';t.popMatched=patch.pop_matched||'';
     if(x.status==='ok')ok++;else no++;
    }
    done+=chunk.length;progress();
