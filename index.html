@@ -3590,16 +3590,22 @@ async function djAnalyzePopularity(opts){
  if(opts.all&&!confirm(`Se consultará Deezer para ${list.length} canciones (tarda unos minutos; deja la página abierta). ¿Continuar?`))return;
  djPopRunning=true;djPopStop=false;
  [btn,btn2].forEach(b=>{if(b)b.disabled=true;});if(stop){stop.classList.remove('hidden');stop.disabled=false;stop.textContent='Detener';}
- let done=0,ok=0,no=0,retry=0,fail=0,firstErr='';
+ let done=0,ok=0,no=0,retry=0,fail=0,firstErr='';const why={sinDeezer:0,fecha:0,nombre:0,sinArtista:0},samples=[];
  const progress=()=>say(`${done}/${list.length} · ${ok} con dato, ${no} sin coincidencia${retry?`, ${retry} por reintentar`:''}${fail?`, ${fail} con error`:''}`);
  try{
-  const session=await requireSession();
+  let session=await requireSession();
+  let lastRefresh=Date.now();
+  const refreshSess=async()=>{try{const r=await sb.auth.refreshSession();if(r&&r.data&&r.data.session){session=r.data.session;lastRefresh=Date.now();return true;}}catch(_){}return false;};
+  await refreshSess();
   for(let i=0;i<list.length&&!djPopStop;i+=10){
+   if(Date.now()-lastRefresh>5*60*1000)await refreshSess();
    const chunk=list.slice(i,i+10);
    const items=chunk.map(t=>{const info=parseTrackInfo(t);return{id:t.id,artist:info.artist||'',song:info.song||t.title,genre:t.genre||''};});
    let results=[];
    try{
-    const r=await fetch('/.netlify/functions/popularity',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({items})});
+    const call=()=>fetch('/.netlify/functions/popularity',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({items})});
+    let r=await call();
+    if((r.status===401||r.status===403)&&await refreshSess())r=await call(); // sesión vencida: se renueva sola y se reintenta
     const j=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(j.error||('Error '+r.status));
     results=Array.isArray(j.results)?j.results:[];
@@ -3608,6 +3614,12 @@ async function djAnalyzePopularity(opts){
    for(const t of chunk){
     const x=byId.get(t.id);
     if(!x||x.status==='retry'){retry++;continue;}
+    const _inf=parseTrackInfo(t);
+    const _okName=x.status==='ok'&&topMatches(t,x.matched||'',x.genre||x.deezer_genre||'');
+    if(x.status!=='ok'){why.sinDeezer++;}
+    else if(!_inf.artist){why.sinArtista++;}
+    else if(!_okName){why.nombre++;if(samples.length<8)samples.push(`${_inf.artist} - ${_inf.song}  ≠  ${x.matched||'?'}`);}
+    else if(!inTopRange(x.release_date)){why.fecha++;}
     const patch=(x.status==='ok'&&inTopRange(x.release_date)&&topMatches(t,x.matched||'',x.genre||x.deezer_genre||''))
      ?{popularity:x.rank||0,release_date:x.release_date||null,deezer_id:x.deezer_id||null,pop_matched:x.matched||null,pop_status:'ok'}
      :{popularity:null,release_date:null,deezer_id:null,pop_matched:null,pop_status:'nomatch'};
@@ -3625,7 +3637,9 @@ async function djAnalyzePopularity(opts){
   const msg=`${djPopStop?'Detenido':'Terminado'}: ${ok} con fecha, ${no} sin coincidencia${retry?`, ${retry} quedan para reintentar`:''}${fail?`, ${fail} con error`:''}.`;
   if(opts.auto&&upStatus)upStatus.textContent=upBase+' · Top actualizado: '+msg;
   else if(sum)sum.textContent=msg;
-  if(firstErr)warn('Primer error: '+firstErr);
+  const why2=`Motivos de «sin coincidencia»: ${why.sinDeezer} no aparecen en Deezer · ${why.sinArtista} sin artista en el nombre · ${why.nombre} nombre/artista no coincide · ${why.fecha} lanzadas antes de 2025.`;
+  if(samples.length)console.info('Ejemplos de nombre/artista que no coincide:\n'+samples.join('\n'));
+  if(firstErr)warn('Primer error: '+firstErr+' · '+why2);else warn(why2);
  }
 }
 
