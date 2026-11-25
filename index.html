@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2563EB">
     <script>
         // Tema automatico por hora local: claro de 07:00 a 18:59, oscuro de 19:00 a 06:59.
         (function () {
@@ -249,6 +250,114 @@
         html.dark body #featuredPlaylists .featured-card { background:#0b1730 !important; }
         html.dark body .genre-chip { color:#fff !important; }
         html.dark body .bg-brand-crimson, html.dark body .bg-brand-crimson * { color:#fff !important; }
+
+        /* ================================================================
+           OPTIMIZACIÓN PARA CELULARES (solo estilos; no cambia la lógica)
+           ================================================================ */
+        html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+        body { overflow-x:clip; -webkit-tap-highlight-color:transparent; }
+        button, a, select, summary, [role="button"] { touch-action:manipulation; }
+        #bottomPlayer { padding-bottom:calc(.625rem + env(safe-area-inset-bottom,0px)) !important; }
+        @media (hover:none) { #tracksTableBody .group button { opacity:1 !important; } }
+
+        /* ---- Tablets y celulares (< 1024px) ---- */
+        @media (max-width:1023px) {
+            /* Géneros: de columna lateral a fichas con scroll horizontal */
+            #sidebarPools { padding:10px 12px !important; border-right-width:0 !important; border-bottom-width:1px !important; }
+            #sidebarPools > div:first-child { display:none !important; }
+            #portalsListContainer { display:flex !important; flex-direction:row; gap:8px; overflow-x:auto !important; overflow-y:hidden !important; max-height:none !important; padding:2px 0 4px !important; scrollbar-width:none; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity; }
+            #portalsListContainer::-webkit-scrollbar { display:none; }
+            #portalsListContainer > * { margin:0 !important; width:auto !important; flex:0 0 auto; white-space:nowrap; gap:10px; min-height:40px; padding:9px 14px !important; border:1px solid #e2e8f0; scroll-snap-align:start; }
+            #portalsListContainer .cd { animation:none !important; }
+            html.dark #portalsListContainer > * { border-color:#293750; }
+            /* Menú secundario: píldoras con scroll */
+            body > nav { justify-content:flex-start !important; gap:6px; overflow-x:auto; white-space:nowrap; padding:8px 12px !important; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+            body > nav::-webkit-scrollbar { display:none; }
+            body > nav a { flex:0 0 auto; padding:8px 14px; border-radius:9999px; background:#f1f5f9; font-size:12px; }
+            html.dark body > nav a { background:#17243b; }
+            /* Encabezado más compacto */
+            body > header > div:first-child { padding:10px 14px !important; }
+            body > header .cd { width:36px !important; height:36px !important; }
+            body > header { padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); }
+        }
+
+        /* ---- Celulares grandes (< 768px) ---- */
+        @media (max-width:767px) {
+            input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea { font-size:16px !important; } /* evita el zoom automático de iOS */
+            /* Filtros en cuadrícula de 2 columnas */
+            #searchBar { display:grid !important; grid-template-columns:1fr 1fr; gap:8px !important; margin-bottom:14px !important; }
+            #searchBar > div { width:100% !important; max-width:none !important; }
+            #searchBar > div:first-child, #searchBar > div:nth-child(4) { grid-column:1 / -1; }
+            #searchBar input, #searchBar select { min-height:44px; }
+            /* Reproductor inferior compacto: info + controles arriba, onda abajo */
+            #bottomPlayer { padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px)) !important; }
+            #bottomPlayer .vp-row { display:grid !important; grid-template-columns:minmax(0,1fr) auto auto; grid-template-areas:"info ctrl act" "wave wave wave"; column-gap:6px !important; row-gap:6px !important; align-items:center; }
+            #bottomPlayer .vp-info { grid-area:info; width:auto !important; min-width:0; gap:10px !important; }
+            #bottomPlayer .vp-ctrl { grid-area:ctrl; gap:2px !important; }
+            #bottomPlayer .vp-ctrl button { min-width:36px; height:40px; display:inline-flex; align-items:center; justify-content:center; }
+            #bottomPlayer .vp-ctrl .vp-play { width:42px; height:42px; min-width:42px; }
+            #bottomPlayer .vp-act { grid-area:act; gap:2px !important; margin-left:0 !important; }
+            #bottomPlayer .vp-act > button:first-child { min-width:36px; height:40px; padding:0 !important; }
+            #bottomPlayer .vp-act .vp-dl { width:40px; height:40px; padding:0 !important; gap:0; justify-content:center; }
+            #bottomPlayer .vp-wfwrap { grid-area:wave; }
+            #bottomPlayer .vp-cover { width:38px; height:38px; font-size:16px; border-radius:10px; }
+            /* Botón de WhatsApp más discreto */
+            .whatsapp-btn { width:48px !important; height:48px !important; right:12px !important; }
+            .whatsapp-btn svg { width:26px; height:26px; }
+            /* Modales: nunca más altos que la pantalla */
+            #paywallModal > div, #registerModal > div, #checkEmailModal > div, #loginModal > div, #forgotModal > div, #resetModal > div { max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto; overscroll-behavior:contain; padding:20px !important; }
+            #videoModalPlayer { max-height:60vh !important; max-height:60dvh !important; }
+            /* Membresías y DJ Studio */
+            #membershipsViewContainer .grid { gap:1rem !important; }
+            #membershipsViewContainer .rounded-3xl { padding:1.25rem !important; }
+            #membershipsViewContainer h2 { font-size:1.6rem !important; }
+            #djStudioView > div:first-child { padding:1rem !important; }
+            #djStudioView h2 { font-size:1.6rem !important; }
+            #djStudioView [role="tablist"] { flex-wrap:nowrap !important; overflow-x:auto; scrollbar-width:none; }
+            #djStudioView [role="tablist"] button { flex:0 0 auto; white-space:nowrap; }
+            #featuredDetailPlay { width:100%; justify-content:center; }
+            #tracksPager button { min-width:40px; height:40px; }
+        }
+
+        /* ---- Celulares (< 640px): la tabla pasa a lista de tarjetas ---- */
+        @media (max-width:639px) {
+            .table-fixed { display:block; width:100%; }
+            .table-fixed thead { display:none; }
+            #tracksTableBody { display:block; }
+            #tracksTableBody > tr { display:grid; grid-template-columns:48px minmax(0,1fr) auto; align-items:center; column-gap:4px; padding:0 8px 0 10px; }
+            #tracksTableBody > tr > td:not(.hidden) { display:block; min-width:0; padding:10px 0 !important; }
+            #tracksTableBody > tr > td[colspan] { grid-column:1 / -1; text-align:center; padding:32px 12px !important; }
+            #tracksTableBody > tr > td:nth-child(3) { padding-left:6px !important; padding-right:4px !important; }
+            #tracksTableBody td button { min-width:40px; min-height:40px; }
+            #tracksTableBody td button.w-9 { width:40px; height:40px; }
+        }
+
+        /* ---- Celulares pequeños (< 480px) ---- */
+        @media (max-width:479px) {
+            /* Encabezado en dos filas (marca / sesión) y menú fijo al hacer scroll */
+            body > header { flex-wrap:wrap; position:relative; }
+            body > header > div:first-child { flex:1 1 100%; }
+            body > header > div:last-child { flex:1 1 100%; padding:8px 12px !important; justify-content:flex-end !important; }
+            body > header > div:last-child > div { flex-wrap:wrap; justify-content:flex-end; }
+            body > nav { position:sticky; top:0; z-index:39; }
+            #bottomPlayer .vp-cover { display:none; }
+            #featuredPlaylists h2 { font-size:1.05rem !important; }
+            #featuredPlaylists .featured-heading p { display:none; }
+            #featuredPlaylists .featured-arrow { width:34px; height:34px; }
+            #videoModal .vp-dl span { display:none; }
+            #videoModal .vp-dl { padding:.6rem .85rem; }
+            /* Portada */
+            #landingView h1 { font-size:clamp(2rem,10.5vw,3.2rem) !important; }
+            #landingView > div { padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px)) !important; }
+            #landingView button { padding:1.05rem 1rem !important; font-size:1rem !important; }
+        }
+
+        /* ---- Celular en horizontal: reproductor más bajo ---- */
+        @media (max-height:500px) and (orientation:landscape) {
+            .vp-wf-ov { height:30px !important; }
+            #bottomPlayer .vp-row { row-gap:4px !important; }
+            #landingView h1 { font-size:2.2rem !important; }
+        }
     </style>
 </head>
 <body class="bg-brand-bg text-slate-800 min-h-screen flex flex-col selection:bg-brand-crimson selection:text-white">
@@ -734,9 +843,9 @@
 
     <!-- BOTTOM AUDIO PLAYER -->
     <footer id="bottomPlayer" class="fixed bottom-0 left-0 right-0 bg-white border-t border-brand-border shadow-[0_-4px_20px_rgba(15,23,42,0.06)] px-3 lg:px-6 py-2.5 z-50">
-        <div class="flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2">
+        <div class="vp-row flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2">
             <!-- Info del track -->
-            <div class="flex items-center gap-3 min-w-0 flex-1 md:flex-none md:w-64 lg:w-72">
+            <div class="vp-info flex items-center gap-3 min-w-0 flex-1 md:flex-none md:w-64 lg:w-72">
                 <div class="vp-cover"><i class="fa-solid fa-compact-disc"></i></div>
                 <div class="min-w-0 flex-1">
                     <h4 id="playerTrackTitle" class="vp-title text-sm font-bold truncate">Selecciona un Remix</h4>
@@ -746,7 +855,7 @@
             </div>
 
             <!-- Controles -->
-            <div class="flex items-center gap-3 shrink-0">
+            <div class="vp-ctrl flex items-center gap-3 shrink-0">
                 <button onclick="prevTrack()" class="text-slate-400 hover:text-brand-crimson transition p-1" title="Anterior"><i class="fa-solid fa-backward-step"></i></button>
                 <button id="playPauseBtn" onclick="togglePlayPause()" class="vp-play" title="Reproducir / pausar">
                     <i class="fa-solid fa-play text-sm ml-0.5"></i>
@@ -755,12 +864,12 @@
             </div>
 
             <!-- Onda única -->
-            <div id="waveformVisualizer" class="order-last basis-full w-full min-w-0 flex flex-col gap-1">
+            <div id="waveformVisualizer" class="vp-wfwrap order-last basis-full w-full min-w-0 flex flex-col gap-1">
                 <div class="vp-wf vp-wf-ov"><canvas id="wfOverview"></canvas></div>
             </div>
 
             <!-- Acciones -->
-            <div class="flex items-center gap-3 shrink-0 md:ml-auto">
+            <div class="vp-act flex items-center gap-3 shrink-0 md:ml-auto">
                 <button onclick="toggleFavoriteCurrent()" class="text-slate-400 hover:text-brand-crimson text-xl p-1 transition" title="Favorito"><i id="playerFavIcon" class="fa-regular fa-heart"></i></button>
                 <div class="hidden xl:flex items-center gap-2">
                     <i class="fa-solid fa-volume-high text-slate-400 text-sm"></i>
