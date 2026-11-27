@@ -10,8 +10,15 @@ const SUPABASE_KEY = 'sb_publishable_' + 'Y7FUvF1VdDsdbXPQpalQcA_djd2cIpU';
 const LIMITE_BYTES = 5 * 1024 ** 3; // 5 GB
 
 // Vista previa para quien NO es socio: solo se le entrega el inicio del archivo (no el archivo completo).
-// ~1 MB equivale a ~60 s de un MP3 a 128 kbps (~25 s a 320 kbps). El reproductor además corta a los 40 s.
+// ~1 MB equivale a ~60 s de un MP3 a 128 kbps (~25 s a 320 kbps). El reproductor además corta a los 20 s.
+// WAV/FLAC pesan mucho más por segundo, por eso se entrega más para que lleguen igualmente a 20 s.
 const PREVIEW_BYTES = 1024 * 1024;
+const PREVIEW_BYTES_BY_EXT = { wav: 3.5 * 1024 * 1024, flac: 2 * 1024 * 1024 };
+
+// Límite de vistas previas para visitantes SIN cuenta: máximo 3 por IP y por día.
+// Se cuenta en Supabase (tabla preview_hits + función consume_preview, ver SQL aparte) porque las funciones
+// de Netlify no comparten memoria entre ejecuciones. Se guarda un hash de la IP, nunca la IP en claro.
+const PREVIEW_IP_LIMIT = 3;
 
 const PATH_RE = /^b2\/[A-Za-z0-9][A-Za-z0-9._-]*\.(mp3|wav|m4a|aac|flac|ogg|mp4)$/i;
 const PREVIEW_PATH_RE = /^b2\/pv-/i; // clips de preview de video ya recortados
@@ -104,6 +111,26 @@ async function getUser(event) {
   return { id: u.id, isAdmin, member };
 }
 
+function clientIp(event) {
+  const h = event.headers || {};
+  return String(h['x-nf-client-connection-ip'] || String(h['x-forwarded-for'] || '').split(',')[0] || h['client-ip'] || '').trim();
+}
+
+// Cuenta una vista previa de un visitante sin cuenta. Devuelve true (permitida), false (límite alcanzado) o null (no se pudo contar).
+async function consumirVistaPrevia(event) {
+  const ip = clientIp(event);
+  if (!ip) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/consume_preview`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_ip: sha256hex('preview:' + ip), p_limit: PREVIEW_IP_LIMIT })
+    });
+    if (!r.ok) { console.error('[audio] consume_preview', r.status, (await r.text()).slice(0, 120)); return null; }
+    return (await r.json()) === true;
+  } catch (e) { console.error('[audio] consume_preview error:', e.message); return null; }
+}
+
 // Motivo del último fallo (para diagnóstico)
 let lastErr = '';
 
@@ -159,12 +186,13 @@ async function urlPreview(cfg, base, path) {
     return presign({ ...pvBase, method: 'GET', expires: 3600 });
   }
 
-  const r = await fetch(presign({ ...base, method: 'GET', expires: 60 }), { headers: { Range: `bytes=0-${PREVIEW_BYTES - 1}` } });
+  const limit = PREVIEW_BYTES_BY_EXT[ext] || PREVIEW_BYTES;
+  const r = await fetch(presign({ ...base, method: 'GET', expires: 60 }), { headers: { Range: `bytes=0-${limit - 1}` } });
   if (r.status !== 206 && r.status !== 200) throw new Error('Backblaze ' + r.status);
   if (r.status === 200) {
     // El servidor ignoró el rango: si el archivo es grande, NO se lee entero.
     const len = parseInt(r.headers.get('content-length') || '0', 10) || 0;
-    if (!len || len > PREVIEW_BYTES) { try { await r.body.cancel(); } catch (_) {} throw new Error('Rango no soportado'); }
+    if (!len || len > limit) { try { await r.body.cancel(); } catch (_) {} throw new Error('Rango no soportado'); }
   }
   const buf = Buffer.from(await r.arrayBuffer());
   return `data:${MIME[ext] || 'audio/mpeg'};base64,${buf.toString('base64')}`;
@@ -178,9 +206,12 @@ exports.handler = async (event) => {
 
   if (!PATH_RE.test(String(path || '')) || String(path).includes('..')) return reply(400, { error: 'Ruta no válida' });
 
-  let user;
-  try { user = await getUser(event); } catch (e) { return reply(502, { error: 'No se pudo verificar la sesión (' + e.message + ')' }); }
-  if (!user) return reply(401, { error: 'Debes iniciar sesión.' });
+  // La vista previa ("play") está abierta a visitantes sin cuenta: user puede ser null.
+  // Todo lo demás (descargar, subir, borrar) exige sesión.
+  let user = null;
+  try { user = await getUser(event); }
+  catch (e) { if (action !== 'play') return reply(502, { error: 'No se pudo verificar la sesión (' + e.message + ')' }); }
+  if (!user && action !== 'play') return reply(401, { error: 'Debes iniciar sesión.' });
 
   let cfg;
   try { cfg = b2Config(); } catch (e) { console.error('[audio] ' + e.message); return reply(500, { error: e.message }); }
@@ -189,10 +220,15 @@ exports.handler = async (event) => {
 
   if (action === 'play') {
     // Socios y administradores: archivo completo. Los clips pv- ya son preview.
-    if (user.member || PREVIEW_PATH_RE.test(path)) {
+    if ((user && user.member) || PREVIEW_PATH_RE.test(path)) {
       return reply(200, { url: presign({ ...base, method: 'GET', expires: 3600 }) });
     }
-    // Usuarios registrados sin membresía: solo vista previa.
+    // Visitantes sin cuenta: máximo PREVIEW_IP_LIMIT vistas previas por IP al día (si no se puede contar, se permite).
+    if (!user) {
+      const ok = await consumirVistaPrevia(event);
+      if (ok === false) return reply(429, { code: 'preview_limit', error: 'Ya usaste tus ' + PREVIEW_IP_LIMIT + ' vistas previas gratis de hoy. Crea tu cuenta y hazte socio para escuchar completo.' });
+    }
+    // Visitantes sin cuenta y usuarios sin membresía: solo vista previa.
     try {
       return reply(200, { url: await urlPreview(cfg, base, path), preview: true });
     } catch (e) {
