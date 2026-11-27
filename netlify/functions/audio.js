@@ -15,10 +15,11 @@ const LIMITE_BYTES = 5 * 1024 ** 3; // 5 GB
 const PREVIEW_BYTES = 1024 * 1024;
 const PREVIEW_BYTES_BY_EXT = { wav: 3.5 * 1024 * 1024, flac: 2 * 1024 * 1024 };
 
-// Límite de vistas previas para visitantes SIN cuenta: máximo 3 por IP y por día.
+// Límite de vistas previas para visitantes SIN cuenta: 50 por IP y por día (0 = sin límite).
+// Requiere haber ejecutado preview_limit.sql en Supabase. Los socios con membresía no tienen límite.
 // Se cuenta en Supabase (tabla preview_hits + función consume_preview, ver SQL aparte) porque las funciones
 // de Netlify no comparten memoria entre ejecuciones. Se guarda un hash de la IP, nunca la IP en claro.
-const PREVIEW_IP_LIMIT = 3;
+const PREVIEW_IP_LIMIT = 50;
 
 const PATH_RE = /^b2\/[A-Za-z0-9][A-Za-z0-9._-]*\.(mp3|wav|m4a|aac|flac|ogg|mp4)$/i;
 const PREVIEW_PATH_RE = /^b2\/pv-/i; // clips de preview de video ya recortados
@@ -224,7 +225,7 @@ exports.handler = async (event) => {
       return reply(200, { url: presign({ ...base, method: 'GET', expires: 3600 }) });
     }
     // Visitantes sin cuenta: máximo PREVIEW_IP_LIMIT vistas previas por IP al día (si no se puede contar, se permite).
-    if (!user) {
+    if (!user && PREVIEW_IP_LIMIT > 0) {
       const ok = await consumirVistaPrevia(event);
       if (ok === false) return reply(429, { code: 'preview_limit', error: 'Ya usaste tus ' + PREVIEW_IP_LIMIT + ' vistas previas gratis de hoy. Crea tu cuenta y hazte socio para escuchar completo.' });
     }
