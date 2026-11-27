@@ -4700,27 +4700,48 @@ let updDlBusy = false;
 async function updDownloadLink(key) {
     if (updDlBusy) return;
     if (!currentUser) { openLoginModal(); return; }
-    if (!(await verifyMembershipServer())) { openPaywallModal(); return; }
-    const { y, m, n } = updParseKey(key);
-    const { data, error } = await sb.from('update_links').select('url').eq('year', y).eq('month', m).eq('name', n).maybeSingle();
-    if (error || !data || !data.url) { alert('No se pudo obtener el link de descarga. Intenta de nuevo.'); return; }
-    const url = updDirectUrl(data.url);
-    const label = n || updFolderLabel(m);
-    const st = document.getElementById('updStatus');
     updDlBusy = true;
-    // Espera 5 segundos (Dropbox arma el zip) y luego inicia la descarga directa
-    let left = 5;
-    const tick = () => { if (st) st.textContent = `Preparando ${label}… la descarga empieza en ${left}s`; };
-    tick();
-    const timer = setInterval(() => { left--; if (left > 0) tick(); }, 1000);
-    setTimeout(() => {
-        clearInterval(timer);
-        const a = document.createElement('a');
-        a.href = url; a.rel = 'noopener'; a.style.display = 'none';
-        document.body.appendChild(a); a.click(); a.remove();
-        if (st) st.textContent = `Descargando ${label}…`;
-        setTimeout(() => { if (st) st.textContent = ''; updDlBusy = false; }, 6000);
-    }, 5000);
+    // La pestaña se abre YA (dentro del clic) para que Safari no la bloquee; la web nunca se mueve de lugar.
+    let dlWin = null;
+    try {
+        dlWin = window.open('', '_blank');
+        if (dlWin) {
+            try { dlWin.document.title = 'Preparando descarga…'; dlWin.document.body.style.cssText = 'background:#0b1220;color:#cbd5e1;font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'; dlWin.document.body.textContent = 'Preparando tu descarga… esta pestaña se cierra sola.'; } catch (_) {}
+            try { window.focus(); } catch (_) {}
+        }
+    } catch (_) {}
+    const finish = () => { updDlBusy = false; };
+    const closeWin = () => { try { if (dlWin && !dlWin.closed) dlWin.close(); } catch (_) {} };
+    try {
+        if (!(await verifyMembershipServer())) { closeWin(); finish(); openPaywallModal(); return; }
+        const { y, m, n } = updParseKey(key);
+        const { data, error } = await sb.from('update_links').select('url').eq('year', y).eq('month', m).eq('name', n).maybeSingle();
+        if (error || !data || !data.url) { closeWin(); finish(); alert('No se pudo obtener el link de descarga. Intenta de nuevo.'); return; }
+        const url = updDirectUrl(data.url);
+        const label = n || updFolderLabel(m);
+        const st = document.getElementById('updStatus');
+        // Espera 5 segundos (Dropbox arma el zip) y luego inicia la descarga
+        let left = 5;
+        const tick = () => { if (st) st.textContent = `Preparando ${label}… la descarga empieza en ${left}s`; };
+        tick();
+        const timer = setInterval(() => { left--; if (left > 0) tick(); }, 1000);
+        setTimeout(() => {
+            clearInterval(timer);
+            if (dlWin && !dlWin.closed) {
+                dlWin.location.href = url;
+                if (st) st.textContent = `Descargando ${label}… revisa tus descargas.`;
+                // Cierra la pestaña de Dropbox y deja al usuario en el catálogo
+                setTimeout(() => { closeWin(); try { window.focus(); } catch (_) {} }, 10000);
+            } else {
+                // Si el navegador bloqueó la pestaña: iframe oculto, sin sacar al usuario de la web
+                const old = document.getElementById('updDlFrame'); if (old) old.remove();
+                const fr = document.createElement('iframe'); fr.id = 'updDlFrame'; fr.style.display = 'none'; fr.src = url;
+                document.body.appendChild(fr);
+                if (st) st.textContent = `Descargando ${label}…`;
+            }
+            setTimeout(() => { if (st) st.textContent = ''; finish(); }, 12000);
+        }, 5000);
+    } catch (e) { console.error(e); closeWin(); finish(); }
 }
 
 // ---- Eventos ----
