@@ -4421,12 +4421,12 @@ function updTrackRow(t) {
 function updFolderBlock(y, m, name, tracks) {
     const key = updKey(y, m, name), open = UPD.openF.has(key), k = escapeHtml(key);
     const size = tracks.reduce((s, t) => s + (t.fileSize || 0), 0);
-    const info = tracks.length + (tracks.length === 1 ? ' archivo' : ' archivos') + (size ? ' · ' + updFmtSize(size) : '');
+    const info = tracks.length ? tracks.length + (tracks.length === 1 ? ' archivo' : ' archivos') + (size ? ' · ' + updFmtSize(size) : '') : 'Descarga por Dropbox';
     const sorted = open ? tracks.slice().sort((a, b) => String(a.title).localeCompare(String(b.title), 'es', { numeric: true })) : [];
     return `<div class="border-t border-brand-border">
         <div class="flex items-center gap-2 pl-5 sm:pl-9 pr-3 py-2.5 hover:bg-slate-50">
             <button type="button" data-act="folder" data-key="${k}" class="flex items-center gap-3 flex-1 min-w-0 text-left" aria-expanded="${open}">
-                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 transition ${open ? 'rotate-90' : ''}"></i>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 transition ${open ? 'rotate-90' : ''} ${tracks.length ? '' : 'opacity-0'}"></i>
                 <i class="fa-solid fa-folder text-lg" style="color:#38bdf8"></i>
                 <span class="min-w-0"><span class="block truncate font-semibold text-slate-800 text-sm">${escapeHtml(name)}</span><span class="block text-[11px] text-slate-500">${info}</span></span>
             </button>
@@ -4449,13 +4449,14 @@ function updRender() {
     if (sel) { sel.innerHTML = updYears().map(y => `<option value="${y}"${y === UPD.year ? ' selected' : ''}>${y}</option>`).join(''); }
     const adminBar = document.getElementById('updAdminBar'); if (adminBar) adminBar.classList.toggle('hidden', !isAdmin);
     const groups = updGroups(UPD.year);
+    UPD.links.forEach(k => { const p = updParseKey(k); if (p.y === UPD.year && p.n && p.m >= 1 && p.m <= 12) { if (!groups[p.m]) groups[p.m] = {}; if (!groups[p.m][p.n]) groups[p.m][p.n] = []; } });
     let html = '', any = false;
     for (let m = 1; m <= 12; m++) {
         const g = groups[m], names = g ? Object.keys(g).sort((a, b) => a.localeCompare(b, 'es', { numeric: true })) : [];
         const total = names.reduce((s, n) => s + g[n].length, 0);
         const open = UPD.openM.has(m) && names.length;
         if (names.length) any = true;
-        const label = names.length ? `${names.length} ${names.length === 1 ? 'update' : 'updates'} · ${total} ${total === 1 ? 'archivo' : 'archivos'}` : 'Sin updates';
+        const label = names.length ? `${names.length} ${names.length === 1 ? 'update' : 'updates'}${total ? ` · ${total} ${total === 1 ? 'archivo' : 'archivos'}` : ''}` : 'Sin updates';
         const mKey = updKey(UPD.year, m, ''), mLink = UPD.links.has(mKey);
         if (mLink) any = true;
         html += `<div class="bg-white border border-brand-border rounded-2xl overflow-hidden ${(names.length || mLink) ? '' : 'opacity-60'}">
@@ -4466,6 +4467,7 @@ function updRender() {
                     <span class="font-bold text-slate-800 flex-1">${updFolderLabel(m)}</span>
                     <span class="text-xs text-slate-500 hidden sm:inline">${label}</span>
                 </button>
+                ${isAdmin ? `<button type="button" data-act="newweek" data-m="${m}" title="Nueva carpeta de semana con link de Dropbox" aria-label="Nueva carpeta" class="w-8 h-8 shrink-0 rounded-full text-slate-600 hover:bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-folder-plus"></i></button>` : ''}
                 ${isAdmin ? `<button type="button" data-act="setlink" data-key="${escapeHtml(mKey)}" title="Link de Dropbox de todo el mes" aria-label="Link de Dropbox del mes" class="w-8 h-8 shrink-0 rounded-full ${mLink ? 'text-brand-crimson' : 'text-slate-600'} hover:bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-link"></i></button>` : ''}
                 ${mLink ? `<button type="button" data-act="dllink" data-key="${escapeHtml(mKey)}" class="shrink-0 bg-brand-crimson text-white text-xs font-bold px-3 py-2 rounded-full whitespace-nowrap"><i class="fa-solid fa-download sm:mr-1"></i><span class="hidden sm:inline">Descargar mes</span></button>` : ''}
             </div>
@@ -4532,13 +4534,27 @@ async function updRename(key) {
     const nn = (prompt('Nuevo nombre del update:', n) || '').trim().toUpperCase();
     if (!nn || nn === n) return;
     const ids = allRemixes.filter(t => updInUpdate(t, y, m, n)).map(t => t.id);
-    if (await updAssignIds(ids, { year: y, month: m, name: nn })) { UPD.openF.delete(key); UPD.openF.add(updKey(y, m, nn)); updRender(); }
+    if (ids.length && !(await updAssignIds(ids, { year: y, month: m, name: nn }))) return;
+    if (UPD.links.has(key)) {
+        const { error } = await sb.from('update_links').update({ name: nn }).eq('year', y).eq('month', m).eq('name', n);
+        if (error) { updLinkError(error); return; }
+        UPD.links.delete(key); UPD.links.add(updKey(y, m, nn));
+    }
+    UPD.openF.delete(key); UPD.openF.add(updKey(y, m, nn)); updRender();
 }
 async function updDeleteFolder(key) {
     const { y, m, n } = updParseKey(key);
     const ids = allRemixes.filter(t => updInUpdate(t, y, m, n)).map(t => t.id);
-    if (!confirm(`¿Quitar el update "${n}"? Sus ${ids.length} canciones NO se borran: siguen en el catálogo.`)) return;
-    if (await updAssignIds(ids, null)) updRender();
+    const hasLink = UPD.links.has(key);
+    const msg = ids.length ? `¿Quitar el update "${n}"? Sus ${ids.length} canciones NO se borran: siguen en el catálogo.${hasLink ? ' También se quita su link de Dropbox.' : ''}` : `¿Quitar la carpeta "${n}" y su link de Dropbox?`;
+    if (!confirm(msg)) return;
+    if (ids.length && !(await updAssignIds(ids, null))) return;
+    if (hasLink) {
+        const { error } = await sb.from('update_links').delete().eq('year', y).eq('month', m).eq('name', n);
+        if (error) { updLinkError(error); return; }
+        UPD.links.delete(key);
+    }
+    updRender();
 }
 async function updRemoveTrack(id) {
     const t = allRemixes[updIdx(id)]; if (!t) return;
@@ -4648,8 +4664,9 @@ async function updLoadLinks() {
 }
 function updLinkError(e) {
     const msg = (e && e.message) || String(e);
-    if (/update_links|relation|does not exist|schema cache/i.test(msg)) alert('Falta crear la tabla de links en Supabase. Corre este SQL una sola vez en el SQL Editor y vuelve a intentar:\n\n' + UPD_LINKS_SQL);
-    else alert('No se pudo guardar el link: ' + msg);
+    console.error('update_links error:', e);
+    if (/does not exist|schema cache|could not find the table/i.test(msg)) alert('Falta crear la tabla de links en Supabase. Corre este SQL una sola vez en el SQL Editor y vuelve a intentar:\n\n' + UPD_LINKS_SQL);
+    else alert('No se pudo guardar el link.\n\nError real de Supabase:\n' + msg);
 }
 function updDirectUrl(u) { try { const x = new URL(u); x.searchParams.set('dl', '1'); return x.toString(); } catch (_) { return u; } }
 async function updSetLink(key) {
@@ -4668,7 +4685,16 @@ async function updSetLink(key) {
     if (!/^https:\/\/(www\.)?dropbox\.com\//i.test(url)) { alert('Pega un link de Dropbox (empieza con https://www.dropbox.com/...).'); return; }
     const { error } = await sb.from('update_links').upsert({ year: y, month: m, name: n, url }, { onConflict: 'year,month,name' });
     if (error) { updLinkError(error); return; }
-    UPD.links.add(key); updRender(); updStatus('Link guardado.');
+    UPD.links.add(key); if (n) UPD.openM.add(m); updRender(); updStatus('Link guardado.');
+}
+async function updNewWeek(m) {
+    if (!isAdmin || !sb) return;
+    const y = UPD.year;
+    let count = 0; UPD.links.forEach(k => { const p = updParseKey(k); if (p.y === y && p.m === m && p.n) count++; });
+    const def = `UPDATE ${updPad(count + 1)} ${MESES[m - 1].toUpperCase()} VIPREMIXESTOOLS ${y}`;
+    const n = (prompt(`Nombre de la nueva carpeta en ${updFolderLabel(m)}:`, def) || '').trim().toUpperCase();
+    if (!n) return;
+    await updSetLink(updKey(y, m, n));
 }
 async function updDownloadLink(key) {
     if (!currentUser) { openLoginModal(); return; }
@@ -4676,8 +4702,17 @@ async function updDownloadLink(key) {
     const { y, m, n } = updParseKey(key);
     const { data, error } = await sb.from('update_links').select('url').eq('year', y).eq('month', m).eq('name', n).maybeSingle();
     if (error || !data || !data.url) { alert('No se pudo obtener el link de descarga. Intenta de nuevo.'); return; }
-    updStatus(`Iniciando la descarga de ${n || updFolderLabel(m)}… Dropbox prepara el archivo y puede tardar unos segundos.`);
-    const a = document.createElement('a'); a.href = updDirectUrl(data.url); a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+    const url = updDirectUrl(data.url);
+    // Descarga en un iframe oculto: el socio se queda en la web y no se abre Dropbox
+    const old = document.getElementById('updDlFrame'); if (old) old.remove();
+    const fr = document.createElement('iframe'); fr.id = 'updDlFrame'; fr.style.display = 'none'; fr.setAttribute('aria-hidden', 'true'); fr.src = url;
+    document.body.appendChild(fr);
+    const st = document.getElementById('updStatus');
+    if (st) {
+        st.textContent = `Descargando ${n || updFolderLabel(m)}… Dropbox prepara el archivo y puede tardar unos segundos. Si no empieza, `;
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'toca aquí'; a.className = 'underline font-bold text-brand-crimson';
+        st.appendChild(a); st.appendChild(document.createTextNode('.'));
+    }
 }
 
 // ---- Eventos ----
@@ -4693,6 +4728,7 @@ async function updDownloadLink(key) {
         else if (a === 'dlall') updDownloadAll(key);
         else if (a === 'dllink') updDownloadLink(key);
         else if (a === 'setlink') updSetLink(key);
+        else if (a === 'newweek') updNewWeek(Number(b.dataset.m));
         else if (a === 'cancel') UPD.cancel = true;
         else if (a === 'add') { const k = updParseKey(key); updOpenPicker(k.y, k.m, k.n); }
         else if (a === 'rename') updRename(key);
