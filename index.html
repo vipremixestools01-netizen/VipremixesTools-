@@ -494,9 +494,9 @@
                 <a href="#" onclick="event.preventDefault();resetFilters()" class="hover:text-brand-crimson transition">Catálogo</a>
                 <a href="#" onclick="event.preventDefault();filterNewReleases()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs text-brand-crimson"></i> Nuevos / Recientes</a>
                 <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top</a>
-                <a href="#" onclick="event.preventDefault();showUpdatesView()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-folder-open text-xs text-brand-crimson"></i> Updates</a>
+                <a href="#" onclick="event.preventDefault();showUpdatesView()" id="updatesNavLink" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-folder-open text-xs text-brand-crimson"></i> Updates</a>
                 <a href="#" onclick="event.preventDefault();showPlansView()" class="hover:text-brand-crimson transition">Membresías</a>
-                <a href="#" onclick="event.preventDefault();showDJStudioView()" class="hover:text-brand-crimson transition"><i class="fa-solid fa-sliders mr-1 text-brand-crimson"></i> DJ Studio</a>
+                <a href="#" onclick="event.preventDefault();showDJStudioView()" id="djStudioNavLink" class="hover:text-brand-crimson transition"><i class="fa-solid fa-sliders mr-1 text-brand-crimson"></i> DJ Studio</a>
             </nav>
             <div id="authHeaderContainer" class="flex items-center gap-3">
                 <button onclick="openLoginModal()" class="text-slate-800 hover:text-brand-crimson font-semibold text-sm px-3 py-2 transition-all">Iniciar Sesión</button>
@@ -619,7 +619,7 @@
                     <p class="text-slate-400 text-sm lg:text-base">Obtén acceso ilimitado a descargas en alta calidad WAV/MP3.</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
                     <div class="bg-brand-panelBg border border-brand-border hover:border-brand-crimson rounded-3xl p-8 flex flex-col justify-between transition-all relative overflow-hidden group shadow-xl">
                         <div>
                             <h3 class="text-xl font-bold text-white mb-2">Membresía 1 Mes VIP</h3>
@@ -630,6 +630,18 @@
                             </div>
                         </div>
                         <div id="paypal-1m" class="w-full"></div>
+                    </div>
+
+                    <div class="bg-brand-panelBg border border-brand-border hover:border-brand-crimson rounded-3xl p-8 flex flex-col justify-between transition-all relative overflow-hidden group shadow-xl">
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">Membresía 6 Meses VIP</h3>
+                            <p class="text-slate-400 text-xs mb-6">Acceso VIP completo durante seis meses.</p>
+                            <div class="flex items-baseline space-x-2 mb-6">
+                                <span class="text-4xl font-black text-white">$60</span>
+                                <span class="text-slate-400 text-xs">USD / 6 meses</span>
+                            </div>
+                        </div>
+                        <div id="paypal-6m" class="w-full"></div>
                     </div>
 
                     <div class="bg-gradient-to-b from-brand-cardBg to-brand-panelBg border-2 border-brand-crimson rounded-3xl p-8 flex flex-col justify-between transition-all relative overflow-hidden group shadow-2xl glow-button">
@@ -653,7 +665,7 @@
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div>
                             <span class="text-xs font-bold uppercase tracking-widest text-brand-crimson">VIPREMIXESTOOLS</span>
-                            <h2 class="text-3xl font-black mt-1">Updates</h2>
+                            <h2 id="updatesHeading" class="text-3xl font-black mt-1">Updates de Audio</h2>
                             <p class="text-sm text-slate-500 mt-1">Todos los updates organizados por mes y por semana. Descarga una canción o el update completo.</p>
                         </div>
                         <div class="flex items-center gap-2">
@@ -942,7 +954,7 @@
                 <div class="w-10 h-10 rounded-2xl bg-brand-crimson/10 text-brand-crimson flex items-center justify-center border border-brand-crimson/30"><i class="fa-solid fa-user-plus text-lg"></i></div>
                 <div>
                     <h3 class="text-lg font-bold text-white">Registro de DJ</h3>
-                    <p class="text-xs text-slate-400">Crea tu cuenta para acceder a la plataforma</p>
+                    <p class="text-xs text-slate-400">Crea tu cuenta y luego elige una membresía para activar el acceso VIP</p>
                 </div>
             </div>
             <form id="registerForm" novalidate onsubmit="handleRegisterSubmit(event)" class="space-y-4">
@@ -970,7 +982,7 @@
                     <p id="regPassword2Err" class="text-[11px] text-rose-500 mt-1 hidden" role="alert"></p>
                 </div>
                 <p id="registerMsg" class="text-xs hidden" role="status" aria-live="polite"></p>
-                <button id="registerBtn" type="submit" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2">Crear Cuenta Gratis</button>
+                <button id="registerBtn" type="submit" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2">Crear cuenta y continuar al pago</button>
             </form>
         </div>
     </div>
@@ -1813,7 +1825,13 @@ function filterByDj(name) {
         }
         function applyModeUI() {
             const video = currentMode === 'video';
-            const title = document.getElementById('sidebarTitle'); if (title) title.textContent = 'Géneros';
+            const title = document.getElementById('sidebarTitle'); if (title) title.textContent = video ? 'Géneros de video' : 'Géneros de audio';
+            const updatesHeading = document.getElementById('updatesHeading');
+            if (updatesHeading) updatesHeading.textContent = video ? 'Updates de Video' : 'Updates de Audio';
+            const updatesNav = document.getElementById('updatesNavLink');
+            if (updatesNav) updatesNav.innerHTML = `<i class="fa-solid fa-folder-open text-xs text-brand-crimson"></i> Updates ${video ? 'Video' : 'Audio'}`;
+            const djNav = document.getElementById('djStudioNavLink');
+            if (djNav) djNav.classList.toggle('hidden', video);
             const tag = document.getElementById('bannerCategoryTag'); if (tag) tag.textContent = video ? 'Video Remixes VIP' : 'Record Pool VIP';
             const bt = document.getElementById('bannerTitle'); if (bt) bt.textContent = video ? 'Catálogo de Videos' : 'Catálogo General de Remixes';
             // Audio y video van totalmente separados en la web
@@ -1832,14 +1850,26 @@ function filterByDj(name) {
         function enterMode(mode) {
             currentMode = mode === 'video' ? 'video' : 'audio';
             document.getElementById('landingView').classList.add('hidden');
+            ['mainViewContainer','membershipsViewContainer','adminDashboardView','djStudioView','updatesView'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.classList.add('hidden');
+            });
+            document.getElementById('mainViewContainer').classList.remove('hidden');
             applyModeUI();
             window.scrollTo(0, 0);
             requestAnimationFrame(() => resetFilters());
         }
-        function showLanding() { closeVideoModal(); audioPlayer.pause(); isPlaying = false; try { updatePlayPauseUI(); } catch (_) {} document.getElementById('landingView').classList.remove('hidden'); }
+        function showLanding() {
+            closeVideoModal();
+            audioPlayer.pause(); isPlaying = false;
+            try { updatePlayPauseUI(); } catch (_) {}
+            ['mainViewContainer','membershipsViewContainer','adminDashboardView','djStudioView','updatesView'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.classList.add('hidden');
+            });
+            document.getElementById('landingView').classList.remove('hidden');
+        }
         // Los videos solo se reproducen en modo preview (no completos)
         const VIDEO_PREVIEW_SECONDS = 40;
-        const AUDIO_PREVIEW_SECONDS = 40;
+        const AUDIO_PREVIEW_SECONDS = 20;
         function videoPreviewGuard() {
             const v = document.getElementById('videoModalPlayer');
             if (hasMembership()) return;
@@ -1849,7 +1879,7 @@ function filterByDj(name) {
                 document.getElementById('videoPreviewEnd').classList.remove('hidden');
             }
         }
-        // Audio: quien no es socio escucha solo 40 s (socios y admin, completo)
+        // Audio: visitantes y usuarios sin membresía escuchan 20 s (socios y admin, completo)
         function audioPreviewGuard() {
             if (hasMembership() || !currentPlayingId) return;
             if (audioPlayer.currentTime >= AUDIO_PREVIEW_SECONDS) {
@@ -2598,11 +2628,10 @@ async function handleRegisterSubmit(e) {
         }
 
         await loadSession();
-        await loadTracks();
-        goToCatalog();
         form.reset();
         closeRegisterModal();
-        showToast('Cuenta creada. ¡Bienvenido al catálogo!');
+        showPlansView();
+        showToast('Cuenta creada. Elige y paga una membresía para activar tu acceso VIP.');
     } catch (error) {
         console.error('Registro:', error);
         const t = (error && error.message) || '';
@@ -2616,7 +2645,7 @@ async function handleRegisterSubmit(e) {
         else showRegisterMessage('No se pudo completar el registro. Verifica los datos e inténtalo de nuevo.');
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Crear Cuenta Gratis';
+        btn.textContent = 'Crear cuenta y continuar al pago';
     }
 }
 
@@ -2709,9 +2738,12 @@ async function requireSession() {
 // Canciones nuevas: ruta "b2/..." (Backblaze, vía función de Netlify). Canciones antiguas: Supabase.
 const isB2 = p => String(p || '').startsWith('b2/');
 async function audioApi(body) {
-    const session = await requireSession();
-    const r = await fetch('/.netlify/functions/audio', { method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+    const headers = { 'Content-Type': 'application/json' };
+    if (body && body.action !== 'play') {
+        const session = await requireSession();
+        headers.Authorization = 'Bearer ' + session.access_token;
+    }
+    const r = await fetch('/.netlify/functions/audio', { method: 'POST', headers,
         body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j.error || ('Error ' + r.status));
@@ -2727,7 +2759,6 @@ async function signedUrl(key, seconds, options) {
         const j = await audioApi({ action: dl ? 'download' : 'play', path: key, filename: dl || undefined });
         return j.url;
     }
-    await requireSession();
     const { data, error } = await sb.storage.from(BUCKET).createSignedUrl(key, seconds, options);
     if (error) throw new Error(error.message);
     return data.signedUrl;
@@ -2775,8 +2806,7 @@ async function handleAudioError() {
 async function playTrack(index) {
     const t = allRemixes[index]; if (!t) return;
     if (currentPlayingId === t.id) { togglePlayPause(); return; }
-    if (!currentUser) { openAuthGate(); return; }
-    // Escuchar: cualquier usuario registrado. Descargar: solo socios (ver handleDownloadClick).
+    // La escucha previa de audio está abierta a visitantes; la descarga sigue siendo solo para socios.
     let url;
     try { url = await signedUrl(t.path, 3600); }
     catch (e) { alert('No se pudo cargar el archivo: ' + e.message); return; }
@@ -3469,7 +3499,7 @@ function loadPaypalSdk() {
 }
 
 async function renderPaypalButtons() {
-    const plans = [['paypal-1m', 12.99, 'Membresía 1 Mes VIP'], ['paypal-12m', 130, 'Membresía 12 Meses VIP']];
+    const plans = [['paypal-1m', 12.99, 'Membresía 1 Mes VIP'], ['paypal-6m', 60, 'Membresía 6 Meses VIP'], ['paypal-12m', 130, 'Membresía 12 Meses VIP']];
     const btn = (click, text) => `<button onclick="${click}" class="w-full bg-brand-crimson hover:bg-red-600 text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-lg">${text}</button>`;
     if (!currentUser) { plans.forEach(([id]) => { document.getElementById(id).innerHTML = btn('openLoginModal()', 'Inicia sesión para comprar'); }); return; }
     if (PAYPAL_CLIENT_ID.includes('PEGA_AQUI')) {
@@ -3531,6 +3561,7 @@ const DJ_CAMELOT = {'C':'8B','G':'9B','D':'10B','A':'11B','E':'12B','B':'1B','F#
 let djPlaylists = [];
 function djSetStatus(msg, bad=false){const el=document.getElementById('djStatus'); if(el){el.textContent=msg;el.className='text-xs mt-4 '+(bad?'text-rose-600':'text-slate-500');}}
 function showDJStudioView(){
+ if(currentMode === 'video'){ showToast('DJ Studio está disponible en la sección de Audio.'); return; }
  if(!currentUser){openLoginModal();return;}
  document.getElementById('mainViewContainer').classList.add('hidden');
  document.getElementById('membershipsViewContainer').classList.add('hidden');
@@ -3540,7 +3571,7 @@ function showDJStudioView(){
  djPopulateSelectors(); djBatchInit(); djLoadPlaylists(); djShowTab(djTab); djBatchTargetChange();
 }
 function djPopulateSelectors(){
- const opts='<option value="">Selecciona un remix pendiente…</option>'+allRemixes.filter(t=>!t.musicalKey).map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.title)}${t.bpm?' · '+escapeHtml(t.bpm)+' BPM':''}</option>`).join('');
+ const opts='<option value="">Selecciona un remix pendiente…</option>'+allRemixes.filter(t=>!isVideoTrack(t)&&!t.musicalKey).map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.title)}${t.bpm?' · '+escapeHtml(t.bpm)+' BPM':''}</option>`).join('');
  ['djKeyTrack'].forEach(id=>{const el=document.getElementById(id);if(el){const old=el.value;el.innerHTML=opts;if(old)el.value=old;}});
  const key=document.getElementById('djKeyValue'); if(key)key.innerHTML='<option value="">Selecciona tonalidad…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
  const compatible=document.getElementById('djCompatibleKey'); if(compatible&&!compatible.options.length)compatible.innerHTML='<option value="">Elige una tonalidad de referencia…</option>'+DJ_KEYS.map(k=>`<option value="${k}">${k} · ${DJ_CAMELOT[k]}</option>`).join('');
@@ -4389,15 +4420,16 @@ function updDbError(e) {
     else alert('No se pudo guardar: ' + msg);
 }
 
+function updModeTrack(t) { return currentMode === 'video' ? isVideoTrack(t) : !isVideoTrack(t); }
 function updYears() {
     const s = new Set([new Date().getFullYear(), UPD.year]);
-    allRemixes.forEach(t => { if (t.updYear) s.add(t.updYear); });
+    allRemixes.forEach(t => { if (updModeTrack(t) && t.updYear) s.add(t.updYear); });
     return [...s].sort((a, b) => b - a);
 }
 function updGroups(year) {
     const g = {};
     allRemixes.forEach(t => {
-        if (t.updYear === year && t.updMonth >= 1 && t.updMonth <= 12 && t.updName) {
+        if (updModeTrack(t) && t.updYear === year && t.updMonth >= 1 && t.updMonth <= 12 && t.updName) {
             if (!g[t.updMonth]) g[t.updMonth] = {};
             if (!g[t.updMonth][t.updName]) g[t.updMonth][t.updName] = [];
             g[t.updMonth][t.updName].push(t);
@@ -4481,6 +4513,8 @@ function updRenderIfOpen() { const v = document.getElementById('updatesView'); i
 
 function showUpdatesView() {
     ['mainViewContainer', 'membershipsViewContainer', 'adminDashboardView', 'djStudioView'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+    const heading = document.getElementById('updatesHeading');
+    if (heading) heading.textContent = currentMode === 'video' ? 'Updates de Video' : 'Updates de Audio';
     document.getElementById('updatesView').classList.remove('hidden');
     // meses del formulario admin
     const nm = document.getElementById('updNewMonth');
@@ -4495,7 +4529,7 @@ function showUpdatesView() {
 async function updDownloadAll(key) {
     if (UPD.busy) return;
     const { y, m, n } = updParseKey(key);
-    const list = allRemixes.filter(t => updInUpdate(t, y, m, n) && t.path);
+    const list = allRemixes.filter(t => updModeTrack(t) && updInUpdate(t, y, m, n) && t.path);
     if (!list.length) return;
     if (!currentUser) { openLoginModal(); return; }
     if (!(await verifyMembershipServer())) { openPaywallModal(); return; }
@@ -4609,7 +4643,7 @@ function updPickRender() {
     const q = normalizeText(p.q || '');
     const rows = [];
     for (const t of allRemixes) {
-        if (updInUpdate(t, p.y, p.m, p.n)) continue;
+        if (!updModeTrack(t) || updInUpdate(t, p.y, p.m, p.n)) continue;
         if (q && !(t._searchText || '').includes(q)) continue;
         rows.push(t); if (rows.length >= 80) break;
     }
