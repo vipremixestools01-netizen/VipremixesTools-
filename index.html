@@ -494,6 +494,7 @@
                 <a href="#" onclick="event.preventDefault();resetFilters()" class="hover:text-brand-crimson transition">Catálogo</a>
                 <a href="#" onclick="event.preventDefault();filterNewReleases()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs text-brand-crimson"></i> Nuevos / Recientes</a>
                 <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top</a>
+                <a href="#" onclick="event.preventDefault();showUpdatesView()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-folder-open text-xs text-brand-crimson"></i> Updates</a>
                 <a href="#" onclick="event.preventDefault();showPlansView()" class="hover:text-brand-crimson transition">Membresías</a>
                 <a href="#" onclick="event.preventDefault();showDJStudioView()" class="hover:text-brand-crimson transition"><i class="fa-solid fa-sliders mr-1 text-brand-crimson"></i> DJ Studio</a>
             </nav>
@@ -507,6 +508,7 @@
         <a href="#" onclick="event.preventDefault();resetFilters()">Catálogo</a>
         <a href="#" onclick="event.preventDefault();filterNewReleases()">Nuevos / Recientes</a>
         <a href="#" onclick="event.preventDefault();filterTop50()">Top</a>
+        <a href="#" onclick="event.preventDefault();showUpdatesView()">Updates</a>
         <a href="#" onclick="event.preventDefault();showPlansView()">Membresías</a>
         <a href="#" onclick="event.preventDefault();showDJStudioView()">DJ Studio</a>
     </nav>
@@ -645,6 +647,41 @@
             </div>
 
             <!-- DJ STUDIO: mezcla de remixes del catálogo existente -->
+            <!-- ===== UPDATES POR MES Y SEMANA ===== -->
+            <section id="updatesView" class="hidden space-y-5">
+                <div class="bg-white border border-brand-border rounded-2xl p-6 shadow-sm">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-widest text-brand-crimson">VIPREMIXESTOOLS</span>
+                            <h2 class="text-3xl font-black mt-1">Updates</h2>
+                            <p class="text-sm text-slate-500 mt-1">Todos los updates organizados por mes y por semana. Descarga una canción o el update completo.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label for="updYearSel" class="text-xs font-bold text-slate-500">Año</label>
+                            <select id="updYearSel" class="bg-white border border-brand-border rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="updAdminBar" class="hidden bg-white border border-brand-border rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2"><i class="fa-solid fa-user-shield mr-1"></i> Admin: crear un update con canciones del catálogo</p>
+                    <div class="grid grid-cols-2 md:grid-cols-[1fr_90px_2fr_auto] gap-2">
+                        <select id="updNewMonth" class="bg-white border border-brand-border rounded-xl px-3 py-2.5 text-sm"></select>
+                        <input id="updNewYear" type="number" min="2020" max="2100" class="bg-white border border-brand-border rounded-xl px-3 py-2.5 text-sm" aria-label="Año">
+                        <input id="updNewName" type="text" maxlength="80" placeholder="UPDATE 01 NOVIEMBRE" class="col-span-2 md:col-span-1 bg-white border border-brand-border rounded-xl px-3 py-2.5 text-sm">
+                        <button type="button" data-act="newupd" class="col-span-2 md:col-span-1 bg-brand-crimson text-white font-bold text-xs rounded-xl px-4 py-2.5 whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Agregar canciones</button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2">También puedes asignar un update al subir un lote nuevo (botón de subir, sección "Asignar a un Update").</p>
+                </div>
+
+                <div class="flex items-center gap-3 min-h-[1.5rem]">
+                    <p id="updStatus" class="text-xs text-slate-500 flex-1" role="status"></p>
+                    <button id="updCancelBtn" type="button" data-act="cancel" class="hidden bg-slate-200 text-slate-700 rounded-lg px-3 py-2 text-xs font-bold">Cancelar descarga</button>
+                </div>
+
+                <div id="updList" class="space-y-3"></div>
+            </section>
+
             <section id="djStudioView" class="hidden space-y-6">
                 <div class="bg-white border border-brand-border rounded-2xl p-6 shadow-sm">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -1095,6 +1132,19 @@
                     <button type="button" id="previewUploadBtn" onclick="uploadVideoPreviews()" class="w-full bg-brand-crimson text-white font-bold py-2.5 rounded-xl text-xs">Subir previews</button>
                     <p id="previewStatus" class="text-[11px] mt-2 text-slate-300 hidden"></p>
                 </div>
+                </div>
+                <div class="border border-brand-border rounded-xl p-3 bg-brand-cardBg">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5"><i class="fa-solid fa-folder-tree mr-1"></i> Asignar a un Update (opcional)</label>
+                    <div class="grid grid-cols-[1fr_80px] gap-2 mb-2">
+                        <select id="bulkUpdMonth" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2.5 text-sm text-white">
+                            <option value="">Sin update (solo catálogo)</option>
+                            <option value="1">01-ENERO</option><option value="2">02-FEBRERO</option><option value="3">03-MARZO</option><option value="4">04-ABRIL</option><option value="5">05-MAYO</option><option value="6">06-JUNIO</option><option value="7">07-JULIO</option><option value="8">08-AGOSTO</option><option value="9">09-SEPTIEMBRE</option><option value="10">10-OCTUBRE</option><option value="11">11-NOVIEMBRE</option><option value="12">12-DICIEMBRE</option>
+                        </select>
+                        <input id="bulkUpdYear" type="number" min="2020" max="2100" aria-label="Año del update" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2.5 text-sm text-white">
+                    </div>
+                    <input id="bulkUpdName" type="text" list="updNamesList" maxlength="80" placeholder="Nombre de la semana: UPDATE 01 NOVIEMBRE" class="w-full bg-brand-cardBg border border-brand-border rounded-xl px-3 py-2.5 text-sm text-white">
+                    <datalist id="updNamesList"></datalist>
+                    <p class="text-[11px] text-slate-400 mt-2">Las canciones del lote quedan en el catálogo y también dentro de ese update. Si alguna ya existía en la web, no se duplica: solo se agrega al update.</p>
                 </div>
                 <datalist id="djKnownList"></datalist>
                 <div id="bulkReview" class="hidden space-y-2 max-h-48 overflow-y-auto pr-1"></div>
@@ -1752,7 +1802,7 @@ function filterByDj(name) {
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
-            document.getElementById('djStudioView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden'); try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
             safeRun('Barra de géneros', renderPortalsSidebar);
             safeRun('Tabla del catálogo', renderTracksTable);
         }
@@ -1856,7 +1906,7 @@ function filterByDj(name) {
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
-            document.getElementById('djStudioView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden'); try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
             safeRun('Barra de géneros', renderPortalsSidebar);
             safeRun('Tabla del catálogo', renderTracksTable);
         }
@@ -1875,7 +1925,7 @@ function filterByDj(name) {
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
-            document.getElementById('djStudioView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden'); try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
             safeRun('Barra de géneros', renderPortalsSidebar);
             safeRun('Tabla del catálogo', renderTracksTable);
         }
@@ -1900,7 +1950,7 @@ function filterByDj(name) {
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
-            document.getElementById('djStudioView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden'); try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
             safeRun('Barra de géneros', renderPortalsSidebar);
             safeRun('Tabla del catálogo', renderTracksTable);
         }
@@ -1914,7 +1964,7 @@ function filterByDj(name) {
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
-            document.getElementById('djStudioView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden'); try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
             safeRun('Tabla del catálogo', renderTracksTable);
         }
 
@@ -1922,12 +1972,13 @@ function filterByDj(name) {
             document.getElementById('mainViewContainer').classList.add('hidden');
             document.getElementById('membershipsViewContainer').classList.remove('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
-            document.getElementById('djStudioView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden'); try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
         }
 
         function showAdminDashboardView() {
             if (!isAdmin) return;
             renderAdminDashboard();
+            try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
             document.getElementById('mainViewContainer').classList.add('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.remove('hidden');
@@ -2238,7 +2289,7 @@ function toggleFavorite(i) {
     saveToLocalStorage(); renderTracksTable();
 }
 
-const TRACK_COLS = 'id,title,artist,remixer,portal,genre,bpm,created_at,storage_path,ext,file_size,musical_key,camelot_key,duration_seconds,key_analysis_status,rating,rating_status,cover_url,version,popularity,release_date,pop_status,pop_matched';
+const TRACK_COLS = 'id,title,artist,remixer,portal,genre,bpm,created_at,storage_path,ext,file_size,musical_key,camelot_key,duration_seconds,key_analysis_status,rating,rating_status,cover_url,version,popularity,release_date,pop_status,pop_matched,update_year,update_month,update_name';
 async function fetchTrackPage(from, cols, withCount) {
     return sb.from('tracks').select(cols, withCount ? { count: 'exact' } : undefined)
         .order('created_at', { ascending: false }).order('id', { ascending: true }).range(from, from + 999);
@@ -2263,7 +2314,7 @@ async function loadTracks() {
     }
     if (error) { console.error('loadTracks:', error); alert('No se pudo cargar el catálogo: ' + error.message); return; }
     allRemixes = (Array.isArray(data) ? data : []).map(t => ({ id: t.id, title: t.title || 'Sin título', remixer: t.remixer || '', artist: /anthonymejia/i.test(t.artist || '') ? '' : (t.artist || ''), portal: t.portal || '', genre: t.genre || '', bpm: t.bpm,
-        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), fileSize: Number(t.file_size) || 0, musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', popularity: Number(t.popularity) || 0, releaseDate: t.release_date || '', popStatus: t.pop_status || '', popMatched: t.pop_matched || '', catalogVersion: t.version || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
+        date: t.created_at ? String(t.created_at).slice(0, 10) : '', path: t.storage_path || '', ext: (t.ext || 'mp3').toLowerCase(), fileSize: Number(t.file_size) || 0, musicalKey: t.musical_key || '', camelotKey: t.camelot_key || '', duration: t.duration_seconds || null, keyStatus: t.key_analysis_status || 'pending', rating: t.rating || '', ratingStatus: t.rating_status || '', popularity: Number(t.popularity) || 0, releaseDate: t.release_date || '', popStatus: t.pop_status || '', popMatched: t.pop_matched || '', catalogVersion: t.version || '', updYear: Number(t.update_year) || 0, updMonth: Number(t.update_month) || 0, updName: t.update_name || '', coverUrl: safeMediaUrl(t.cover_url, DEFAULT_COVER), isVip: true, isFavorite: favs.includes(t.id) }));
     // Índice de búsqueda precalculado: evita normalizar y analizar cada canción en cada tecla.
     allRemixes.forEach(track => {
         try {
@@ -2349,7 +2400,7 @@ function togglePass(id, btn) {
 }
 function goToCatalog() {
     resetFilters();
-    ['membershipsViewContainer', 'adminDashboardView', 'djStudioView'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+    ['membershipsViewContainer', 'adminDashboardView', 'djStudioView', 'updatesView'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
     document.getElementById('mainViewContainer').classList.remove('hidden');
 }
 
@@ -3280,8 +3331,9 @@ async function processBulkUpload() {
     if (skipped && !confirm(`${skipped} archivo(s) con formato no admitido se omitirán. ¿Continuar con los ${files.length} restantes?`)) return;
     if (files.length > 50 && !confirm(`Se subirán ${files.length} archivos uno por uno. Mantén esta pestaña abierta; puedes detener el lote cuando quieras. ¿Continuar?`)) return;
     if (!sb) { alert('La conexión con la base de datos no está configurada.'); return; }
+    const updSel = updReadUploadSelection(); if (updSel && updSel.error) { alert(updSel.error); return; }
     let total = files.length; const itemMap = new Map(bulkItems.map(x => [x.file, x])), sleep = ms => new Promise(r => setTimeout(r, ms));
-    const dupNames = [], noGenreNames = []; let hasSizeCol = false;
+    const dupNames = [], noGenreNames = [], dupToTag = []; let hasSizeCol = false;
     const stopBtn = document.getElementById('uploadStopBtn');
     bulkCancel = false;
     if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = 'Detener lote'; stopBtn.classList.remove('hidden'); }
@@ -3301,9 +3353,10 @@ async function processBulkUpload() {
         const seenSizes = new Set(allRemixes.filter(t => t.fileSize).map(t => t.fileSize));
         files = files.filter(f => {
             const base = f.name.replace(/\.[^/.]+$/, ''), keys = [normalizeText(base), normalizeText(bulkFinalTitle(base, itemMap.get(f) || {}))];
-            if (keys.some(k => k && seen.has(k)) || (hasSizeCol && f.size && seenSizes.has(f.size))) { dupNames.push(f.name); return false; }
+            if (keys.some(k => k && seen.has(k)) || (hasSizeCol && f.size && seenSizes.has(f.size))) { if (updSel) { const ex = updFindExisting(keys, f.size); if (ex) dupToTag.push(ex.id); } dupNames.push(f.name); return false; }
             keys.forEach(k => seen.add(k)); if (hasSizeCol && f.size) seenSizes.add(f.size); return true;
         });
+        if (updSel && dupToTag.length) { const okTag = await updAssignIds([...new Set(dupToTag)], updSel); if (okTag) showToast(`${new Set(dupToTag).size} canción(es) que ya existían se agregaron al update ${updSel.name}.`); }
         // Canciones sin género detectado: se rechazan (o se envían a Latino / al género por defecto según lo elegido)
         const fb = bulkFallbackGenre();
         if (!fb) {
@@ -3335,7 +3388,7 @@ async function processBulkUpload() {
                 const finalTitle = bulkFinalTitle(title, it);
                 const bpm = Number((title.match(/(\d{2,3})\s*bpm/i) || [])[1]) || it.bpm || null;
                 const detectedUploadVersion = detectCatalogVersion(f.name + ' ' + finalTitle).join(' · ');
-                const ins = await sb.from('tracks').insert({ ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal: (VIDEO_EXTS.includes(ext) ? 'VIDEOS' : portal), genre: it.genre || bulkFallbackGenre(), bpm, storage_path: path, ext, version: detectedUploadVersion || null,
+                const ins = await sb.from('tracks').insert({ ...(updSel ? { update_year: updSel.year, update_month: updSel.month, update_name: updSel.name } : {}), ...(hasSizeCol ? { file_size: f.size } : {}), title: finalTitle, artist: '', portal: (VIDEO_EXTS.includes(ext) ? 'VIDEOS' : portal), genre: it.genre || bulkFallbackGenre(), bpm, storage_path: path, ext, version: detectedUploadVersion || null,
                     musical_key: it.musicalKey || null, camelot_key: it.camelotKey || null, duration_seconds: it.duration || null,
                     key_analysis_status: it.musicalKey ? 'analyzed' : 'pending', key_analyzed_at: it.musicalKey ? new Date().toISOString() : null });
                 if (ins.error) throw new Error(ins.error.message);
@@ -3451,6 +3504,7 @@ async function renderPaypalButtons() {
 
 function showPlansView() {
     mainViewContainer.classList.add('hidden');
+    try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
     membershipsViewContainer.classList.remove('hidden');
     adminDashboardView.classList.add('hidden');
     renderPaypalButtons();
@@ -3481,7 +3535,7 @@ function showDJStudioView(){
  document.getElementById('mainViewContainer').classList.add('hidden');
  document.getElementById('membershipsViewContainer').classList.add('hidden');
  document.getElementById('adminDashboardView').classList.add('hidden');
-            document.getElementById('djStudioView').classList.add('hidden');
+            document.getElementById('djStudioView').classList.add('hidden'); try { document.getElementById('updatesView').classList.add('hidden'); } catch (_) {}
  document.getElementById('djStudioView').classList.remove('hidden');
  djPopulateSelectors(); djBatchInit(); djLoadPlaylists(); djShowTab(djTab); djBatchTargetChange();
 }
@@ -4314,6 +4368,357 @@ function downloadCurrent() {
  ['seeked', 'durationchange'].forEach(ev => audioPlayer.addEventListener(ev, draw));
  if (window.ResizeObserver) { const ro = new ResizeObserver(draw); ro.observe(ov); } else window.addEventListener('resize', draw);
  draw();
+})();
+</script>
+
+<script>
+// ===== UPDATES POR MES Y SEMANA =====
+const UPD_SQL = "alter table tracks add column if not exists update_year int, add column if not exists update_month int, add column if not exists update_name text;";
+const UPD = { links: new Set(), year: new Date().getFullYear(), openM: new Set(), openF: new Set(), cancel: false, busy: false, pick: null };
+const updPad = m => String(m).padStart(2, '0');
+const updFolderLabel = m => updPad(m) + '-' + MESES[m - 1].toUpperCase();
+const updKey = (y, m, n) => y + '|' + m + '|' + n;
+function updParseKey(k) { const a = k.indexOf('|'), b = k.indexOf('|', a + 1); return { y: +k.slice(0, a), m: +k.slice(a + 1, b), n: k.slice(b + 1) }; }
+function updFmtSize(b) { if (!b) return ''; const u = ['B', 'KB', 'MB', 'GB']; let i = 0, v = b; while (v >= 1024 && i < 3) { v /= 1024; i++; } return v.toFixed(i > 1 ? 1 : 0) + ' ' + u[i]; }
+function updIdx(id) { return allRemixes.findIndex(x => String(x.id) === String(id)); }
+function updStatus(msg) { const el = document.getElementById('updStatus'); if (el) el.textContent = msg || ''; }
+function updInUpdate(t, y, m, n) { return t.updYear === y && t.updMonth === m && t.updName === n; }
+function updDbError(e) {
+    const msg = (e && e.message) || String(e);
+    if (/update_(year|month|name)|column/i.test(msg)) alert('Falta crear las columnas de updates en Supabase. Corre este SQL en el SQL Editor y vuelve a intentar:\n\n' + UPD_SQL);
+    else alert('No se pudo guardar: ' + msg);
+}
+
+function updYears() {
+    const s = new Set([new Date().getFullYear(), UPD.year]);
+    allRemixes.forEach(t => { if (t.updYear) s.add(t.updYear); });
+    return [...s].sort((a, b) => b - a);
+}
+function updGroups(year) {
+    const g = {};
+    allRemixes.forEach(t => {
+        if (t.updYear === year && t.updMonth >= 1 && t.updMonth <= 12 && t.updName) {
+            if (!g[t.updMonth]) g[t.updMonth] = {};
+            if (!g[t.updMonth][t.updName]) g[t.updMonth][t.updName] = [];
+            g[t.updMonth][t.updName].push(t);
+        }
+    });
+    return g;
+}
+
+function updTrackRow(t) {
+    const video = isVideoTrack(t);
+    const meta = [t.genre, t.bpm ? t.bpm + ' BPM' : '', t.camelotKey || t.musicalKey, updFmtSize(t.fileSize)].filter(Boolean).join(' · ');
+    const id = escapeHtml(String(t.id));
+    return `<div class="flex items-center gap-3 pl-10 sm:pl-16 pr-3 py-2 border-t border-brand-border text-sm">
+        <button type="button" data-act="play" data-id="${id}" aria-label="${video ? 'Ver preview' : 'Reproducir'}" class="w-8 h-8 shrink-0 rounded-full bg-brand-crimson inline-flex items-center justify-center"><i class="fa-solid ${video ? 'fa-film' : 'fa-play'} text-[10px] ${video ? '' : 'ml-0.5'}"></i></button>
+        <div class="min-w-0 flex-1"><div class="truncate font-medium text-slate-800">${escapeHtml(t.title)}</div>${meta ? `<div class="truncate text-[11px] text-slate-500">${escapeHtml(meta)}</div>` : ''}</div>
+        <button type="button" data-act="dl" data-id="${id}" title="Descargar" aria-label="Descargar" class="w-9 h-9 shrink-0 rounded-full text-slate-600 hover:bg-blue-50 hover:text-brand-crimson transition flex items-center justify-center"><i class="fa-solid ${hasMembership() ? 'fa-download' : 'fa-lock'}"></i></button>
+        ${isAdmin ? `<button type="button" data-act="rm" data-id="${id}" title="Quitar de este update" aria-label="Quitar de este update" class="w-8 h-8 shrink-0 rounded-full text-red-500 hover:bg-red-50 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>` : ''}
+    </div>`;
+}
+
+function updFolderBlock(y, m, name, tracks) {
+    const key = updKey(y, m, name), open = UPD.openF.has(key), k = escapeHtml(key);
+    const size = tracks.reduce((s, t) => s + (t.fileSize || 0), 0);
+    const info = tracks.length + (tracks.length === 1 ? ' archivo' : ' archivos') + (size ? ' · ' + updFmtSize(size) : '');
+    const sorted = open ? tracks.slice().sort((a, b) => String(a.title).localeCompare(String(b.title), 'es', { numeric: true })) : [];
+    return `<div class="border-t border-brand-border">
+        <div class="flex items-center gap-2 pl-5 sm:pl-9 pr-3 py-2.5 hover:bg-slate-50">
+            <button type="button" data-act="folder" data-key="${k}" class="flex items-center gap-3 flex-1 min-w-0 text-left" aria-expanded="${open}">
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 transition ${open ? 'rotate-90' : ''}"></i>
+                <i class="fa-solid fa-folder text-lg" style="color:#38bdf8"></i>
+                <span class="min-w-0"><span class="block truncate font-semibold text-slate-800 text-sm">${escapeHtml(name)}</span><span class="block text-[11px] text-slate-500">${info}</span></span>
+            </button>
+            ${isAdmin ? `<button type="button" data-act="add" data-key="${k}" title="Agregar canciones" aria-label="Agregar canciones" class="w-8 h-8 rounded-full text-slate-600 hover:bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-plus"></i></button>
+            <button type="button" data-act="rename" data-key="${k}" title="Renombrar" aria-label="Renombrar" class="w-8 h-8 rounded-full text-slate-600 hover:bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-pen"></i></button>
+            <button type="button" data-act="delfolder" data-key="${k}" title="Quitar el update (las canciones siguen en el catálogo)" aria-label="Quitar el update" class="w-8 h-8 rounded-full text-red-500 hover:bg-red-50 flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>` : ''}
+            ${isAdmin ? `<button type="button" data-act="setlink" data-key="${k}" title="Link de Dropbox de este update" aria-label="Link de Dropbox" class="w-8 h-8 rounded-full ${UPD.links.has(key) ? 'text-brand-crimson' : 'text-slate-600'} hover:bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-link"></i></button>` : ''}
+            ${UPD.links.has(key)
+                ? `<button type="button" data-act="dllink" data-key="${k}" class="bg-brand-crimson text-white text-xs font-bold px-3 py-2 rounded-full whitespace-nowrap"><i class="fa-solid fa-download sm:mr-1"></i><span class="hidden sm:inline">Descargar update</span></button>`
+                : `<button type="button" data-act="dlall" data-key="${k}" class="bg-brand-crimson text-white text-xs font-bold px-3 py-2 rounded-full whitespace-nowrap"><i class="fa-solid fa-download sm:mr-1"></i><span class="hidden sm:inline">Descargar todo</span></button>`}
+        </div>
+        ${open ? sorted.map(updTrackRow).join('') : ''}
+    </div>`;
+}
+
+function updRender() {
+    const list = document.getElementById('updList'); if (!list) return;
+    // selector de año
+    const sel = document.getElementById('updYearSel');
+    if (sel) { sel.innerHTML = updYears().map(y => `<option value="${y}"${y === UPD.year ? ' selected' : ''}>${y}</option>`).join(''); }
+    const adminBar = document.getElementById('updAdminBar'); if (adminBar) adminBar.classList.toggle('hidden', !isAdmin);
+    const groups = updGroups(UPD.year);
+    let html = '', any = false;
+    for (let m = 1; m <= 12; m++) {
+        const g = groups[m], names = g ? Object.keys(g).sort((a, b) => a.localeCompare(b, 'es', { numeric: true })) : [];
+        const total = names.reduce((s, n) => s + g[n].length, 0);
+        const open = UPD.openM.has(m) && names.length;
+        if (names.length) any = true;
+        const label = names.length ? `${names.length} ${names.length === 1 ? 'update' : 'updates'} · ${total} ${total === 1 ? 'archivo' : 'archivos'}` : 'Sin updates';
+        const mKey = updKey(UPD.year, m, ''), mLink = UPD.links.has(mKey);
+        if (mLink) any = true;
+        html += `<div class="bg-white border border-brand-border rounded-2xl overflow-hidden ${(names.length || mLink) ? '' : 'opacity-60'}">
+            <div class="flex items-center gap-1 pr-3">
+                <button type="button" ${names.length ? `data-act="month" data-m="${m}"` : 'disabled'} class="flex-1 min-w-0 flex items-center gap-3 px-4 py-3.5 text-left ${names.length ? 'hover:bg-slate-50' : 'cursor-default'}" aria-expanded="${!!open}">
+                    <i class="fa-solid fa-chevron-right text-xs text-slate-400 transition ${open ? 'rotate-90' : ''}"></i>
+                    <i class="fa-solid fa-folder text-xl" style="color:#38bdf8"></i>
+                    <span class="font-bold text-slate-800 flex-1">${updFolderLabel(m)}</span>
+                    <span class="text-xs text-slate-500 hidden sm:inline">${label}</span>
+                </button>
+                ${isAdmin ? `<button type="button" data-act="setlink" data-key="${escapeHtml(mKey)}" title="Link de Dropbox de todo el mes" aria-label="Link de Dropbox del mes" class="w-8 h-8 shrink-0 rounded-full ${mLink ? 'text-brand-crimson' : 'text-slate-600'} hover:bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-link"></i></button>` : ''}
+                ${mLink ? `<button type="button" data-act="dllink" data-key="${escapeHtml(mKey)}" class="shrink-0 bg-brand-crimson text-white text-xs font-bold px-3 py-2 rounded-full whitespace-nowrap"><i class="fa-solid fa-download sm:mr-1"></i><span class="hidden sm:inline">Descargar mes</span></button>` : ''}
+            </div>
+            ${open ? names.map(n => updFolderBlock(UPD.year, m, n, g[n])).join('') : ''}
+        </div>`;
+    }
+    if (!any) html = `<div class="bg-white border border-brand-border rounded-2xl p-8 text-center text-sm text-slate-500"><i class="fa-solid fa-folder-open text-3xl mb-3 block" style="color:#38bdf8"></i>Todavía no hay updates en ${UPD.year}.${isAdmin ? ' Crea el primero con el formulario de arriba o al subir un lote.' : ''}</div>` + html;
+    list.innerHTML = html;
+}
+function updRenderIfOpen() { const v = document.getElementById('updatesView'); if (v && !v.classList.contains('hidden')) updRender(); }
+
+function showUpdatesView() {
+    ['mainViewContainer', 'membershipsViewContainer', 'adminDashboardView', 'djStudioView'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+    document.getElementById('updatesView').classList.remove('hidden');
+    // meses del formulario admin
+    const nm = document.getElementById('updNewMonth');
+    if (nm && !nm.options.length) { nm.innerHTML = '<option value="">Mes…</option>' + MESES.map((_, i) => `<option value="${i + 1}">${updFolderLabel(i + 1)}</option>`).join(''); nm.value = String(new Date().getMonth() + 1); }
+    const ny = document.getElementById('updNewYear'); if (ny && !ny.value) ny.value = UPD.year;
+    // abre por defecto el mes más reciente que tenga updates
+    if (!UPD.openM.size) { const g = updGroups(UPD.year); for (let m = 12; m >= 1; m--) if (g[m]) { UPD.openM.add(m); break; } }
+    updRender(); window.scrollTo(0, 0); updLoadLinks();
+}
+
+// ---- Descargas ----
+async function updDownloadAll(key) {
+    if (UPD.busy) return;
+    const { y, m, n } = updParseKey(key);
+    const list = allRemixes.filter(t => updInUpdate(t, y, m, n) && t.path);
+    if (!list.length) return;
+    if (!currentUser) { openLoginModal(); return; }
+    if (!(await verifyMembershipServer())) { openPaywallModal(); return; }
+    if (list.length > 15 && !confirm(`Se descargarán ${list.length} archivos uno por uno. Si el navegador pregunta, permite descargas múltiples. ¿Continuar?`)) return;
+    UPD.busy = true; UPD.cancel = false;
+    const cancelBtn = document.getElementById('updCancelBtn'); if (cancelBtn) cancelBtn.classList.remove('hidden');
+    let ok = 0, fail = 0;
+    try {
+        for (let i = 0; i < list.length && !UPD.cancel; i++) {
+            const t = list[i];
+            updStatus(`Descargando ${i + 1} de ${list.length}: ${t.title}`);
+            try {
+                const url = await signedUrl(t.path, 120, { download: `${t.title}${t.artist ? ' - ' + t.artist : ''}.${t.ext}` });
+                const a = document.createElement('a'); a.href = url; document.body.appendChild(a); a.click(); a.remove(); ok++;
+            } catch (e) { console.warn(e); fail++; }
+            await new Promise(r => setTimeout(r, 1500));
+        }
+        updStatus(UPD.cancel ? `Cancelado tras ${ok} descarga(s).` : `Listo: ${ok} descargada(s)${fail ? `, ${fail} con error` : ''}.`);
+    } finally { UPD.busy = false; if (cancelBtn) cancelBtn.classList.add('hidden'); }
+}
+
+// ---- Administración ----
+async function updAssignIds(ids, s) {
+    if (!isAdmin || !sb || !ids.length) return false;
+    const patch = s ? { update_year: s.year, update_month: s.month, update_name: s.name } : { update_year: null, update_month: null, update_name: null };
+    for (let i = 0; i < ids.length; i += 200) {
+        const { error } = await sb.from('tracks').update(patch).in('id', ids.slice(i, i + 200));
+        if (error) { updDbError(error); return false; }
+    }
+    const set = new Set(ids.map(String));
+    allRemixes.forEach(t => { if (set.has(String(t.id))) { t.updYear = s ? s.year : 0; t.updMonth = s ? s.month : 0; t.updName = s ? s.name : ''; } });
+    return true;
+}
+async function updRename(key) {
+    const { y, m, n } = updParseKey(key);
+    const nn = (prompt('Nuevo nombre del update:', n) || '').trim().toUpperCase();
+    if (!nn || nn === n) return;
+    const ids = allRemixes.filter(t => updInUpdate(t, y, m, n)).map(t => t.id);
+    if (await updAssignIds(ids, { year: y, month: m, name: nn })) { UPD.openF.delete(key); UPD.openF.add(updKey(y, m, nn)); updRender(); }
+}
+async function updDeleteFolder(key) {
+    const { y, m, n } = updParseKey(key);
+    const ids = allRemixes.filter(t => updInUpdate(t, y, m, n)).map(t => t.id);
+    if (!confirm(`¿Quitar el update "${n}"? Sus ${ids.length} canciones NO se borran: siguen en el catálogo.`)) return;
+    if (await updAssignIds(ids, null)) updRender();
+}
+async function updRemoveTrack(id) {
+    const t = allRemixes[updIdx(id)]; if (!t) return;
+    if (!confirm(`¿Quitar "${t.title}" de este update? Seguirá en el catálogo.`)) return;
+    if (await updAssignIds([t.id], null)) updRender();
+}
+
+// ---- Selector de canciones del catálogo (admin) ----
+function updOpenPicker(y, m, n) {
+    if (!isAdmin) return;
+    UPD.pick = { y, m, n, sel: new Set(), q: '' };
+    let ov = document.getElementById('updPicker');
+    if (!ov) {
+        ov = document.createElement('div'); ov.id = 'updPicker';
+        ov.className = 'fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4';
+        ov.innerHTML = `<div class="bg-white border border-brand-border rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div class="p-4 border-b border-brand-border">
+                <div class="flex items-start justify-between gap-3 mb-3"><div><h3 class="font-black text-lg text-slate-800">Agregar canciones al update</h3><p id="updPickTarget" class="text-xs text-slate-500"></p></div><button type="button" data-pick="close" aria-label="Cerrar" class="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-500"><i class="fa-solid fa-xmark"></i></button></div>
+                <input id="updPickSearch" type="search" placeholder="Buscar por título, remixer, género…" class="w-full bg-white border border-brand-border rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div id="updPickList" class="flex-1 overflow-y-auto"></div>
+            <div class="p-4 border-t border-brand-border flex items-center gap-3"><span id="updPickCount" class="text-xs text-slate-500 flex-1"></span><button type="button" data-pick="close" class="bg-slate-200 text-slate-700 rounded-xl px-4 py-2.5 text-xs font-bold">Cancelar</button><button type="button" data-pick="save" class="bg-brand-crimson text-white rounded-xl px-4 py-2.5 text-xs font-bold">Agregar</button></div>
+        </div>`;
+        document.body.appendChild(ov);
+        ov.addEventListener('click', async e => {
+            if (e.target === ov) { ov.classList.add('hidden'); return; }
+            const b = e.target.closest('[data-pick]'); if (!b) return;
+            if (b.dataset.pick === 'close') ov.classList.add('hidden');
+            if (b.dataset.pick === 'save') {
+                const p = UPD.pick; if (!p || !p.sel.size) { alert('Selecciona al menos una canción.'); return; }
+                b.disabled = true;
+                const ok = await updAssignIds([...p.sel], { year: p.y, month: p.m, name: p.n });
+                b.disabled = false;
+                if (ok) { ov.classList.add('hidden'); UPD.year = p.y; UPD.openM.add(p.m); UPD.openF.add(updKey(p.y, p.m, p.n)); updRender(); updStatus(`${p.sel.size} canción(es) agregadas a ${p.n}.`); }
+            }
+        });
+        ov.addEventListener('change', e => {
+            const cb = e.target.closest('input[data-pid]'); if (!cb || !UPD.pick) return;
+            if (cb.checked) UPD.pick.sel.add(cb.dataset.pid); else UPD.pick.sel.delete(cb.dataset.pid);
+            updPickCount();
+        });
+        document.getElementById('updPickSearch').addEventListener('input', e => { UPD.pick.q = e.target.value; updPickRender(); });
+    }
+    ov.classList.remove('hidden');
+    document.getElementById('updPickTarget').textContent = `${updFolderLabel(m)} ${y} · ${n}`;
+    document.getElementById('updPickSearch').value = '';
+    updPickRender();
+}
+function updPickCount() { const el = document.getElementById('updPickCount'); if (el && UPD.pick) el.textContent = `${UPD.pick.sel.size} seleccionada(s)`; }
+function updPickRender() {
+    const p = UPD.pick, box = document.getElementById('updPickList'); if (!p || !box) return;
+    const q = normalizeText(p.q || '');
+    const rows = [];
+    for (const t of allRemixes) {
+        if (updInUpdate(t, p.y, p.m, p.n)) continue;
+        if (q && !(t._searchText || '').includes(q)) continue;
+        rows.push(t); if (rows.length >= 80) break;
+    }
+    box.innerHTML = rows.length ? rows.map(t => {
+        const other = t.updName ? `<span class="text-[10px] bg-amber-50 text-amber-700 border border-amber-100 rounded-full px-2 py-0.5 ml-2 whitespace-nowrap">ya en: ${escapeHtml(t.updName)}</span>` : '';
+        return `<label class="flex items-center gap-3 px-4 py-2 border-b border-brand-border hover:bg-slate-50 cursor-pointer"><input type="checkbox" data-pid="${escapeHtml(String(t.id))}" ${p.sel.has(String(t.id)) ? 'checked' : ''}><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-slate-800">${escapeHtml(t.title)}${other}</span><span class="block text-[11px] text-slate-500">${escapeHtml([t.genre, t.date].filter(Boolean).join(' · '))}</span></span></label>`;
+    }).join('') + (rows.length >= 80 ? '<p class="text-center text-[11px] text-slate-500 py-3">Mostrando 80. Usa el buscador para encontrar más.</p>' : '') : '<p class="text-center text-sm text-slate-500 py-8">No hay canciones que coincidan.</p>';
+    updPickCount();
+}
+
+// ---- Subida en lote: asignar a un update ----
+function updReadUploadSelection() {
+    const m = Number((document.getElementById('bulkUpdMonth') || {}).value) || 0;
+    const name = ((document.getElementById('bulkUpdName') || {}).value || '').trim().toUpperCase();
+    const y = Number((document.getElementById('bulkUpdYear') || {}).value) || new Date().getFullYear();
+    if (!m && !name) return null;
+    if (!m || !name) return { error: 'Para asignar el lote a un Update elige el mes y escribe el nombre (por ejemplo: UPDATE 01 NOVIEMBRE). Si no quieres asignarlo, deja el mes en "Sin update" y el nombre vacío.' };
+    return { year: y, month: m, name };
+}
+let updExistingMaps = null;
+function updFindExisting(keys, size) {
+    if (!updExistingMaps) {
+        const byTitle = new Map(), bySize = new Map();
+        allRemixes.forEach(t => { const k = normalizeText(t.title); if (k && !byTitle.has(k)) byTitle.set(k, t); if (t.fileSize && !bySize.has(t.fileSize)) bySize.set(t.fileSize, t); });
+        updExistingMaps = { byTitle, bySize };
+    }
+    for (const k of keys) { if (k && updExistingMaps.byTitle.has(k)) return updExistingMaps.byTitle.get(k); }
+    return size ? (updExistingMaps.bySize.get(size) || null) : null;
+}
+
+
+// ---- Links de Dropbox (por mes o por semana) ----
+const UPD_LINKS_SQL = `create table if not exists update_links (
+  id bigint generated by default as identity primary key,
+  year int not null, month int not null, name text not null default '',
+  url text not null, created_at timestamptz default now(),
+  unique (year, month, name)
+);
+alter table update_links enable row level security;
+create policy "socios leen links" on update_links for select using (exists (select 1 from profiles p where p.id = auth.uid() and (p.is_admin or p.membership_expires > now())));
+create policy "admin gestiona links" on update_links for all using (exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin)) with check (exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin));
+create view update_links_available as select year, month, name from update_links;
+grant select on update_links_available to anon, authenticated;`;
+async function updLoadLinks() {
+    if (!sb) return;
+    try {
+        const { data, error } = await sb.from('update_links_available').select('year,month,name');
+        if (error || !Array.isArray(data)) return;
+        UPD.links = new Set(data.map(r => updKey(r.year, r.month, r.name || '')));
+        updRenderIfOpen();
+    } catch (_) {}
+}
+function updLinkError(e) {
+    const msg = (e && e.message) || String(e);
+    if (/update_links|relation|does not exist|schema cache/i.test(msg)) alert('Falta crear la tabla de links en Supabase. Corre este SQL una sola vez en el SQL Editor y vuelve a intentar:\n\n' + UPD_LINKS_SQL);
+    else alert('No se pudo guardar el link: ' + msg);
+}
+function updDirectUrl(u) { try { const x = new URL(u); x.searchParams.set('dl', '1'); return x.toString(); } catch (_) { return u; } }
+async function updSetLink(key) {
+    if (!isAdmin || !sb) return;
+    const { y, m, n } = updParseKey(key);
+    let cur = '';
+    try { const r = await sb.from('update_links').select('url').eq('year', y).eq('month', m).eq('name', n).maybeSingle(); cur = (r.data && r.data.url) || ''; } catch (_) {}
+    const v = prompt(`Link de Dropbox de ${n || updFolderLabel(m) + ' ' + y}\n(déjalo vacío para quitarlo):`, cur);
+    if (v === null) return;
+    const url = v.trim();
+    if (!url) {
+        const { error } = await sb.from('update_links').delete().eq('year', y).eq('month', m).eq('name', n);
+        if (error) { updLinkError(error); return; }
+        UPD.links.delete(key); updRender(); updStatus('Link quitado.'); return;
+    }
+    if (!/^https:\/\/(www\.)?dropbox\.com\//i.test(url)) { alert('Pega un link de Dropbox (empieza con https://www.dropbox.com/...).'); return; }
+    const { error } = await sb.from('update_links').upsert({ year: y, month: m, name: n, url }, { onConflict: 'year,month,name' });
+    if (error) { updLinkError(error); return; }
+    UPD.links.add(key); updRender(); updStatus('Link guardado.');
+}
+async function updDownloadLink(key) {
+    if (!currentUser) { openLoginModal(); return; }
+    if (!(await verifyMembershipServer())) { openPaywallModal(); return; }
+    const { y, m, n } = updParseKey(key);
+    const { data, error } = await sb.from('update_links').select('url').eq('year', y).eq('month', m).eq('name', n).maybeSingle();
+    if (error || !data || !data.url) { alert('No se pudo obtener el link de descarga. Intenta de nuevo.'); return; }
+    updStatus(`Iniciando la descarga de ${n || updFolderLabel(m)}… Dropbox prepara el archivo y puede tardar unos segundos.`);
+    const a = document.createElement('a'); a.href = updDirectUrl(data.url); a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+}
+
+// ---- Eventos ----
+(function () {
+    const view = document.getElementById('updatesView'); if (!view) return;
+    view.addEventListener('click', e => {
+        const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+        const a = b.dataset.act, key = b.dataset.key, id = b.dataset.id;
+        if (a === 'month') { const m = Number(b.dataset.m); if (UPD.openM.has(m)) UPD.openM.delete(m); else UPD.openM.add(m); updRender(); }
+        else if (a === 'folder') { if (UPD.openF.has(key)) UPD.openF.delete(key); else UPD.openF.add(key); updRender(); }
+        else if (a === 'play') { const i = updIdx(id); if (i >= 0) playTrack(i); }
+        else if (a === 'dl') { const i = updIdx(id); if (i >= 0) handleDownloadClick(i); }
+        else if (a === 'dlall') updDownloadAll(key);
+        else if (a === 'dllink') updDownloadLink(key);
+        else if (a === 'setlink') updSetLink(key);
+        else if (a === 'cancel') UPD.cancel = true;
+        else if (a === 'add') { const k = updParseKey(key); updOpenPicker(k.y, k.m, k.n); }
+        else if (a === 'rename') updRename(key);
+        else if (a === 'delfolder') updDeleteFolder(key);
+        else if (a === 'rm') updRemoveTrack(id);
+        else if (a === 'newupd') {
+            const m = Number(document.getElementById('updNewMonth').value) || 0, y = Number(document.getElementById('updNewYear').value) || UPD.year;
+            const n = (document.getElementById('updNewName').value || '').trim().toUpperCase();
+            if (!m || !n) { alert('Elige el mes y escribe el nombre del update (por ejemplo: UPDATE 01 NOVIEMBRE).'); return; }
+            updOpenPicker(y, m, n);
+        }
+    });
+    view.addEventListener('change', e => { if (e.target.id === 'updYearSel') { UPD.year = Number(e.target.value) || UPD.year; UPD.openM.clear(); UPD.openF.clear(); updRender(); } });
+    // año por defecto y sugerencias de nombre al subir
+    const by = document.getElementById('bulkUpdYear'); if (by && !by.value) by.value = new Date().getFullYear();
+    const bn = document.getElementById('bulkUpdName');
+    if (bn) bn.addEventListener('focus', () => {
+        const m = Number((document.getElementById('bulkUpdMonth') || {}).value) || 0, y = Number((document.getElementById('bulkUpdYear') || {}).value) || 0;
+        const names = new Set(); allRemixes.forEach(t => { if (t.updName && (!m || t.updMonth === m) && (!y || t.updYear === y)) names.add(t.updName); });
+        const dl = document.getElementById('updNamesList'); if (dl) dl.innerHTML = [...names].map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+    });
+    // al recargar el catálogo (p. ej. tras subir), se refresca la vista y el índice de duplicados
+    if (typeof loadTracks === 'function') {
+        const _lt = loadTracks;
+        loadTracks = async function () { const r = await _lt.apply(this, arguments); updExistingMaps = null; updRenderIfOpen(); return r; };
+    }
 })();
 </script>
 
