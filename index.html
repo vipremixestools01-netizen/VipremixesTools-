@@ -4696,23 +4696,31 @@ async function updNewWeek(m) {
     if (!n) return;
     await updSetLink(updKey(y, m, n));
 }
+let updDlBusy = false;
 async function updDownloadLink(key) {
+    if (updDlBusy) return;
     if (!currentUser) { openLoginModal(); return; }
     if (!(await verifyMembershipServer())) { openPaywallModal(); return; }
     const { y, m, n } = updParseKey(key);
     const { data, error } = await sb.from('update_links').select('url').eq('year', y).eq('month', m).eq('name', n).maybeSingle();
     if (error || !data || !data.url) { alert('No se pudo obtener el link de descarga. Intenta de nuevo.'); return; }
     const url = updDirectUrl(data.url);
-    // Descarga en un iframe oculto: el socio se queda en la web y no se abre Dropbox
-    const old = document.getElementById('updDlFrame'); if (old) old.remove();
-    const fr = document.createElement('iframe'); fr.id = 'updDlFrame'; fr.style.display = 'none'; fr.setAttribute('aria-hidden', 'true'); fr.src = url;
-    document.body.appendChild(fr);
+    const label = n || updFolderLabel(m);
     const st = document.getElementById('updStatus');
-    if (st) {
-        st.textContent = `Descargando ${n || updFolderLabel(m)}… Dropbox prepara el archivo y puede tardar unos segundos. Si no empieza, `;
-        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'toca aquí'; a.className = 'underline font-bold text-brand-crimson';
-        st.appendChild(a); st.appendChild(document.createTextNode('.'));
-    }
+    updDlBusy = true;
+    // Espera 5 segundos (Dropbox arma el zip) y luego inicia la descarga directa
+    let left = 5;
+    const tick = () => { if (st) st.textContent = `Preparando ${label}… la descarga empieza en ${left}s`; };
+    tick();
+    const timer = setInterval(() => { left--; if (left > 0) tick(); }, 1000);
+    setTimeout(() => {
+        clearInterval(timer);
+        const a = document.createElement('a');
+        a.href = url; a.rel = 'noopener'; a.style.display = 'none';
+        document.body.appendChild(a); a.click(); a.remove();
+        if (st) st.textContent = `Descargando ${label}…`;
+        setTimeout(() => { if (st) st.textContent = ''; updDlBusy = false; }, 6000);
+    }, 5000);
 }
 
 // ---- Eventos ----
