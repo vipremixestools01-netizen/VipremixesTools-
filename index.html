@@ -594,13 +594,11 @@
                                 <tr class="border-b border-brand-border text-slate-500 text-xs uppercase tracking-wider font-semibold bg-slate-50">
                                     <th class="py-4 pl-6 pr-2 w-[84px] hidden md:table-cell">Date</th>
                                     <th class="py-4 px-2 w-[72px] text-center">Play</th>
-                                    <th class="py-4 pl-5 pr-5 w-[19%]">Song Title</th>
-                                    <th class="py-4 pl-5 pr-3 w-[21%] hidden sm:table-cell">Artist</th>
-                                    <th class="py-4 px-3 w-[17%] text-center hidden md:table-cell">Version</th>
-                                    <th class="py-4 px-3 w-[13%] text-center hidden lg:table-cell">Remixer</th>
+                                    <th class="py-4 pl-5 pr-5">Song Title</th>
+                                    <th class="py-4 px-2 w-[96px] text-center hidden md:table-cell">Version</th>
                                     <th class="py-4 px-3 w-[64px] text-center hidden md:table-cell">BPM</th>
                                     <th class="py-4 px-2 w-[84px] text-center hidden md:table-cell"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
-                                    <th class="py-4 px-3 w-[11%] text-center hidden lg:table-cell">Genre</th>
+                                    <th class="py-4 px-3 w-[110px] text-center hidden lg:table-cell">Genre</th>
                                     <th class="py-4 px-3 pr-5 w-[96px] sm:w-[120px] text-center">Download</th>
                                 </tr>
                             </thead>
@@ -1670,7 +1668,7 @@ function filterByDj(name) {
             if(filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="10" class="py-12 text-center text-slate-400">
+                        <td colspan="8" class="py-12 text-center text-slate-400">
                             <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
                             <p class="text-sm font-semibold">${topOnly ? 'Aún no hay canciones de 2025 en adelante encontradas. Corre «Actualizar popularidad» en el panel DJ.' : 'No hay remixes subidos con este filtro.'}</p>
                             <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
@@ -1690,9 +1688,9 @@ function filterByDj(name) {
                 const versionHtml = info.version ? `<div class="text-xs text-slate-500 ${info.rating ? 'mt-1' : ''}">${escapeHtml(info.version)}</div>` : '';
 
                 const verPills = [];
-                if (info.rating) verPills.push(`<span class="${info.rating === 'Dirty' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'} border font-semibold px-2.5 py-1 rounded-full text-[11px] leading-none whitespace-nowrap">${info.rating}</span>`);
-                if (info.version) verPills.push(`<span class="bg-white border border-brand-border text-slate-700 font-medium px-3 py-1.5 rounded-lg text-xs leading-tight shadow-sm">${escapeHtml(info.version)}</span>`);
-                const versionCell = verPills.length ? `<div class="flex flex-wrap items-center justify-center gap-1.5">${verPills.join('')}</div>` : '<span class="text-slate-300">—</span>';
+                if (info.rating) verPills.push(`<span class="${info.rating === 'Dirty' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'} border font-semibold px-2 py-0.5 rounded-full text-[10px] leading-none whitespace-nowrap">${info.rating}</span>`);
+                if (info.version) verPills.push(`<span class="bg-white border border-brand-border text-slate-700 font-medium px-1.5 py-0.5 rounded-md text-[10px] leading-tight">${escapeHtml(info.version)}</span>`);
+                const versionCell = verPills.length ? `<div class="flex flex-wrap items-center justify-center gap-1">${verPills.join('')}</div>` : '<span class="text-slate-300">—</span>';
                 const remixerCell = (info.remixers && info.remixers.length)
                     ? info.remixers.map(n => `<button type="button" data-dj="${escapeHtml(n)}" onclick="filterByDj(this.dataset.dj)" title="Ver todos los remixes de ${escapeHtml(n)}" class="block mx-auto max-w-full truncate font-semibold text-slate-800 hover:text-brand-crimson transition">${escapeHtml(n)}</button>`).join('')
                     : '<span class="text-slate-300">—</span>';
@@ -1707,14 +1705,10 @@ function filterByDj(name) {
                             </button>
                         </td>
                         <td class="py-3 pl-5 pr-5 min-w-0">
-                            <div class="catalog-song-title" title="${escapeHtml(info.song)}">${topOnly ? `<span class="inline-block bg-brand-crimson text-white text-[10px] font-extrabold rounded-md px-1.5 py-0.5 mr-1.5 align-middle">#${topPos + 1 + (tablePage - 1) * TABLE_PAGE_SIZE}</span>` : ''}${escapeHtml(info.song)}</div>
-                            ${info.artist ? `<div class="catalog-song-sub sm:hidden">${escapeHtml(info.artist)}</div>` : ''}
+                            <div class="catalog-song-title" title="${escapeHtml(track.title)}">${topOnly ? `<span class="inline-block bg-brand-crimson text-white text-[10px] font-extrabold rounded-md px-1.5 py-0.5 mr-1.5 align-middle">#${topPos + 1 + (tablePage - 1) * TABLE_PAGE_SIZE}</span>` : ''}${escapeHtml(track.title)}</div>
                             <div class="catalog-mobile-meta md:hidden">${fmtShortDate(track.date)}${track.genre ? ' · ' + escapeHtml(track.genre) : ''}</div>
-                            ${info.remixer ? `<div class="catalog-mobile-meta lg:hidden text-brand-crimson"><i class="fa-solid fa-headphones text-[9px]"></i> ${escapeHtml(info.remixer)}</div>` : ''}
                         </td>
-                        <td class="py-3 pl-5 pr-3 text-slate-600 hidden sm:table-cell"><div class="truncate" title="${escapeHtml(info.artist)}">${escapeHtml(info.artist) || '<span class="text-slate-300">—</span>'}</div></td>
-                        <td class="py-3 px-3 text-center hidden md:table-cell">${versionCell}</td>
-                        <td class="py-3 px-3 text-sm text-center hidden lg:table-cell">${remixerCell}</td>
+                        <td class="py-3 px-2 text-center hidden md:table-cell">${versionCell}</td>
                         <td class="py-3 px-3 text-sm text-slate-500 text-center hidden md:table-cell">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
                         <td class="py-3 px-2 text-center hidden md:table-cell">${keyPillHtml(track)}</td>
                         <td class="py-3 px-3 text-center hidden lg:table-cell">${genreCell}</td>
