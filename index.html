@@ -287,7 +287,7 @@
             /* Filtros en cuadrícula de 2 columnas */
             #searchBar { display:grid !important; grid-template-columns:1fr 1fr; gap:8px !important; margin-bottom:14px !important; }
             #searchBar > div { width:100% !important; max-width:none !important; }
-            #searchBar > div:first-child, #searchBar > div:nth-child(4) { grid-column:1 / -1; }
+            #searchBar > div:first-child, #searchBar > div:nth-child(4), #searchBar > div:nth-child(5) { grid-column:1 / -1; }
             #searchBar input, #searchBar select { min-height:44px; }
             /* Reproductor inferior compacto: info + controles arriba, onda abajo */
             #bottomPlayer { padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px)) !important; }
@@ -560,7 +560,7 @@
                     </div>
                 </section>
 
-                <div id="searchBar" class="flex flex-col md:flex-row items-center gap-4 mb-6" style="scroll-margin-top:96px">
+                <div id="searchBar" class="flex flex-col md:flex-row md:flex-wrap items-center gap-4 mb-6" style="scroll-margin-top:96px">
                     <div class="relative flex-1 w-full md:max-w-[210px]">
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
                             <i class="fa-solid fa-magnifying-glass"></i>
@@ -575,6 +575,11 @@
                     <div class="w-full md:w-56">
                         <select id="genreSelectFilter" onchange="filterByDropdownGenre(this.value)" class="w-full bg-white border border-brand-border rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-crimson transition-all">
                             <option value="ALL">Género (Todos)</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-56">
+                        <select id="typeSelectFilter" onchange="filterByType(this.value)" aria-label="Tipo de remix" class="w-full bg-white border border-brand-border rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-brand-crimson transition-all">
+                            <option value="ALL">Tipo de remix (Todos)</option>
                         </select>
                     </div>
                     <div class="w-full md:w-52">
@@ -595,10 +600,10 @@
                                     <th class="py-4 pl-6 pr-2 w-[84px] hidden md:table-cell">Date</th>
                                     <th class="py-4 px-2 w-[72px] text-center">Play</th>
                                     <th class="py-4 pl-5 pr-5">Song Title</th>
-                                    <th class="py-4 px-2 w-[96px] text-center hidden md:table-cell">Version</th>
+                                    <th class="py-4 px-2 w-[84px] text-center hidden md:table-cell">Version</th>
                                     <th class="py-4 px-3 w-[64px] text-center hidden md:table-cell">BPM</th>
                                     <th class="py-4 px-2 w-[84px] text-center hidden md:table-cell"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
-                                    <th class="py-4 px-3 w-[110px] text-center hidden lg:table-cell">Genre</th>
+                                    <th class="py-4 px-3 w-[170px] text-center hidden lg:table-cell">Type</th>
                                     <th class="py-4 px-3 pr-5 w-[96px] sm:w-[120px] text-center">Download</th>
                                 </tr>
                             </thead>
@@ -1204,6 +1209,7 @@
         let currentPortalFilter = "ALL";
         let currentGenreFilter = "ALL";
         let currentMonthFilter = "ALL";
+        let currentTypeFilter = "ALL";
         let currentRatingFilter = "ALL";
         let currentMode = 'audio';
         const VIDEO_EXTS = ['mp4','mov','m4v','webm'];
@@ -1392,6 +1398,35 @@
                 ['Clean', 'Dirty'].map(v => `<option value="${v}" ${currentRatingFilter === v ? 'selected' : ''}>${v} · ${n[v]}</option>`).join('');
         }
         function filterByRating(v) { currentRatingFilter = v; renderTracksTable(); }
+        const REMIX_TYPES = ['Intro Verse & Outro', 'Intro Chorus & Outro', 'Intro Outro', 'Intro Outro Break', 'Intro Break', 'Starter Acapella', 'Acapella', 'Transición', 'Mashup'];
+        function trackTypes(track) {
+            if (track._types) return track._types;
+            const found = new Set(detectCatalogVersion([track.title, track.path].filter(Boolean).join(' ')));
+            String(track.catalogVersion || '').split(/\s*[·|,]\s*/).forEach(v => { const m = REMIX_TYPES.find(x => x.toLowerCase() === v.trim().toLowerCase()); if (m) found.add(m); });
+            const ttl = normalizeText(String(track.title || '').replace(/[_-]+/g, ' '));
+            if (/\btransici(?:on|ones)\b|\btransitions?\b/.test(ttl)) found.add('Transición');
+            if (/\bmash ?ups?\b/.test(ttl)) found.add('Mashup');
+            if (found.has('Intro Outro Break')) found.delete('Intro Outro');
+            if (found.has('Starter Acapella')) found.delete('Acapella');
+            return (track._types = REMIX_TYPES.filter(x => found.has(x)));
+        }
+        function renderTypeFilter() {
+            const select = document.getElementById('typeSelectFilter');
+            if (!select) return;
+            const n = {}; REMIX_TYPES.forEach(t => n[t] = 0);
+            allRemixes.forEach(r => {
+                if (currentMode === 'video' ? !isVideoTrack(r) : isVideoTrack(r)) return;
+                if (currentPortalFilter !== "ALL" && r.portal !== currentPortalFilter) return;
+                if (currentGenreFilter !== "ALL" && normalizeText(r.genre || '') !== normalizeText(currentGenreFilter || '')) return;
+                if (currentMonthFilter !== "ALL" && !(r.date || '').startsWith(currentMonthFilter)) return;
+                if (currentRatingFilter !== "ALL" && parseTrackInfo(r).rating !== currentRatingFilter) return;
+                trackTypes(r).forEach(t => n[t]++);
+            });
+            select.innerHTML = `<option value="ALL">Tipo de remix (Todos)</option>` +
+                REMIX_TYPES.map(t => `<option value="${t}" ${currentTypeFilter === t ? 'selected' : ''}>${t} · ${n[t]}</option>`).join('');
+        }
+        function filterByType(v) { currentTypeFilter = v; renderTracksTable(); }
+
 
         function updateSummaryCounts() {
             document.getElementById('poolCountsSummary').textContent = `Todo (${allRemixes.filter(r => currentMode === 'video' ? isVideoTrack(r) : !isVideoTrack(r)).length})`;
@@ -1623,6 +1658,7 @@ function filterByDj(name) {
 
         function renderTracksTable() {
             renderRatingFilter();
+            renderTypeFilter();
             const tbody = document.getElementById('tracksTableBody');
             const indexById = new Map(allRemixes.map((track, index) => [track.id, index]));
             const idx = currentPlayingId !== null ? (indexById.get(currentPlayingId) ?? -1) : -1;
@@ -1636,11 +1672,12 @@ function filterByDj(name) {
                     normalizeText(track.genre || '') === normalizeText(currentGenreFilter || '');
                 const matchesMonth = currentMonthFilter === "ALL" || (track.date || '').startsWith(currentMonthFilter);
                 const matchesRating = currentRatingFilter === "ALL" || parseTrackInfo(track).rating === currentRatingFilter;
+                const matchesType = currentTypeFilter === "ALL" || trackTypes(track).includes(currentTypeFilter);
                 const haystack = track._searchText || '';
                 const words = searchWords;
                 const matchesSearch = words.every(w => haystack.includes(w));
                 const matchesMode = currentMode === 'video' ? isVideoTrack(track) : !isVideoTrack(track);
-                return matchesMode && matchesPortal && matchesGenre && matchesMonth && matchesRating && matchesSearch;
+                return matchesMode && matchesPortal && matchesGenre && matchesMonth && matchesRating && matchesType && matchesSearch;
             });
 
             if (newOnly) filtered = [...filtered].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
@@ -1658,7 +1695,7 @@ function filterByDj(name) {
             }
 
             // Si cambió algún filtro/búsqueda/modo, vuelve a la página 1; si solo cambió el play o un favorito, se queda.
-            const sig = [currentPortalFilter, currentGenreFilter, currentMonthFilter, currentRatingFilter, searchQuery, currentMode, newOnly, topOnly, keySortDir].join('|');
+            const sig = [currentPortalFilter, currentGenreFilter, currentMonthFilter, currentRatingFilter, currentTypeFilter, searchQuery, currentMode, newOnly, topOnly, keySortDir].join('|');
             if (sig !== tableSig) { tableSig = sig; tablePage = 1; }
             const pages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
             if (tablePage > pages) tablePage = pages;
@@ -1689,12 +1726,12 @@ function filterByDj(name) {
 
                 const verPills = [];
                 if (info.rating) verPills.push(`<span class="${info.rating === 'Dirty' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'} border font-semibold px-2 py-0.5 rounded-full text-[10px] leading-none whitespace-nowrap">${info.rating}</span>`);
-                if (info.version) verPills.push(`<span class="bg-white border border-brand-border text-slate-700 font-medium px-1.5 py-0.5 rounded-md text-[10px] leading-tight">${escapeHtml(info.version)}</span>`);
                 const versionCell = verPills.length ? `<div class="flex flex-wrap items-center justify-center gap-1">${verPills.join('')}</div>` : '<span class="text-slate-300">—</span>';
                 const remixerCell = (info.remixers && info.remixers.length)
                     ? info.remixers.map(n => `<button type="button" data-dj="${escapeHtml(n)}" onclick="filterByDj(this.dataset.dj)" title="Ver todos los remixes de ${escapeHtml(n)}" class="block mx-auto max-w-full truncate font-semibold text-slate-800 hover:text-brand-crimson transition">${escapeHtml(n)}</button>`).join('')
                     : '<span class="text-slate-300">—</span>';
-                const genreCell = track.genre ? `<span class="bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-xs inline-block whitespace-nowrap">${escapeHtml(track.genre)}</span>` : '<span class="text-slate-300">—</span>';
+                const typeList = trackTypes(track);
+                const typeCell = typeList.length ? `<div class="flex flex-wrap items-center justify-center gap-1">${typeList.map(t => `<button type="button" data-type="${escapeHtml(t)}" onclick="filterByType(this.dataset.type)" title="Filtrar: ${escapeHtml(t)}" class="bg-blue-50 text-brand-crimson hover:bg-blue-100 font-semibold px-2 py-0.5 rounded-full text-[10px] leading-tight whitespace-nowrap">${escapeHtml(t)}</button>`).join('')}</div>` : '<span class="text-slate-300">—</span>';
 
                 html += `
                     <tr class="transition group ${isCurrent ? 'bg-blue-50' : 'hover:bg-slate-50'}">
@@ -1706,12 +1743,12 @@ function filterByDj(name) {
                         </td>
                         <td class="py-3 pl-5 pr-5 min-w-0">
                             <div class="catalog-song-title" title="${escapeHtml(track.title)}">${topOnly ? `<span class="inline-block bg-brand-crimson text-white text-[10px] font-extrabold rounded-md px-1.5 py-0.5 mr-1.5 align-middle">#${topPos + 1 + (tablePage - 1) * TABLE_PAGE_SIZE}</span>` : ''}${escapeHtml(track.title)}</div>
-                            <div class="catalog-mobile-meta md:hidden">${fmtShortDate(track.date)}${track.genre ? ' · ' + escapeHtml(track.genre) : ''}</div>
+                            <div class="catalog-mobile-meta md:hidden">${fmtShortDate(track.date)}${track.genre ? ' · ' + escapeHtml(track.genre) : ''}${trackTypes(track).length ? ' · ' + escapeHtml(trackTypes(track).join(', ')) : ''}</div>
                         </td>
                         <td class="py-3 px-2 text-center hidden md:table-cell">${versionCell}</td>
                         <td class="py-3 px-3 text-sm text-slate-500 text-center hidden md:table-cell">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
                         <td class="py-3 px-2 text-center hidden md:table-cell">${keyPillHtml(track)}</td>
-                        <td class="py-3 px-3 text-center hidden lg:table-cell">${genreCell}</td>
+                        <td class="py-3 px-2 text-center hidden lg:table-cell">${typeCell}</td>
                         <td class="py-3 px-3 pr-5">
                             <div class="flex items-center justify-center gap-1">
                                 <button onclick="toggleFavorite(${realIndex})" aria-label="Favorito" class="p-1.5 rounded-full hover:bg-slate-100 transition ${track.isFavorite ? '' : 'sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'}"><i class="${favClass} text-sm"></i></button>
@@ -1801,7 +1838,7 @@ function filterByDj(name) {
             currentPortalFilter = 'ALL';
             currentGenreFilter = 'ALL';
             currentMonthFilter = 'ALL';
-            currentRatingFilter = 'ALL';
+            currentRatingFilter = 'ALL'; currentTypeFilter = 'ALL';
             searchQuery = '';
             const search = document.getElementById('searchInput'); if (search) search.value = '';
             const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = 'ALL';
@@ -1940,7 +1977,7 @@ function filterByDj(name) {
             currentGenreFilter = genreName;
             currentPortalFilter = 'ALL';
             currentMonthFilter = 'ALL';
-            currentRatingFilter = 'ALL';
+            currentRatingFilter = 'ALL'; currentTypeFilter = 'ALL';
             topOnly = false;
             newOnly = false;
             searchQuery = '';
@@ -1969,7 +2006,7 @@ function filterByDj(name) {
         }
         function filterTop50() {
             topOnly = true; newOnly = false;
-            currentPortalFilter = "ALL"; currentGenreFilter = "ALL"; currentMonthFilter = "ALL"; currentRatingFilter = "ALL";
+            currentPortalFilter = "ALL"; currentGenreFilter = "ALL"; currentMonthFilter = "ALL"; currentRatingFilter = "ALL"; currentTypeFilter = 'ALL';
             const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = "ALL";
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
@@ -2012,7 +2049,7 @@ function filterByDj(name) {
             currentPortalFilter = "ALL";
             currentGenreFilter = "ALL";
             currentMonthFilter = "ALL";
-            currentRatingFilter = "ALL";
+            currentRatingFilter = "ALL"; currentTypeFilter = 'ALL';
             searchQuery = "";
             document.getElementById('searchInput').value = "";
             updateSummaryCounts();
@@ -2113,7 +2150,7 @@ function filterByDj(name) {
             const selectedGenre = catalogGenre || exactGenre || String(genre || '').trim();
             activeFeaturedGenre = selectedGenre;
             if (genreSelect) genreSelect.value = selectedGenre;
-            currentPortalFilter = 'ALL'; currentMonthFilter = 'ALL'; currentRatingFilter = 'ALL';
+            currentPortalFilter = 'ALL'; currentMonthFilter = 'ALL'; currentRatingFilter = 'ALL'; currentTypeFilter = 'ALL';
             newOnly = false; topOnly = false; currentGenreFilter = selectedGenre;
             const search = document.getElementById('searchInput'); if (search) search.value = '';
             searchQuery = ''; tablePage = 1;
@@ -4342,51 +4379,132 @@ function downloadCurrent() {
   g.fillText(text, W / 2, H / 2);
  }
 
+ // Onda en movimiento: la posición actual queda fija en el centro y la onda se desplaza hacia la izquierda al reproducir
+ const VIS_SEC = 10; // segundos visibles en pantalla
+ let lastCT = -1, lastTS = 0;
+ function smoothCur() {
+  const ct = audioPlayer.currentTime || 0, now = performance.now();
+  if (ct !== lastCT) { lastCT = ct; lastTS = now; }
+  if (audioPlayer.paused) return ct;
+  return ct + Math.min(0.25, (now - lastTS) / 1000) * (audioPlayer.playbackRate || 1);
+ }
+ // Caché en memoria: si vuelves a un tema que ya analizaste, la onda sale al instante
+ const wfCache = new Map();
+ const FIRST_BYTES = 600 * 1024; // primer trozo que se decodifica para mostrar la onda sin esperar la descarga completa
+ // Onda provisional (mientras se analiza): sale desde el primer segundo y se reemplaza por la real
+ function phAmp(c) { const r = Math.abs(Math.sin(c * 12.9898) * 43758.5453); return 0.22 + 0.5 * (r - Math.floor(r)); }
  function draw() {
-  const dur = audioPlayer.duration || (data ? data.dur : 0), cur = audioPlayer.currentTime || 0;
+  const dur = audioPlayer.duration || (data ? data.dur : 0), cur = smoothCur();
   const [W1, H1] = fit(ov), g1 = ov.getContext('2d');
   g1.clearRect(0, 0, W1, H1);
-  if (data) {
-   if (!ovCache || ovCacheW !== W1 || ovCacheH !== H1) buildOverview(W1, H1);
-   g1.drawImage(ovCache, 0, 0);
-   const px = dur ? Math.min(1, cur / dur) * W1 : 0;
-   g1.fillStyle = 'rgba(0,0,0,.5)'; g1.fillRect(0, 0, px, H1);
-   g1.fillStyle = '#ffffff'; g1.fillRect(Math.round(px), 0, Math.max(1, Math.round(dpr * 1.5)), H1);
+  if (data || status === 'loading') {
+   const stripH = Math.max(2, Math.round(3 * dpr)), mid = (H1 - stripH) / 2, cx = Math.round(W1 / 2);
+   const pxCol = W1 / (VIS_SEC * PPS), curCol = cur * PPS;
+   const maxCol = dur ? Math.floor(dur * PPS) : Infinity;
+   const c0 = Math.max(0, Math.floor(curCol - cx / pxCol) - 1), c1 = Math.min(maxCol, Math.ceil(curCol + (W1 - cx) / pxCol) + 1);
+   for (let c = c0; c <= c1; c++) {
+    const x = Math.round(cx + (c - curCol) * pxCol), w = Math.max(1, Math.round(pxCol));
+    const real = data && c < data.cols;
+    const h = Math.max(1, (real ? data.amp[c] : phAmp(c)) * (H1 - stripH - 2));
+    g1.globalAlpha = real ? (c < curCol ? 0.45 : 1) : (c < curCol ? 0.25 : 0.5);
+    g1.fillStyle = real ? `rgb(${data.rgb[c * 3]},${data.rgb[c * 3 + 1]},${data.rgb[c * 3 + 2]})` : 'rgb(110,125,160)';
+    g1.fillRect(x, mid - h / 2, w, h);
+   }
+   g1.globalAlpha = 1;
+   g1.fillStyle = '#ffffff'; g1.fillRect(cx, 0, Math.max(1, Math.round(dpr * 1.5)), H1 - stripH);
+   g1.fillStyle = '#1f2330'; g1.fillRect(0, H1 - stripH, W1, stripH);
+   g1.fillStyle = '#3b82f6'; g1.fillRect(0, H1 - stripH, dur ? Math.min(1, cur / dur) * W1 : 0, stripH);
   } else {
    g1.fillStyle = '#2a2a33'; g1.fillRect(0, H1 / 2 - 0.5 * dpr, W1, dpr);
-   msg(g1, W1, H1, status === 'loading' ? 'Cargando onda…' : status === 'na' ? 'Onda no disponible para este archivo' : status === 'err' ? 'No se pudo generar la onda' : 'Selecciona un remix para ver la onda');
+   msg(g1, W1, H1, status === 'na' ? 'Onda no disponible para este archivo' : status === 'err' ? 'No se pudo generar la onda' : 'Selecciona un remix para ver la onda');
   }
+ }
+
+ function concatChunks(chunks, total) {
+  const out = new Uint8Array(total); let o = 0;
+  for (const c of chunks) { out.set(c, o); o += c.length; }
+  return out;
  }
 
  async function loadFor(id) {
   const t = allRemixes.find(r => r.id === id), my = ++token;
-  loadedId = id; data = null; ovCache = null; status = 'loading'; draw();
+  loadedId = id; data = null; ovCache = null;
+  const cached = wfCache.get(id);
+  if (cached) { data = cached; status = 'ok'; draw(); return; }
+  status = 'loading'; draw();
   if (!t || (t.fileSize && t.fileSize > MAX_BYTES)) { status = 'na'; draw(); return; }
   try {
    const src = audioPlayer.currentSrc || audioPlayer.src; if (!src) throw new Error('sin fuente');
    const r = await fetch(src); if (!r.ok) throw new Error('HTTP ' + r.status);
-   const ab = await r.arrayBuffer(); if (my !== token) return;
+   if (my !== token) return;
    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+   let ab;
+   const reader = r.body && r.body.getReader ? r.body.getReader() : null;
+   if (reader) {
+    const chunks = [], total = Number(r.headers.get('content-length')) || 0;
+    let got = 0, partialSent = false;
+    for (;;) {
+     const { done, value } = await reader.read();
+     if (my !== token) { try { reader.cancel(); } catch (_) {} return; }
+     if (done) break;
+     chunks.push(value); got += value.length;
+     // Primer vistazo rápido: decodifica solo el comienzo del archivo y muestra esa parte de la onda ya
+     if (!partialSent && got >= FIRST_BYTES && (!total || total > got * 1.3)) {
+      partialSent = true;
+      const head = concatChunks(chunks, got);
+      actx.decodeAudioData(head.buffer).then(buf => {
+       if (my !== token || status === 'ok') return;
+       data = analyze(buf); status = 'partial'; draw();
+      }).catch(() => {});
+     }
+    }
+    ab = concatChunks(chunks, got).buffer;
+   } else {
+    ab = await r.arrayBuffer(); if (my !== token) return;
+   }
    const buf = await actx.decodeAudioData(ab); if (my !== token) return;
    data = analyze(buf); status = 'ok';
-  } catch (e) { if (my !== token) return; console.warn('Onda:', e); status = 'err'; }
+   wfCache.set(id, data);
+   if (wfCache.size > 25) wfCache.delete(wfCache.keys().next().value);
+  } catch (e) { if (my !== token) return; console.warn('Onda:', e); status = data ? 'ok' : 'err'; }
   draw();
  }
 
- // Buscar con la vista general
- function seekOverview(e) {
+ // Buscar: clic en la onda salta a ese punto; arrastrar la onda la mueve; la barra fina de abajo salta a cualquier parte
+ ov.style.cursor = 'grab';
+ function seekAbs(e) {
   const d = audioPlayer.duration; if (!d) return;
   const r = ov.getBoundingClientRect();
   audioPlayer.currentTime = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * d; draw();
  }
- ov.addEventListener('pointerdown', e => { ov.setPointerCapture(e.pointerId); seekOverview(e); ov._drag = true; });
- ov.addEventListener('pointermove', e => { if (ov._drag) seekOverview(e); });
- ov.addEventListener('pointerup', () => { ov._drag = false; });
- ov.addEventListener('pointercancel', () => { ov._drag = false; });
+ ov.addEventListener('pointerdown', e => {
+  ov.setPointerCapture(e.pointerId);
+  const r = ov.getBoundingClientRect(), strip = (e.clientY - r.top) > r.height - 8;
+  ov._drag = { x: e.clientX, t: audioPlayer.currentTime || 0, moved: false, strip };
+  if (strip) seekAbs(e); else ov.style.cursor = 'grabbing';
+ });
+ ov.addEventListener('pointermove', e => {
+  const d0 = ov._drag; if (!d0) return;
+  if (d0.strip) { seekAbs(e); return; }
+  const dur = audioPlayer.duration; if (!dur) return;
+  const dx = e.clientX - d0.x;
+  if (Math.abs(dx) > 3) d0.moved = true;
+  if (d0.moved) { const r = ov.getBoundingClientRect(); audioPlayer.currentTime = Math.min(dur, Math.max(0, d0.t - dx / (r.width / VIS_SEC))); draw(); }
+ });
+ function endDrag(e, click) {
+  const d0 = ov._drag; ov._drag = null; ov.style.cursor = 'grab';
+  if (click && d0 && !d0.strip && !d0.moved) {
+   const dur = audioPlayer.duration; if (!dur) return;
+   const r = ov.getBoundingClientRect();
+   audioPlayer.currentTime = Math.min(dur, Math.max(0, (audioPlayer.currentTime || 0) + (e.clientX - (r.left + r.width / 2)) / (r.width / VIS_SEC))); draw();
+  }
+ }
+ ov.addEventListener('pointerup', e => endDrag(e, true));
+ ov.addEventListener('pointercancel', e => endDrag(e, false));
 
  function loop() { draw(); raf = audioPlayer.paused ? 0 : requestAnimationFrame(loop); }
  audioPlayer.addEventListener('loadstart', () => { if (currentPlayingId !== null && currentPlayingId !== loadedId) loadFor(currentPlayingId); });
- audioPlayer.addEventListener('play', () => { foot.classList.add('vp-playing'); if (!raf) raf = requestAnimationFrame(loop); });
+ audioPlayer.addEventListener('play', () => { foot.classList.add('vp-playing'); if (currentPlayingId !== null && currentPlayingId !== loadedId) loadFor(currentPlayingId); if (!raf) raf = requestAnimationFrame(loop); });
  audioPlayer.addEventListener('playing', () => { if (!raf) raf = requestAnimationFrame(loop); });
  audioPlayer.addEventListener('pause', () => { foot.classList.remove('vp-playing'); draw(); });
  audioPlayer.addEventListener('ended', () => foot.classList.remove('vp-playing'));
