@@ -52,6 +52,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         #portalsListContainer { max-height: calc(100vh - 220px - var(--player-h, 0px)); }
+        /* Escritorio: barra de scroll de géneros siempre visible para que se vea que la lista continúa */
+        @media (min-width:1024px) {
+            #portalsListContainer { scrollbar-width: thin; scrollbar-color: #94a3b8 transparent; }
+            #portalsListContainer::-webkit-scrollbar { width: 8px; }
+            #portalsListContainer::-webkit-scrollbar-track { background: transparent; }
+            #portalsListContainer::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 8px; }
+        }
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #0f172a; }
         .logo-font { font-weight: 300; letter-spacing: -0.02em; }
         .glow-button { box-shadow: 0 0 25px rgba(37, 99, 235, 0.25); }
@@ -1195,11 +1202,12 @@
         ];
 
         const genresList = [
-            "Latino", "Bachata", "Cubatón", "Cumbia", "Dancehall", "Dembow",
+            "Latino", "Latin House", "Afro House", "Tech House",
+            "Bachata", "Cubatón", "Cumbia", "Dancehall", "Dembow",
             "Reggaeton", "Electro", "Guaracha", "Merengue", "Típico",
             "Moombahton", "Hip Hop", "Reggae", "Techno", "Transición",
-            "SEGWAY", "Trap", "Rock", "Salsa", "Afro House", "Tech House",
-            "Amapiano", "Mashup", "House", "Latin House", "Open Show"
+            "SEGWAY", "Trap", "Rock", "Salsa",
+            "Amapiano", "Mashup", "House", "Open Show"
         ];
 
         // START CLEAN (NO DEFAULT DEMO SONGS)
@@ -2800,103 +2808,66 @@ function mimeFromExt(ext, fallback) { return AUDIO_MIME[String(ext).toLowerCase(
 
 function stopPlaybackUI() { isPlaying = false; updatePlayPauseUI(); renderTracksTable(); }
 
-// Recuperación de audio que el navegador rechaza (muchos MP3/WAV con cabeceras raras):
-//  1) se descarga y se detecta el formato REAL por sus bytes (no por la extensión),
-//  2) si aún falla, se decodifica con Web Audio y se convierte a WAV en memoria,
-//  3) solo si todo falla se muestra el motivo, con nombre de canción y formato.
-function sniffAudioMime(u8, fallback) {
-    const a = (i) => u8[i];
-    const str = (i, n) => String.fromCharCode.apply(null, Array.from(u8.slice(i, i + n)));
-    if (u8.length < 12) return fallback;
-    if (str(0, 3) === 'ID3') return 'audio/mpeg';
-    if (a(0) === 0xFF && (a(1) & 0xE0) === 0xE0) return ((a(1) & 0x06) === 0) ? 'audio/aac' : 'audio/mpeg';
-    if (str(0, 4) === 'RIFF' && str(8, 4) === 'WAVE') return 'audio/wav';
-    if (str(4, 4) === 'ftyp') return 'audio/mp4';
-    if (str(0, 4) === 'fLaC') return 'audio/flac';
-    if (str(0, 4) === 'OggS') return 'audio/ogg';
-    return fallback;
+// Si el navegador no logra reproducir la URL directa, se descarga el audio, se identifica su formato REAL
+// por los primeros bytes (no por la extensión) y se reproduce desde memoria con el tipo correcto.
+// Si tampoco funciona, se muestra el motivo técnico real (formato detectado, tamaño, respuesta del servidor).
+function sniffAudioBytes(u8) {
+    const at = (i, str) => { for (let k = 0; k < str.length; k++) if (u8[i + k] !== str.charCodeAt(k)) return false; return true; };
+    if (!u8 || u8.length < 4) return { kind: 'vacío o demasiado corto', mime: '' };
+    if (at(0, 'ID3')) return { kind: 'MP3', mime: 'audio/mpeg' };
+    if (u8[0] === 0xFF && (u8[1] & 0xE0) === 0xE0) return ((u8[1] >> 1) & 3) === 0 ? { kind: 'AAC (ADTS)', mime: 'audio/aac' } : { kind: 'MP3', mime: 'audio/mpeg' };
+    if (at(0, 'RIFF') && at(8, 'WAVE')) return { kind: 'WAV', mime: 'audio/wav' };
+    if (at(0, 'fLaC')) return { kind: 'FLAC', mime: 'audio/flac' };
+    if (at(0, 'OggS')) return { kind: 'OGG', mime: 'audio/ogg' };
+    if (at(4, 'ftyp')) return at(8, 'qt  ') ? { kind: 'MOV/QuickTime', mime: 'video/quicktime' } : { kind: 'M4A/MP4', mime: 'audio/mp4' };
+    if (u8[0] === 0x1A && u8[1] === 0x45 && u8[2] === 0xDF && u8[3] === 0xA3) return { kind: 'WebM/Matroska', mime: 'audio/webm' };
+    if (u8[0] === 0x7B || u8[0] === 0x3C) return { kind: 'texto (no es audio)', mime: '' };
+    return { kind: 'desconocido (bytes ' + Array.from(u8.slice(0, 8)).map(x => x.toString(16).padStart(2, '0')).join(' ') + ')', mime: '' };
 }
-function audioBufferToWavBlob(buf) {
-    const ch = Math.min(2, buf.numberOfChannels), len = buf.length, rate = buf.sampleRate;
-    const dataLen = len * ch * 2, out = new ArrayBuffer(44 + dataLen), v = new DataView(out);
-    const w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
-    w(0, 'RIFF'); v.setUint32(4, 36 + dataLen, true); w(8, 'WAVE'); w(12, 'fmt ');
-    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, ch, true);
-    v.setUint32(24, rate, true); v.setUint32(28, rate * ch * 2, true); v.setUint16(32, ch * 2, true); v.setUint16(34, 16, true);
-    w(36, 'data'); v.setUint32(40, dataLen, true);
-    const chans = []; for (let c = 0; c < ch; c++) chans.push(buf.getChannelData(c));
-    let o = 44;
-    for (let i = 0; i < len; i++) for (let c = 0; c < ch; c++) {
-        const x = Math.max(-1, Math.min(1, chans[c][i]));
-        v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7FFF, true); o += 2;
-    }
-    return new Blob([out], { type: 'audio/wav' });
-}
-function loadInPlayer(url) {
-    return new Promise((resolve, reject) => {
-        let tm;
-        const cleanup = () => { audioPlayer.removeEventListener('loadedmetadata', ok); audioPlayer.removeEventListener('error', bad); clearTimeout(tm); };
-        const ok = () => { cleanup(); resolve(); };
-        const bad = () => { cleanup(); reject(new Error('código ' + (audioPlayer.error ? audioPlayer.error.code : 0))); };
-        tm = setTimeout(bad, 12000);
-        audioPlayer.addEventListener('loadedmetadata', ok);
-        audioPlayer.addEventListener('error', bad);
-        audioPlayer.src = url; audioPlayer.load();
-    });
-}
-function setPlayerBlob(url) {
-    const old = audioPlayer.dataset.blobUrl;
-    audioPlayer.dataset.blob = '1'; audioPlayer.dataset.blobUrl = url;
-    if (old && old !== url) setTimeout(() => URL.revokeObjectURL(old), 3000);
-}
+
 async function handleAudioError() {
     if (currentPlayingId === null || audioPlayer.dataset.recovering === '1') return;
-    const myId = currentPlayingId;
-    const t = allRemixes.find(r => r.id === myId);
-    const name = t ? t.title : 'esta canción';
-    if (audioPlayer.dataset.blob === '1') { // ya se recuperó antes y volvió a fallar
+    const t = allRemixes.find(r => r.id === currentPlayingId);
+    const code = audioPlayer.error ? audioPlayer.error.code : 0;
+    if (audioPlayer.dataset.blob === '1' || !/^https?:/.test(audioPlayer.src)) {
         stopPlaybackUI();
-        alert('No se pudo reproducir «' + name + '». Conviértela a MP3 estándar y vuelve a subirla.');
+        const d = audioPlayer.dataset.diag ? '\n\nDetalle técnico: ' + audioPlayer.dataset.diag : '';
+        alert((code === 4
+            ? 'Este archivo no se puede reproducir: el navegador no reconoce su contenido de audio. Prueba a subirlo de nuevo en MP3.'
+            : 'No se pudo reproducir el audio (código ' + code + '). Revisa tu conexión e inténtalo de nuevo.') + d);
         return;
     }
-    audioPlayer.dataset.recovering = '1';
-    let realMime = '', stage = 'descarga';
     try {
+        audioPlayer.dataset.recovering = '1';
         const sourceUrl = audioPlayer.currentSrc || audioPlayer.src;
         const r = await fetch(sourceUrl);
         if (!r.ok) throw new Error('El servidor respondió ' + r.status);
-        const ab = await r.arrayBuffer();
-        if (!ab.byteLength) throw new Error('El archivo de audio está vacío.');
-        if (currentPlayingId !== myId) return;
-        realMime = sniffAudioMime(new Uint8Array(ab, 0, Math.min(16, ab.byteLength)), mimeFromExt(t ? t.ext : 'mp3'));
-        // Intento 1: el formato real detectado por los bytes
-        try {
-            stage = 'formato real';
-            const url1 = URL.createObjectURL(new Blob([ab], { type: realMime }));
-            await loadInPlayer(url1);
-            if (currentPlayingId !== myId) return;
-            setPlayerBlob(url1);
-            await audioPlayer.play(); isPlaying = true; updatePlayPauseUI();
-            return;
-        } catch (e1) { console.warn('Recuperación (formato real) falló:', e1); }
-        // Intento 2: decodificar con Web Audio y reproducir como WAV
-        stage = 'conversión a WAV';
-        const AC = window.AudioContext || window.webkitAudioContext;
-        window.__recoverCtx = window.__recoverCtx || new AC();
-        const buf = await new Promise((res, rej) => {
-            const p = window.__recoverCtx.decodeAudioData(ab.slice(0), res, rej);
-            if (p && p.catch) p.catch(rej);
-        });
-        if (currentPlayingId !== myId) return;
-        const url2 = URL.createObjectURL(audioBufferToWavBlob(buf));
-        await loadInPlayer(url2);
-        if (currentPlayingId !== myId) return;
-        setPlayerBlob(url2);
-        await audioPlayer.play(); isPlaying = true; updatePlayPauseUI();
+        const buf = await r.arrayBuffer();
+        if (!buf.byteLength) throw new Error('El archivo de audio está vacío.');
+        const ext = t ? t.ext : 'mp3';
+        const sn = sniffAudioBytes(new Uint8Array(buf, 0, Math.min(16, buf.byteLength)));
+        const clen = Number(r.headers.get('content-length')) || 0;
+        const diag = 'formato real: ' + sn.kind + ' · extensión: .' + ext + ' · tipo del servidor: ' + (r.headers.get('content-type') || '?') +
+            ' · recibido: ' + buf.byteLength + ' bytes' + (clen && clen !== buf.byteLength ? ' (el servidor anunció ' + clen + ')' : '') + ' · HTTP ' + r.status;
+        audioPlayer.dataset.diag = diag;
+        console.warn('[VIP] Audio no reproducible directo →', t && t.title, '|', diag);
+        if (!sn.mime && /^texto/.test(sn.kind)) {
+            let txt = ''; try { txt = new TextDecoder().decode(new Uint8Array(buf, 0, Math.min(160, buf.byteLength))); } catch (_) {}
+            throw new Error('El servidor devolvió texto en lugar de audio: ' + txt);
+        }
+        const url = URL.createObjectURL(new Blob([buf], { type: sn.mime || mimeFromExt(ext) }));
+        const oldBlobUrl = audioPlayer.dataset.blobUrl;
+        audioPlayer.dataset.blob = '1';
+        audioPlayer.dataset.blobUrl = url;
+        audioPlayer.src = url;
+        if (oldBlobUrl) URL.revokeObjectURL(oldBlobUrl);
+        await audioPlayer.play();
     } catch (e) {
-        console.error('Audio no reproducible (' + stage + '):', e);
         stopPlaybackUI();
-        alert('No se pudo reproducir «' + name + '» (' + stage + ': ' + (e && e.message ? e.message : e) + '). Formato detectado: ' + (realMime || 'desconocido') + '. Conviértela a MP3 estándar y vuelve a subirla.');
+        if (audioPlayer.dataset.blob === '1' && audioPlayer.error) {
+            alert('Este archivo no se puede reproducir: el navegador no reconoce su contenido de audio. Prueba a subirlo de nuevo en MP3.' +
+                (audioPlayer.dataset.diag ? '\n\nDetalle técnico: ' + audioPlayer.dataset.diag : ''));
+        } else alert('No se pudo cargar el audio: ' + (e && e.message ? e.message : e));
     } finally { audioPlayer.dataset.recovering = '0'; }
 }
 
