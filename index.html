@@ -2781,6 +2781,13 @@ async function audioApi(body) {
     if (body && body.action !== 'play') {
         const session = await requireSession();
         headers.Authorization = 'Bearer ' + session.access_token;
+    } else {
+        // "play" también va con la sesión si existe: así el servidor sabe que eres socio/admin y entrega el audio completo.
+        // Sin sesión (visitante) no se envía nada y se queda la vista previa.
+        try {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session && session.access_token) headers.Authorization = 'Bearer ' + session.access_token;
+        } catch (_) {}
     }
     const r = await fetch('/.netlify/functions/audio', { method: 'POST', headers,
         body: JSON.stringify(body) });
@@ -2829,9 +2836,13 @@ async function handleAudioError() {
     if (currentPlayingId === null || audioPlayer.dataset.recovering === '1') return;
     const t = allRemixes.find(r => r.id === currentPlayingId);
     const code = audioPlayer.error ? audioPlayer.error.code : 0;
-    if (audioPlayer.dataset.blob === '1' || !/^https?:/.test(audioPlayer.src)) {
+    const src0 = audioPlayer.src || '';
+    const ctxInfo = 'sesión: ' + (isAdmin ? 'admin' : currentUser ? 'usuario' : 'visitante') +
+        ' · fuente: ' + (/^data:/.test(src0) ? 'vista previa recortada' : /^blob:/.test(src0) ? 'memoria' : (src0.match(/^https?:\/\/([^/?#]+)/) || [])[1] || '?') +
+        ' · código ' + code + ' · ' + (/Chrome|Chromium/.test(navigator.userAgent) ? 'Chrome/otro' : /Safari/.test(navigator.userAgent) ? 'Safari' : 'otro navegador');
+    if (audioPlayer.dataset.blob === '1' || !/^(https?|data):/.test(audioPlayer.src)) {
         stopPlaybackUI();
-        const d = audioPlayer.dataset.diag ? '\n\nDetalle técnico: ' + audioPlayer.dataset.diag : '';
+        const d = '\n\nDetalle técnico: ' + [audioPlayer.dataset.diag, ctxInfo].filter(Boolean).join(' · ');
         alert((code === 4
             ? 'Este archivo no se puede reproducir: el navegador no reconoce su contenido de audio. Prueba a subirlo de nuevo en MP3.'
             : 'No se pudo reproducir el audio (código ' + code + '). Revisa tu conexión e inténtalo de nuevo.') + d);
@@ -2864,10 +2875,11 @@ async function handleAudioError() {
         await audioPlayer.play();
     } catch (e) {
         stopPlaybackUI();
+        const dt = '\n\nDetalle técnico: ' + [audioPlayer.dataset.diag, ctxInfo].filter(Boolean).join(' · ');
         if (audioPlayer.dataset.blob === '1' && audioPlayer.error) {
-            alert('Este archivo no se puede reproducir: el navegador no reconoce su contenido de audio. Prueba a subirlo de nuevo en MP3.' +
-                (audioPlayer.dataset.diag ? '\n\nDetalle técnico: ' + audioPlayer.dataset.diag : ''));
-        } else alert('No se pudo cargar el audio: ' + (e && e.message ? e.message : e));
+            alert('Este archivo no se puede reproducir: el navegador no reconoce su contenido de audio. Prueba a subirlo de nuevo en MP3.' + dt);
+        } else alert('No se pudo cargar el audio: ' + (e && e.message ? e.message : e) +
+            (e instanceof TypeError ? ' (el navegador no pudo leer el archivo desde el servidor: posible bloqueo CORS en Backblaze o enlace caducado)' : '') + dt);
     } finally { audioPlayer.dataset.recovering = '0'; }
 }
 
@@ -4466,6 +4478,8 @@ function downloadCurrent() {
  async function loadFor(id) {
   const t = allRemixes.find(r => r.id === id), my = ++token;
   loadedId = id; data = null; ovCache = null;
+  // Prueba de diagnóstico: abrir la web con ?sinonda=1 desactiva la onda para comprobar si influye en el error de reproducción
+  if (/[?&]sinonda=1\b/.test(location.search)) { status = 'na'; draw(); return; }
   const cached = wfCache.get(id);
   if (cached) { data = cached; status = 'ok'; draw(); return; }
   status = 'loading'; draw();
