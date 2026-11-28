@@ -365,6 +365,55 @@
             #bottomPlayer .vp-row { row-gap:4px !important; }
             #landingView h1 { font-size:2.2rem !important; }
         }
+
+        /* ===== Layout estilo DaleMasBajo: sin menu lateral, generos arriba ===== */
+        #sidebarPools { display:none !important; }
+        main.flex-1 { width:100%; max-width:1480px; margin-left:auto; margin-right:auto; padding-top:12px !important; }
+        #genreNavMenu { scrollbar-width:thin; }
+        #genreNavMenu button { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; border-radius:10px; font-size:13px; font-weight:600; color:#1e293b; text-align:left; }
+        #genreNavMenu button:hover { background:#eff6ff; color:#2563eb; }
+        #genreNavMenu button.active { background:#2563eb; color:#fff; }
+        #genreNavMenu button small { font-size:10px; opacity:.6; }
+        html.dark #genreNavMenu { background:#0f1a30; border-color:#293750; }
+        html.dark #genreNavMenu button { color:#e2e8f0; }
+        html.dark #genreNavMenu button:hover { background:#16254a; color:#93c5fd; }
+
+        /* ===== Nombres de canciones completos (sin cortar) ===== */
+        table:has(#tracksTableBody) { table-layout:auto !important; width:100%; }
+        div.overflow-x-hidden:has(#tracksTableBody) { overflow-x:auto !important; }
+        table:has(#tracksTableBody) th:nth-child(3), #tracksTableBody tr > td:nth-child(3) { min-width:260px; width:42%; }
+        #tracksTableBody .catalog-song-title { overflow:visible !important; text-overflow:clip !important; white-space:normal !important; overflow-wrap:break-word !important; word-break:normal !important; -webkit-line-clamp:unset !important; }
+        @media(max-width:767px){ table:has(#tracksTableBody) th:nth-child(3), #tracksTableBody tr > td:nth-child(3) { min-width:0; width:auto; } }
+
+        /* ===== Header: menu pegado al logo, auth a la derecha (como DaleMasBajo) ===== */
+        header > div:nth-child(2) { justify-content:flex-start !important; gap:0 !important; padding-left:0 !important; padding-right:32px !important; }
+        header > div:nth-child(2) > nav { margin-left:44px; gap:30px !important; flex-wrap:nowrap; white-space:nowrap; font-size:15px; font-weight:500; }
+        header > div:nth-child(2) > nav a, header > div:nth-child(2) > nav button { white-space:nowrap; }
+        header #authHeaderContainer { margin-left:auto; flex-shrink:0; }
+        @media (max-width:1279px) { header > div:nth-child(2) > nav { margin-left:24px; gap:18px !important; font-size:13px; } }
+        @media (max-width:1023px) { header > div:nth-child(2) { justify-content:flex-end !important; padding-left:16px !important; } }
+
+        /* ===== Menu al lado del logo tambien en pantallas medianas (>=600px) ===== */
+        @media (min-width:600px) {
+            header > div:nth-child(2) { justify-content:flex-start !important; min-width:0; padding-left:0 !important; padding-right:14px !important; }
+            header > div:nth-child(2) > nav { display:flex !important; flex:1 1 auto; min-width:0; margin-left:18px !important; gap:18px !important; font-size:13px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+            header > div:nth-child(2) > nav::-webkit-scrollbar { display:none; }
+            header > div:nth-child(2) > nav > * { flex:0 0 auto; }
+            header #authHeaderContainer { gap:4px !important; }
+            header #authHeaderContainer button { padding:6px 12px !important; font-size:13px !important; white-space:nowrap; }
+            body > nav.lg\:hidden { display:none !important; }
+            header > div:first-child { min-width:0 !important; padding-left:16px !important; padding-right:16px !important; }
+        }
+        @media (min-width:1280px) {
+            header > div:nth-child(2) > nav { gap:30px !important; font-size:15px; margin-left:44px !important; overflow:visible; }
+            header #authHeaderContainer button { font-size:14px !important; padding:8px 20px !important; }
+            header > div:first-child { min-width:340px !important; padding-left:48px !important; }
+        }
+
+        /* ===== Evitar scroll horizontal de la pagina ===== */
+        html, body { max-width:100%; overflow-x:hidden; }
+        main.flex-1, #mainViewContainer { min-width:0; max-width:100%; }
+        table:has(#tracksTableBody) th:nth-child(3), #tracksTableBody tr > td:nth-child(3) { min-width:200px; }
     </style>
 </head>
 <body class="bg-brand-bg text-slate-800 min-h-screen flex flex-col selection:bg-brand-crimson selection:text-white">
@@ -499,6 +548,10 @@
         <div class="flex flex-1 items-center justify-end lg:justify-between px-4 lg:px-10 gap-4">
             <nav class="hidden lg:flex items-center gap-9 text-sm font-medium text-slate-800">
                 <a href="#" onclick="event.preventDefault();resetFilters()" class="hover:text-brand-crimson transition">Catálogo</a>
+                <div class="relative" id="genreNavWrap">
+                    <button type="button" onclick="toggleGenreNav(event)" class="hover:text-brand-crimson transition flex items-center gap-1.5" aria-haspopup="true">Géneros <i class="fa-solid fa-chevron-down text-[10px]"></i></button>
+                    <div id="genreNavMenu" class="hidden absolute left-0 top-full mt-4 w-64 max-h-[70vh] overflow-y-auto bg-white border border-brand-border rounded-2xl shadow-xl p-2 z-50"></div>
+                </div>
                 <a href="#" onclick="event.preventDefault();filterNewReleases()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-bolt text-xs text-brand-crimson"></i> Nuevos / Recientes</a>
                 <a href="#" onclick="event.preventDefault();filterTop50()" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-fire text-xs text-brand-crimson"></i> Top</a>
                 <a href="#" onclick="event.preventDefault();showUpdatesView()" id="updatesNavLink" class="hover:text-brand-crimson transition flex items-center gap-1.5"><i class="fa-solid fa-folder-open text-xs text-brand-crimson"></i> Updates</a>
@@ -513,6 +566,7 @@
     </header>
     <nav class="lg:hidden flex items-center justify-around bg-white border-b border-brand-border text-xs font-semibold text-slate-700 py-2.5">
         <a href="#" onclick="event.preventDefault();resetFilters()">Catálogo</a>
+        <a href="#" onclick="event.preventDefault();var b=document.getElementById('searchBar');if(b)b.scrollIntoView({behavior:'smooth'});var g=document.getElementById('genreSelectFilter');if(g)setTimeout(function(){g.focus()},350)">Géneros</a>
         <a href="#" onclick="event.preventDefault();filterNewReleases()">Nuevos / Recientes</a>
         <a href="#" onclick="event.preventDefault();filterTop50()">Top</a>
         <a href="#" onclick="event.preventDefault();showUpdatesView()">Updates</a>
@@ -611,6 +665,7 @@
                                     <th class="py-4 px-3 w-[64px] text-center hidden md:table-cell">BPM</th>
                                     <th class="py-4 px-2 w-[84px] text-center hidden md:table-cell"><button type="button" onclick="toggleKeySort()" class="inline-flex items-center gap-1.5 uppercase tracking-wider font-semibold hover:text-slate-800" title="Ordenar por tonalidad"><span class="flex flex-col leading-[8px] text-[9px]"><i id="keySortUp" class="fa-solid fa-caret-up text-slate-400"></i><i id="keySortDown" class="fa-solid fa-caret-down text-slate-400"></i></span>Key</button></th>
                                     <th class="py-4 px-3 w-[170px] text-center hidden lg:table-cell">Type</th>
+                                    <th class="py-4 px-3 w-[130px] text-center hidden md:table-cell">Genre</th>
                                     <th class="py-4 px-3 pr-5 w-[96px] sm:w-[120px] text-center">Download</th>
                                 </tr>
                             </thead>
@@ -1341,7 +1396,38 @@
             }
         }
 
+        function renderGenreNavMenu() {
+            const menu = document.getElementById('genreNavMenu'); if (!menu) return;
+            const video = currentMode === 'video';
+            const pool = allRemixes.filter(t => video ? isVideoTrack(t) : !isVideoTrack(t));
+            const isAll = !topOnly && !newOnly && currentGenreFilter === 'ALL' && currentPortalFilter === 'ALL';
+            let html = `<button type="button" class="${isAll ? 'active' : ''}" onclick="closeGenreNav();showFullCatalog()"><span>${video ? 'Todos los videos' : 'Todo el Catálogo'}</span><small>${pool.length}</small></button>`;
+            genresList.forEach(g => {
+                const n = pool.filter(t => normalizeText(t.genre || '') === normalizeText(g)).length;
+                const act = currentGenreFilter === g ? 'active' : '';
+                html += `<button type="button" class="${act}" onclick="closeGenreNav();filterByGenreSidebar(${JSON.stringify(g).replace(/"/g, '&quot;')})"><span>${escapeHtml(g)}</span><small>${n}</small></button>`;
+            });
+            menu.innerHTML = html;
+        }
+        function toggleGenreNav(e) {
+            if (e) e.stopPropagation();
+            const m = document.getElementById('genreNavMenu'); if (!m) return;
+            const opening = m.classList.contains('hidden');
+            m.classList.toggle('hidden', !opening);
+            if (opening) {
+                const r = (e && e.currentTarget ? e.currentTarget : document.querySelector('#genreNavWrap button')).getBoundingClientRect();
+                m.style.position = 'fixed';
+                m.style.top = (r.bottom + 10) + 'px';
+                m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 270)) + 'px';
+                m.style.marginTop = '0';
+            }
+        }
+        function closeGenreNav() { const m = document.getElementById('genreNavMenu'); if (m) m.classList.add('hidden'); }
+        document.addEventListener('click', e => { if (!e.target.closest('#genreNavWrap')) closeGenreNav(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGenreNav(); });
+        window.addEventListener('resize', closeGenreNav);
         function renderPortalsSidebar() {
+            safeRun('Menú de géneros', renderGenreNavMenu);
             safeRun('Carrusel de géneros', renderGenreMarquee);
             const container = document.getElementById('portalsListContainer');
             renderGenresSidebar(container); return;
@@ -1713,7 +1799,7 @@ function filterByDj(name) {
             if(filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="py-12 text-center text-slate-400">
+                        <td colspan="9" class="py-12 text-center text-slate-400">
                             <i class="fa-solid fa-music text-3xl mb-3 opacity-30"></i>
                             <p class="text-sm font-semibold">${topOnly ? 'Aún no hay canciones de 2025 en adelante encontradas. Corre «Actualizar popularidad» en el panel DJ.' : 'No hay remixes subidos con este filtro.'}</p>
                             <p class="text-xs text-slate-500 mt-1">El administrador puede subir lotes de audio desde el botón superior.</p>
@@ -1757,6 +1843,7 @@ function filterByDj(name) {
                         <td class="py-3 px-3 text-sm text-slate-500 text-center hidden md:table-cell">${track.bpm ? escapeHtml(track.bpm) : '—'}</td>
                         <td class="py-3 px-2 text-center hidden md:table-cell">${keyPillHtml(track)}</td>
                         <td class="py-3 px-2 text-center hidden lg:table-cell">${typeCell}</td>
+                        <td class="py-3 px-2 text-center hidden md:table-cell">${track.genre ? `<span class="inline-block bg-blue-50 text-brand-crimson font-semibold px-3 py-1 rounded-full text-[12px] leading-tight">${escapeHtml(track.genre)}</span>` : '<span class="text-slate-300">—</span>'}</td>
                         <td class="py-3 px-3 pr-5">
                             <div class="flex items-center justify-center gap-1">
                                 <button onclick="toggleFavorite(${realIndex})" aria-label="Favorito" class="p-1.5 rounded-full hover:bg-slate-100 transition ${track.isFavorite ? '' : 'sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'}"><i class="${favClass} text-sm"></i></button>
@@ -1981,12 +2068,12 @@ function filterByDj(name) {
         }
 
         function filterByDropdownGenre(genreName) {
-            // Elegir un género es independiente del botón Top: cambia solo al catálogo de ese género.
+            // Si el Top está activo, al elegir un género se muestra el Top de ese género.
             currentGenreFilter = genreName;
             currentPortalFilter = 'ALL';
             currentMonthFilter = 'ALL';
             currentRatingFilter = 'ALL'; currentTypeFilter = 'ALL';
-            topOnly = false;
+            // topOnly se conserva si ya estaba activo
             newOnly = false;
             searchQuery = '';
             const search = document.getElementById('searchInput'); if (search) search.value = '';
@@ -2014,8 +2101,9 @@ function filterByDj(name) {
         }
         function filterTop50() {
             topOnly = true; newOnly = false;
-            currentPortalFilter = "ALL"; currentGenreFilter = "ALL"; currentMonthFilter = "ALL"; currentRatingFilter = "ALL"; currentTypeFilter = 'ALL';
-            const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = "ALL";
+            // Se conserva el género elegido: Top + género = Top de ese género
+            currentPortalFilter = "ALL"; currentMonthFilter = "ALL"; currentRatingFilter = "ALL"; currentTypeFilter = 'ALL';
+            const sel = document.getElementById('genreSelectFilter'); if (sel) sel.value = currentGenreFilter || "ALL";
             document.getElementById('mainViewContainer').classList.remove('hidden');
             document.getElementById('membershipsViewContainer').classList.add('hidden');
             document.getElementById('adminDashboardView').classList.add('hidden');
