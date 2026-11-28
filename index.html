@@ -52,6 +52,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         #portalsListContainer { max-height: calc(100vh - 220px - var(--player-h, 0px)); }
+        /* DJ Studio: nada debe quedar tapado por el reproductor ni por la barra de acciones */
+        #djStudioView { padding-bottom: 24px; }
+        #djBatchBar { position: static; z-index: auto; }
+        @media (min-width:1280px) and (min-height:780px) {
+            #djBatchBar { position: sticky; bottom: calc(var(--player-h, 0px) + 10px); z-index: 30; }
+        }
         /* Escritorio: barra de scroll de géneros siempre visible para que se vea que la lista continúa */
         @media (min-width:1024px) {
             #portalsListContainer { scrollbar-width: thin; scrollbar-color: #94a3b8 transparent; }
@@ -856,7 +862,7 @@
                         </div>
                         <div id="djBatchResults" class="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start"></div>
                     </div>
-                    <div class="bg-white border border-brand-border rounded-2xl p-4 shadow-lg" style="position:sticky;bottom:calc(var(--player-h,0px) + 10px);z-index:30">
+                    <div id="djBatchBar" class="bg-white border border-brand-border rounded-2xl p-4 shadow-lg">
                         <div class="flex flex-col xl:flex-row xl:items-center gap-3">
                             <div class="flex gap-2"><button id="djBatchDlBtn" onclick="djBatchDownload()" class="bg-brand-crimson text-white rounded-lg px-4 py-2.5 text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-download mr-1"></i> Descargar lote (0)</button><button onclick="djDlCancel=true" class="bg-slate-200 text-slate-700 rounded-lg px-3 py-2.5 text-xs font-bold">Cancelar</button></div>
                             <div class="flex flex-1 flex-col sm:flex-row gap-2"><select id="djBatchTarget" onchange="djBatchTargetChange()" class="border border-brand-border rounded-lg p-2.5 text-sm sm:w-56"><option value="new">+ Nueva playlist…</option></select><input id="djBatchPlName" maxlength="100" placeholder="Nombre de la nueva playlist" class="min-w-0 flex-1 border border-brand-border rounded-lg px-3 py-2 text-sm"><button onclick="djBatchSave()" class="bg-slate-800 text-white rounded-lg px-4 py-2.5 text-xs font-bold whitespace-nowrap">Guardar en playlist</button></div>
