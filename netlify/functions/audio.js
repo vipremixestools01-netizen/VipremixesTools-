@@ -173,6 +173,25 @@ async function consumirCupo(authHeader, bytes) {
   } catch (e) { lastErr = 'Supabase error: ' + e.message; console.error('[audio]', lastErr); return null; }
 }
 
+// Tamaño total de la etiqueta ID3v2 al inicio de un MP3 (0 si no hay). Algunos MP3 traen etiquetas enormes
+// (carátula, marcadores de Serato, etc.): si el recorte de vista previa cae dentro de la etiqueta, no hay audio que reproducir.
+function id3Total(h) {
+  if (!h || h.length < 10 || h[0] !== 0x49 || h[1] !== 0x44 || h[2] !== 0x33) return 0;
+  if ((h[6] | h[7] | h[8] | h[9]) & 0x80) return 0; // tamaño inválido
+  const size = (h[6] << 21) | (h[7] << 14) | (h[8] << 7) | h[9];
+  return 10 + size + ((h[3] === 4 && (h[5] & 0x10)) ? 10 : 0);
+}
+
+// Byte donde empieza el audio real de un MP3 (justo después de su etiqueta ID3). 0 si no hay etiqueta o no se pudo leer.
+async function inicioAudioMp3(base) {
+  try {
+    const r = await fetch(presign({ ...base, method: 'GET', expires: 60 }), { headers: { Range: 'bytes=0-9' } });
+    if (r.status !== 206) { try { await r.body.cancel(); } catch (_) {} return 0; } // sin soporte de rangos: no se lee el archivo
+    const total = id3Total(Buffer.from(await r.arrayBuffer()));
+    return total > 0 && total < 64 * 1024 * 1024 ? total : 0;
+  } catch (e) { console.error('[audio] id3:', e.message); return 0; }
+}
+
 // Vista previa para quien no es socio. NUNCA devuelve el archivo completo.
 //  - Video: clip ya recortado  b2/pv-<id>.mp4  (el mismo que sube "Subir previews").
 //  - Audio: solo los primeros PREVIEW_BYTES, leídos aquí en el servidor y entregados como data URL.
@@ -188,7 +207,8 @@ async function urlPreview(cfg, base, path) {
   }
 
   const limit = PREVIEW_BYTES_BY_EXT[ext] || PREVIEW_BYTES;
-  const r = await fetch(presign({ ...base, method: 'GET', expires: 60 }), { headers: { Range: `bytes=0-${limit - 1}` } });
+  const start = ext === 'mp3' ? await inicioAudioMp3(base) : 0; // en MP3 se salta la etiqueta ID3 y se recorta el audio de verdad
+  const r = await fetch(presign({ ...base, method: 'GET', expires: 60 }), { headers: { Range: `bytes=${start}-${start + limit - 1}` } });
   if (r.status !== 206 && r.status !== 200) throw new Error('Backblaze ' + r.status);
   if (r.status === 200) {
     // El servidor ignoró el rango: si el archivo es grande, NO se lee entero.
@@ -274,3 +294,4 @@ exports.handler = async (event) => {
 };
 
 exports._presign = presign;
+exports._id3Total = id3Total;
